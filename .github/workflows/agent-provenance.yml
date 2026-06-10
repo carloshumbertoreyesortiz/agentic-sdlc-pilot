@@ -1,27 +1,74 @@
 name: agent-provenance
 
-# Required status check on `main` (US-018 branch protection).
-#
-# ⚠️ STUB — interim placeholder so the required `agent-provenance` check
-# exists and is satisfiable before E-07 is built. It currently PASSES
-# unconditionally and does NOT enforce provenance.
-#
-# To be replaced by the real gate in E-07:
-#   US-029 schema · US-030 writer · US-031 this workflow · US-032 wire-up
-# The real version must, on PRs whose head_ref starts with `agent/`, fail
-# when .agent/provenance.json is missing or missing required fields.
+# Required status check on `main` (US-018). Enforces provenance on agent/* PRs
+# (US-031): fails when .agent/provenance.json is missing or missing required
+# fields, and posts a summary comment when it passes. Non-agent PRs pass.
 
 on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   agent-provenance:
     runs-on: ubuntu-latest
     steps:
-      - name: Provenance gate (stub)
+      - uses: actions/checkout@v4
+
+      - name: Verify provenance
+        env:
+          HEAD_REF: ${{ github.head_ref }}
         run: |
-          echo "::warning::agent-provenance is a non-enforcing STUB (E-07 not yet implemented)."
-          echo "It passes unconditionally so the required check is satisfied."
-          echo "head_ref=${GITHUB_HEAD_REF}"
-          exit 0
+          set -euo pipefail
+          if [[ "$HEAD_REF" != agent/* ]]; then
+            echo "::notice::head '$HEAD_REF' is not an agent/* branch — provenance not required."
+            exit 0
+          fi
+
+          f=.agent/provenance.json
+          if [[ ! -f "$f" ]]; then
+            echo "::error::$f is missing on agent/* branch '$HEAD_REF'."
+            exit 1
+          fi
+          if ! jq empty "$f" 2>/dev/null; then
+            echo "::error::$f is not valid JSON."
+            exit 1
+          fi
+
+          required='run_id task agent_identity human_approver model started_at finished_at prompt_hash tool_trace attachment_hashes token_cost'
+          missing=()
+          for k in $required; do
+            if ! jq -e --arg k "$k" 'has($k) and (.[$k] != null)' "$f" >/dev/null; then
+              missing+=("$k")
+            fi
+          done
+          if (( ${#missing[@]} > 0 )); then
+            echo "::error::$f missing required fields: ${missing[*]}"
+            exit 1
+          fi
+
+          echo "provenance OK"
+          {
+            echo "PROV_RUN=$(jq -r '.run_id' "$f")"
+            echo "PROV_MODEL=$(jq -r '.model' "$f")"
+            echo "PROV_APPROVER=$(jq -r '.human_approver' "$f")"
+            echo "PROV_COST=$(jq -r '.token_cost | "in=\(.input) out=\(.output)"' "$f")"
+          } >> "$GITHUB_ENV"
+
+      - name: Post provenance summary
+        if: ${{ startsWith(github.head_ref, 'agent/') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          body=$(printf '%s\n' \
+            "✅ **agent-provenance** verified for \`${{ github.head_ref }}\`" \
+            "- run_id: \`${PROV_RUN}\`" \
+            "- model: \`${PROV_MODEL}\`" \
+            "- approver: \`${PROV_APPROVER}\`" \
+            "- token cost: ${PROV_COST}")
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --body "$body" || echo "summary comment failed (non-fatal)"

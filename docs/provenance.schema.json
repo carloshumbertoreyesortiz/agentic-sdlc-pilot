@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://telenor/agentic-sdlc-pilot/provenance.schema.json",
+  "title": "Agent provenance",
+  "description": "Provenance record an agent must write to .agent/provenance.json before its final commit (US-029/US-030).",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "run_id",
+    "task",
+    "agent_identity",
+    "human_approver",
+    "model",
+    "started_at",
+    "finished_at",
+    "prompt_hash",
+    "tool_trace",
+    "attachment_hashes",
+    "token_cost"
+  ],
+  "properties": {
+    "run_id": { "type": "string", "description": "Unique id for this agent run." },
+    "task": { "type": "string", "description": "What the run was asked to do." },
+    "agent_identity": { "type": "string", "description": "Agent identity (distinct from any human)." },
+    "human_approver": { "type": "string", "description": "Human who approved the plan/PR (Checkpoint 1)." },
+    "model": { "type": "string", "description": "Model id used, e.g. claude-opus-4-8." },
+    "started_at": { "type": "string", "format": "date-time" },
+    "finished_at": { "type": "string", "format": "date-time" },
+    "prompt_hash": { "type": "string", "description": "Hash of the system prompt used." },
+    "tool_trace": { "type": "array", "items": { "type": "string" }, "description": "Ordered tool invocations." },
+    "attachment_hashes": { "type": "array", "items": { "type": "string" }, "description": "SHA-256 of any ingested attachments." },
+    "token_cost": {
+      "type": "object",
+      "required": ["input", "output"],
+      "properties": {
+        "input": { "type": "number" },
+        "output": { "type": "number" }
+      }
+    }
+  }
+}
