@@ -1,0 +1,28 @@
+name: check
+
+# Required status check on `main` (US-018 branch protection).
+# Runs lint + build + test once the E-03 scaffold (package.json) exists.
+# Until then it passes with a notice, so it never falsely blocks PRs.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Lint, build, test
+        run: |
+          if [ -f package.json ]; then
+            npm ci --no-audit --no-fund
+            npm run check
+          else
+            echo "::notice::No package.json yet (pre-E-03 scaffold) — nothing to lint/build/test. Passing."
+          fi
