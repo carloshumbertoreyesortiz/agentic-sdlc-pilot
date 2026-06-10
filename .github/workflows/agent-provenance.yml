@@ -1,0 +1,27 @@
+name: agent-provenance
+
+# Required status check on `main` (US-018 branch protection).
+#
+# ⚠️ STUB — interim placeholder so the required `agent-provenance` check
+# exists and is satisfiable before E-07 is built. It currently PASSES
+# unconditionally and does NOT enforce provenance.
+#
+# To be replaced by the real gate in E-07:
+#   US-029 schema · US-030 writer · US-031 this workflow · US-032 wire-up
+# The real version must, on PRs whose head_ref starts with `agent/`, fail
+# when .agent/provenance.json is missing or missing required fields.
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  agent-provenance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Provenance gate (stub)
+        run: |
+          echo "::warning::agent-provenance is a non-enforcing STUB (E-07 not yet implemented)."
+          echo "It passes unconditionally so the required check is satisfied."
+          echo "head_ref=${GITHUB_HEAD_REF}"
+          exit 0
