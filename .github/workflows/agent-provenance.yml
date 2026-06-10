@@ -63,10 +63,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          body=$(printf '%s\n' \
+            "✅ **agent-provenance** verified for \`${{ github.head_ref }}\`" \
+            "- run_id: \`${PROV_RUN}\`" \
+            "- model: \`${PROV_MODEL}\`" \
+            "- approver: \`${PROV_APPROVER}\`" \
+            "- token cost: ${PROV_COST}")
           gh pr comment "${{ github.event.pull_request.number }}" \
             --repo "${{ github.repository }}" \
-            --body "✅ **agent-provenance** verified for \`${{ github.head_ref }}\`
-- run_id: \`${PROV_RUN}\`
-- model: \`${PROV_MODEL}\`
-- approver: \`${PROV_APPROVER}\`
-- token cost: ${PROV_COST}" || echo "summary comment failed (non-fatal)"
+            --body "$body" || echo "summary comment failed (non-fatal)"
