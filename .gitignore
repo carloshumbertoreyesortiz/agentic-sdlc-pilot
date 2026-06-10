@@ -1,0 +1,20 @@
+# secrets — never commit
+.env
+.envrc
+.env.*
+*.pem
+*.key
+
+# dependencies & build output
+node_modules/
+dist/
+coverage/
+*.log
+
+# OS / editor
+.DS_Store
+.vscode/settings.json
+
+# agent run artifacts & cache
+artifacts/run-*
+.agent/cache/
