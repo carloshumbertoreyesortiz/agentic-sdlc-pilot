@@ -102,3 +102,17 @@ Once a second collaborator can review, flip `enforce_admins` to true:
 gh api -X PUT "repos/$NEW_FULL/branches/main/protection/enforce_admins"
 ```
 Revisit at the E-10 governance review (US-047).
+
+## 8. Decommission the interim board (final step)
+
+Only after the org "Agentic SDLC Pilot" project is **populated and verified at
+57 items** (step 6), delete the interim personal board so two boards never
+coexist:
+
+```bash
+# preconditions: org project verified at 57 items
+count=$(gh project item-list "$PILOT_PROJECT" --owner "$PROJECT_OWNER" --format json -L 200 -q '.items | length')
+test "$count" = "57" || { echo "Org project has $count items, expected 57 — do NOT delete the interim board yet"; exit 1; }
+
+gh project delete 1 --owner @me   # interim "Agentic SDLC Pilot — Phase 0/1"; deleting a project does not delete issues
+```
