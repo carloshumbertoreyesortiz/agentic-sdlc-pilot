@@ -56,3 +56,14 @@ The `agent/` prefix is the signal the automation keys off:
 3. Agent opens a PR into `main`.
 4. CI (`check`) and the provenance gate (`agent-provenance`) run.
 5. A human reviews and approves; the PR merges; the branch is deleted.
+
+## Phase 0/1 exception: `enforce_admins=false`
+
+While the repo is solo-operated, branch protection runs with
+`enforce_admins=false`. Admin can bypass required checks (demonstrated
+2026-06-10, PR #62/#63: an agent/* PR with no provenance failed the
+`agent-provenance` check, but the owner bypass merged it; it was reverted).
+
+- **Exit trigger:** flip to `enforce_admins=true` when a second collaborator
+  is added (so the 1-review gate is satisfiable by a real reviewer).
+- **Revisit:** at the E-10 governance review (US-047).
