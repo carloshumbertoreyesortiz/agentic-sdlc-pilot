@@ -1,0 +1,13 @@
+{
+  "run_id": "e07-provenance-2026-06-10",
+  "task": "E-07: replace agent-provenance stub with a real gate (US-029 schema, US-030 writer, US-031 workflow)",
+  "agent_identity": "claude-code@agentic-sdlc-pilot",
+  "human_approver": "carloshumbertoreyesortiz",
+  "model": "claude-opus-4-8",
+  "started_at": "2026-06-10T08:00:00Z",
+  "finished_at": "2026-06-10T08:30:00Z",
+  "prompt_hash": "bootstrap-hand-authored",
+  "tool_trace": ["Read", "Write", "Bash"],
+  "attachment_hashes": [],
+  "token_cost": { "input": 0, "output": 0 }
+}
