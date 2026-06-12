@@ -1,14 +1,14 @@
 # 📊 Agentic SDLC Pilot — Delivery Dashboard
 
-_Auto-generated from the [Issues](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues) · last updated **2026-06-12 17:08 UTC**. Do not edit by hand — see `scripts/dashboard.ts`._
+_Auto-generated from the [Issues](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues) · last updated **2026-06-12 17:09 UTC**. Do not edit by hand — see `scripts/dashboard.ts`._
 
 ## Overall progress
 
-**Stories:** 20 / 48 done
+**Stories:** 20 / 49 done
 
-`███████████████░░░░░░░░░░░░░░░░░░░░░` 42%
+`███████████████░░░░░░░░░░░░░░░░░░░░░` 41%
 
-**Story points:** 58 / 157 delivered
+**Story points:** 58 / 158 delivered
 
 `█████████████░░░░░░░░░░░░░░░░░░░░░░░` 37%
 
@@ -16,9 +16,9 @@ _Auto-generated from the [Issues](https://github.com/carloshumbertoreyesortiz/ag
 
 | Total | ✅ Done | 🟧 Blocked | 🟨 In Progress | ⚪ To Do | 🎯 % | 📅 Week |
 | --- | --- | --- | --- | --- | --- | --- |
-| ## 48 | ## 20 | ## 1 | ## 0 | ## 27 | ## 42% | ## W24 |
+| ## 49 | ## 20 | ## 1 | ## 0 | ## 28 | ## 41% | ## W24 |
 
-> **Velocity** — Today is W24 (Jun 08–Jun 14). 20 of 48 stories closed in W18–W24. Projected completion at current pace: ~W34. Critical path: US-009 (unassigned).
+> **Velocity** — Today is W24 (Jun 08–Jun 14). 20 of 49 stories closed in W18–W24. Projected completion at current pace: ~W35. Critical path: US-009 (unassigned).
 
 ## 🗓️ Epic timeline
 
@@ -56,7 +56,7 @@ gantt
 | W21 (May 18–May 24) | 0 | 0 | +0 | — |
 | W22 (May 25–May 31) | 0 | 0 | +0 | — |
 | W23 (Jun 01–Jun 07) | 0 | 0 | +0 | — |
-| W24 (Jun 08–Jun 14) | 58 | 20 | -38 | #73 docs(dashboard): W24 seeding footnote + EPIC_DATES estimates-only note |
+| W24 (Jun 08–Jun 14) | 59 | 20 | -39 | #73 docs(dashboard): W24 seeding footnote + EPIC_DATES estimates-only note |
 
 _W24 spike: full backlog of 58 issues seeded this week (2026-06-09). True post-seeding velocity will show from W25 onward._
 
@@ -65,7 +65,7 @@ _W24 spike: full backlog of 58 issues seeded this week (2026-06-09). True post-s
 | Phase | Stories | Points | Progress |
 | --- | --- | --- | --- |
 | Phase 0 — Foundation | 5/15 | 9/27 | `██████░░░░░░░░░░░░` 33% |
-| Phase 1 — Plan-only pilot | 15/29 | 49/119 | `███████░░░░░░░░░░░` 41% |
+| Phase 1 — Plan-only pilot | 15/30 | 49/120 | `███████░░░░░░░░░░░` 41% |
 | Phase 2 — Full agentic SDLC | 0/4 | 0/11 | `░░░░░░░░░░░░░░░░░░` 0% |
 
 ## Status distribution
@@ -74,7 +74,7 @@ _W24 spike: full backlog of 58 issues seeded this week (2026-06-09). True post-s
 pie showData
     title Stories by status
     "Done" : 20
-    "In backlog" : 28
+    "In backlog" : 29
 ```
 
 ## Progress by epic
@@ -90,7 +90,7 @@ pie showData
 | [E-07: Provenance & Compliance Workflow](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/7) | 5/5 | 17/17 | `██████████████████` 100% |
 | [E-08: Browser Verification (Playwright)](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/8) | 0/4 | 0/11 | `░░░░░░░░░░░░░░░░░░` 0% |
 | [E-09: Slack Intake Bot](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/9) | 0/6 | 0/34 | `░░░░░░░░░░░░░░░░░░` 0% |
-| [E-10: Phase 0/1 Smoke Test & Pilot Launch](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/10) | 2/5 | 8/27 | `█████░░░░░░░░░░░░░` 30% |
+| [E-10: Phase 0/1 Smoke Test & Pilot Launch](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/10) | 2/6 | 8/28 | `█████░░░░░░░░░░░░░` 29% |
 
 ### Stories by epic
 
@@ -202,15 +202,16 @@ _Click an epic to expand its stories._
 
 </details>
 
-<details><summary><strong>E-10: Phase 0/1 Smoke Test & Pilot Launch</strong> — 2/5 done</summary>
+<details><summary><strong>E-10: Phase 0/1 Smoke Test & Pilot Launch</strong> — 2/6 done</summary>
 
 | Story | Title | Status | Est. Week | Blocks |
 | --- | --- | --- | --- | --- |
 | [US-044](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/54) | Run end-to-end smoke test per impl guide §13 | ⚪ To do | W27 | US-046 |
-| [US-045](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/55) | Stand up metrics dashboard with 6 baseline metrics | ✅ Done | W27 | US-046, US-048 |
+| [US-045](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/55) | Stand up metrics dashboard with 6 baseline metrics | ✅ Done | W27 | US-046, US-048, US-049 |
 | [US-046](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/56) | Run 2-week pilot with one squad, collect feedback | ⚪ To do | W27 | US-047 |
 | [US-047](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/57) | Governance council Phase 0/1 sign-off review | ⚪ To do | W27 | — |
-| [US-048](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/71) | KPI dashboard v2 — epic timelines, week numbers, velocity, weekly activity | ✅ Done | W28 | — |
+| [US-048](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/71) | KPI dashboard v2 — epic timelines, week numbers, velocity, weekly activity | ✅ Done | W27 | — |
+| [US-049](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/74) | Dashboard auto-refresh — remove issue-event trigger to eliminate write race | ⚪ To do | W28 | — |
 
 </details>
 
