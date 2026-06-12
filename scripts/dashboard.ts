@@ -48,6 +48,8 @@ const PHASES = [
   },
 ] as const;
 
+// Estimates only. Convert to milestone due_on once Phase 0 closes
+//  (US-001/002/006/010/011/020 done, US-022 evidence run green).
 // Planned epic windows: per-epic start + working-day duration. Single source of
 // truth for the epic Gantt UNTIL a milestone gets a real `due_on`, which then
 // overrides the end date (data-driven path; see epicWindow + fetchMilestones).
@@ -640,6 +642,10 @@ function buildDashboard(
       `| ${isoWeekLabel(w.mon)} (${fmtDay(w.mon)}–${fmtDay(w.sun)}) | ${opened} | ${closed} | ${net >= 0 ? '+' : ''}${net} | ${notable} |`,
     );
   });
+  out.push('');
+  out.push(
+    '_W24 spike: full backlog of 58 issues seeded this week (2026-06-09). True post-seeding velocity will show from W25 onward._',
+  );
   out.push('');
 
   // Per-phase table
