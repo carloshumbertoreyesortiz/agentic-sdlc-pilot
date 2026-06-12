@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
@@ -59,6 +59,7 @@ interface GhIssue {
   labels: GhLabel[];
   milestone: { title: string } | null;
   closedAt: string | null;
+  assignees: { login: string }[];
 }
 interface GhPr {
   number: number;
@@ -86,7 +87,7 @@ function fetchIssues(): GhIssue[] {
     '--limit',
     '300',
     '--json',
-    'number,title,state,body,labels,milestone,closedAt',
+    'number,title,state,body,labels,milestone,closedAt,assignees',
   ]);
   return JSON.parse(out) as GhIssue[];
 }
@@ -135,6 +136,74 @@ export function parsePoints(body: string): number {
 export function parentEpic(body: string): number | null {
   const m = body.match(/Parent epic:[^\n]*#(\d+)/i);
   return m ? Number(m[1]) : null;
+}
+
+/** The `US-0NN` id from a story title, upper-cased (empty if none). */
+export function storyId(title: string): string {
+  const m = title.match(/US-\d+/i);
+  return m ? m[0].toUpperCase() : '';
+}
+
+/** The numeric part of the story id, for ordering (0 if none). */
+export function storyNum(title: string): number {
+  const m = title.match(/US-(\d+)/i);
+  return m ? Number(m[1]) : 0;
+}
+
+/** Story title with the `[STORY] US-0NN:` prefix stripped. */
+export function storyTitle(title: string): string {
+  return title.replace(/^\[STORY\]\s*US-\d+:\s*/i, '').trim();
+}
+
+/** A label name that marks active work (none exist in the repo yet). */
+export function isInProgressLabel(name: string): boolean {
+  return /in[-\s]?progress|wip/i.test(name);
+}
+
+/**
+ * Status cell per the agreed mapping:
+ *   closed -> Done · open+blocked -> Blocked ·
+ *   open+assignee+in-progress label -> In progress · else -> To do.
+ */
+export function storyStatusEmoji(s: {
+  closed: boolean;
+  blocked: boolean;
+  inProgress: boolean;
+}): string {
+  if (s.closed) return '✅ Done';
+  if (s.blocked) return '🟧 Blocked';
+  if (s.inProgress) return '🟨 In progress';
+  return '⚪ To do';
+}
+
+export interface RiskRow {
+  id: string;
+  severity: string;
+  status: string;
+}
+
+/**
+ * Parses the markdown table in docs/risks.md by column header, so it survives
+ * column reordering. Severity is sourced faithfully — if the doc has no
+ * Severity column, it renders as `—` (not invented).
+ */
+export function parseRiskTable(md: string): RiskRow[] {
+  const rows = md.split('\n').filter((l) => l.trim().startsWith('|'));
+  if (rows.length < 3) return [];
+  const header = rows[0].split('|').map((c) => c.trim().toLowerCase());
+  const iId = header.indexOf('id');
+  const iSev = header.indexOf('severity');
+  const iStatus = header.indexOf('status');
+  if (iId < 0) return [];
+  return rows
+    .slice(2) // skip header row + `|---|` separator
+    .map((line) => line.split('|').map((c) => c.trim()))
+    .filter((cells) => /^R-\d+/i.test(cells[iId] ?? ''))
+    .map((cells) => ({
+      id: cells[iId] ?? '',
+      severity: iSev >= 0 ? (cells[iSev] ?? '—') : '—',
+      status: iStatus >= 0 ? (cells[iStatus] ?? '') : '',
+    }));
 }
 
 export function pct(done: number, total: number): number {
@@ -194,7 +263,7 @@ function ganttSection(label: string, start: string, end: string, ratio: number):
   return lines.join('\n');
 }
 
-function buildDashboard(issues: GhIssue[], prs: GhPr[]): string {
+function buildDashboard(issues: GhIssue[], prs: GhPr[], riskMd: string): string {
   const stories = issues.filter((i) => hasLabel(i, 'story'));
   const epics = issues
     .filter((i) => hasLabel(i, 'epic'))
@@ -295,6 +364,41 @@ function buildDashboard(issues: GhIssue[], prs: GhPr[]): string {
   });
   out.push('');
 
+  // Per-epic story detail (collapsed by default — manager view stays scannable)
+  out.push('### Stories by epic');
+  out.push('');
+  out.push('_Click an epic to expand its stories._');
+  out.push('');
+  epics.forEach((e) => {
+    const epicStories = stories
+      .filter((s) => parentEpic(s.body) === e.number)
+      .sort((a, b) => storyNum(a.title) - storyNum(b.title));
+    const closed = epicStories.filter(isClosed).length;
+    const name = e.title.replace(/^\[EPIC\]\s*/i, '');
+    out.push(
+      `<details><summary><strong>${name}</strong> — ${closed}/${epicStories.length} done</summary>`,
+    );
+    out.push('');
+    out.push('| Story | Title | Status |');
+    out.push('| --- | --- | --- |');
+    epicStories.forEach((s) => {
+      const blocked = hasLabel(s, 'blocked');
+      const inProgress =
+        s.assignees.length > 0 && s.labels.some((l) => isInProgressLabel(l.name));
+      const status = storyStatusEmoji({
+        closed: isClosed(s),
+        blocked,
+        inProgress,
+      });
+      out.push(
+        `| [${storyId(s.title)}](https://github.com/${REPO}/issues/${s.number}) | ${storyTitle(s.title)} | ${status} |`,
+      );
+    });
+    out.push('');
+    out.push('</details>');
+    out.push('');
+  });
+
   // In-flight
   out.push('## 🚧 In flight');
   out.push('');
@@ -326,13 +430,42 @@ function buildDashboard(issues: GhIssue[], prs: GhPr[]): string {
   }
   out.push('');
 
+  // Risk register (sourced from docs/risks.md)
+  const risks = parseRiskTable(riskMd);
+  if (risks.length > 0) {
+    out.push('## ⚠️ Risk register');
+    out.push('');
+    out.push('_Source: [docs/risks.md](docs/risks.md)._');
+    out.push('');
+    out.push('| ID | Severity | Status |');
+    out.push('| --- | --- | --- |');
+    risks.forEach((r) => {
+      out.push(`| ${r.id} | ${r.severity} | ${r.status} |`);
+    });
+    out.push('');
+    if (!/\|\s*severity\s*\|/i.test(riskMd)) {
+      out.push(
+        '_Severity is not yet a column in `docs/risks.md`, so it shows as `—`. Add a `Severity` column there and it will populate automatically._',
+      );
+      out.push('');
+    }
+  }
+
   return out.join('\n');
+}
+
+function readRisks(): string {
+  try {
+    return readFileSync('docs/risks.md', 'utf8');
+  } catch {
+    return '';
+  }
 }
 
 function main(): void {
   const issues = fetchIssues();
   const prs = fetchAgentPrs();
-  const md = buildDashboard(issues, prs);
+  const md = buildDashboard(issues, prs, readRisks());
   writeFileSync('DASHBOARD.md', md);
   process.stdout.write(`DASHBOARD.md written — ${issues.length} issues.\n`);
 }

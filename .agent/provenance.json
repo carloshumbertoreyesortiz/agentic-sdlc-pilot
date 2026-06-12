@@ -1,11 +1,11 @@
 {
-  "run_id": "run-1781280953041",
-  "task": "US-045: stand up delivery dashboard (DASHBOARD.md + generator + CI)",
+  "run_id": "run-1781281999389",
+  "task": "US-045: add per-story visibility (collapsible per-epic story tables) + risk register to dashboard",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-06-12T16:15:53.038Z",
-  "finished_at": "2026-06-12T16:15:53.041Z",
+  "started_at": "2026-06-12T16:33:19.387Z",
+  "finished_at": "2026-06-12T16:33:19.389Z",
   "prompt_hash": "sha256:f396926f2ad915e9c9064b5423571caf195ed08d1f7228b14875cb2e09a22b59",
   "tool_trace": [
     "Read",
