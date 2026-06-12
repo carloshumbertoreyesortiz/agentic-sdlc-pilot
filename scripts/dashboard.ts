@@ -48,6 +48,23 @@ const PHASES = [
   },
 ] as const;
 
+// Planned epic windows: per-epic start + working-day duration. Single source of
+// truth for the epic Gantt UNTIL a milestone gets a real `due_on`, which then
+// overrides the end date (data-driven path; see epicWindow + fetchMilestones).
+// EDIT HERE as dates firm up.
+const EPIC_DATES: Record<string, { start: string; days: number }> = {
+  'E-01': { start: '2026-05-26', days: 7 },
+  'E-02': { start: '2026-05-28', days: 9 },
+  'E-04': { start: '2026-06-01', days: 8 },
+  'E-03': { start: '2026-06-09', days: 6 },
+  'E-05': { start: '2026-06-11', days: 10 },
+  'E-06': { start: '2026-06-16', days: 6 },
+  'E-07': { start: '2026-06-18', days: 7 },
+  'E-09': { start: '2026-06-23', days: 10 },
+  'E-10': { start: '2026-07-01', days: 6 },
+  'E-08': { start: '2026-07-07', days: 10 },
+};
+
 interface GhLabel {
   name: string;
 }
@@ -59,6 +76,7 @@ interface GhIssue {
   labels: GhLabel[];
   milestone: { title: string } | null;
   closedAt: string | null;
+  createdAt: string | null;
   assignees: { login: string }[];
 }
 interface GhPr {
@@ -67,6 +85,15 @@ interface GhPr {
   headRefName: string;
   url: string;
   isDraft: boolean;
+}
+interface Milestone {
+  title: string;
+  dueOn: string | null;
+}
+interface MergedPr {
+  number: number;
+  title: string;
+  mergedAt: string;
 }
 
 function gh(args: string[]): string {
@@ -87,9 +114,41 @@ function fetchIssues(): GhIssue[] {
     '--limit',
     '300',
     '--json',
-    'number,title,state,body,labels,milestone,closedAt,assignees',
+    'number,title,state,body,labels,milestone,closedAt,createdAt,assignees',
   ]);
   return JSON.parse(out) as GhIssue[];
+}
+
+function fetchMilestones(): Milestone[] {
+  try {
+    const out = gh(['api', `repos/${REPO}/milestones?state=all`]);
+    const arr = JSON.parse(out) as { title: string; due_on: string | null }[];
+    return arr.map((m) => ({ title: m.title, dueOn: m.due_on }));
+  } catch {
+    return [];
+  }
+}
+
+function fetchMergedPrs(sinceISO: string): MergedPr[] {
+  try {
+    const out = gh([
+      'pr',
+      'list',
+      '-R',
+      REPO,
+      '--state',
+      'merged',
+      '--limit',
+      '100',
+      '--search',
+      `merged:>=${sinceISO}`,
+      '--json',
+      'number,title,mergedAt',
+    ]);
+    return JSON.parse(out) as MergedPr[];
+  } catch {
+    return [];
+  }
 }
 
 function fetchAgentPrs(): GhPr[] {
@@ -206,6 +265,131 @@ export function parseRiskTable(md: string): RiskRow[] {
     }));
 }
 
+// ── v2: weeks, epic windows, dependencies, velocity ──────────────────────────
+
+/** ISO-8601 week number (1–53) for a date. */
+export function isoWeek(d: Date): number {
+  const date = new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
+  );
+  const dayNum = (date.getUTCDay() + 6) % 7; // Mon=0 … Sun=6
+  date.setUTCDate(date.getUTCDate() - dayNum + 3); // Thursday of this week
+  const firstThursday = new Date(Date.UTC(date.getUTCFullYear(), 0, 4));
+  const firstDayNum = (firstThursday.getUTCDay() + 6) % 7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDayNum + 3);
+  return 1 + Math.round((date.getTime() - firstThursday.getTime()) / 604_800_000);
+}
+
+/** `W24`-style label (zero-padded). */
+export function isoWeekLabel(d: Date): string {
+  return `W${String(isoWeek(d)).padStart(2, '0')}`;
+}
+
+/** UTC-midnight Monday of the week containing `d`. */
+export function mondayOf(d: Date): Date {
+  const date = new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
+  );
+  date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7));
+  return date;
+}
+
+/** `2026-06-12` + n calendar days → `YYYY-MM-DD`. */
+export function addCalendarDays(dateStr: string, n: number): string {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/** `Jun 08` short day label (UTC). */
+export function fmtDay(d: Date): string {
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: '2-digit',
+    timeZone: 'UTC',
+  });
+}
+
+/** The `E-0N` code from an epic title (upper-cased, empty if none). */
+export function epicCode(title: string): string {
+  const m = title.match(/E-\d+/i);
+  return m ? m[0].toUpperCase() : '';
+}
+
+export interface EpicWindow {
+  start: string;
+  end: string;
+  source: 'milestone' | 'estimate';
+}
+
+/**
+ * Resolves an epic's Gantt window. A milestone `due_on` (when present) is the
+ * data-driven path and OVERRIDES the planned end; otherwise the EPIC_DATES
+ * estimate (start + working-day duration) is the fallback.
+ */
+export function epicWindow(
+  est: { start: string; days: number },
+  dueOn: string | null,
+): EpicWindow {
+  if (dueOn) {
+    return { start: est.start, end: dueOn.slice(0, 10), source: 'milestone' };
+  }
+  return {
+    start: est.start,
+    end: addCalendarDays(est.start, est.days),
+    source: 'estimate',
+  };
+}
+
+/** US-ids listed on a story's `**Depends on:**` line. */
+export function parseDependsOn(body: string): string[] {
+  const m = body.match(/\*\*Depends on:\*\*\s*([^\n]*)/i);
+  return m ? (m[1].match(/US-\d+/gi) ?? []).map((s) => s.toUpperCase()) : [];
+}
+
+/** US-ids listed on an explicit `**Blocks:**` line (rare; usually inverted). */
+export function parseBlocks(body: string): string[] {
+  const m = body.match(/\*\*Blocks:\*\*\s*([^\n]*)/i);
+  return m ? (m[1].match(/US-\d+/gi) ?? []).map((s) => s.toUpperCase()) : [];
+}
+
+/**
+ * Maps each story id → the set of stories it blocks. Sources both explicit
+ * `Blocks:` lines and the inverse of every `Depends on:` (if B depends on A,
+ * then A blocks B).
+ */
+export function buildBlocksMap(
+  stories: { id: string; body: string }[],
+): Map<string, Set<string>> {
+  const map = new Map<string, Set<string>>();
+  const link = (blocker: string, blocked: string): void => {
+    if (!blocker || !blocked) return;
+    if (!map.has(blocker)) map.set(blocker, new Set());
+    map.get(blocker)!.add(blocked);
+  };
+  for (const s of stories) {
+    parseBlocks(s.body).forEach((b) => link(s.id, b));
+    parseDependsOn(s.body).forEach((dep) => link(dep, s.id));
+  }
+  return map;
+}
+
+/**
+ * Linear projection of the week by which all open stories close at the
+ * recent pace: currentWeek + open / (closedInWindow / weeksInWindow).
+ * Returns null when there is no measurable velocity.
+ */
+export function projectCompletionWeek(
+  open: number,
+  closedInWindow: number,
+  weeksInWindow: number,
+  currentWeek: number,
+): number | null {
+  const velocity = closedInWindow / Math.max(1, weeksInWindow);
+  if (velocity <= 0) return null;
+  return Math.ceil(currentWeek + open / velocity);
+}
+
 export function pct(done: number, total: number): number {
   return total === 0 ? 0 : Math.round((done / total) * 100);
 }
@@ -247,23 +431,38 @@ function add(t: Tally, issue: GhIssue): void {
 
 // ── rendering ────────────────────────────────────────────────────────────────
 
-function ganttSection(label: string, start: string, end: string, ratio: number): string {
-  const dur = daysBetween(start, end);
-  const doneDays = Math.max(0, Math.min(dur, Math.round(dur * ratio)));
-  const remDays = dur - doneDays;
-  const id = label.replace(/[^a-z0-9]/gi, '').slice(0, 8);
-  const lines = [`    section ${label}`];
-  if (doneDays > 0) {
-    lines.push(`    ${pct(ratio * 100, 100)}% complete :done, ${id}d, ${start}, ${doneDays}d`);
+type EpicTag = 'done' | 'active' | 'crit' | '';
+
+/**
+ * Aggregate Gantt tag for an epic from its stories' states (first match wins):
+ *   all closed -> done · any open in-progress -> active ·
+ *   any open blocked -> crit · else -> '' (planned, untagged).
+ */
+function epicTag(epicStories: GhIssue[]): EpicTag {
+  if (epicStories.length === 0) return '';
+  if (epicStories.every(isClosed)) return 'done';
+  const open = epicStories.filter((s) => !isClosed(s));
+  if (
+    open.some(
+      (s) =>
+        s.assignees.length > 0 &&
+        s.labels.some((l) => isInProgressLabel(l.name)),
+    )
+  ) {
+    return 'active';
   }
-  if (remDays > 0) {
-    const after = doneDays > 0 ? `after ${id}d` : start;
-    lines.push(`    remaining :active, ${id}r, ${after}, ${remDays}d`);
-  }
-  return lines.join('\n');
+  if (open.some((s) => hasLabel(s, 'blocked'))) return 'crit';
+  return '';
 }
 
-function buildDashboard(issues: GhIssue[], prs: GhPr[], riskMd: string): string {
+function buildDashboard(
+  issues: GhIssue[],
+  prs: GhPr[],
+  riskMd: string,
+  milestones: Map<string, string | null>,
+  mergedPrs: MergedPr[],
+  now: Date,
+): string {
   const stories = issues.filter((i) => hasLabel(i, 'story'));
   const epics = issues
     .filter((i) => hasLabel(i, 'epic'))
@@ -280,13 +479,69 @@ function buildDashboard(issues: GhIssue[], prs: GhPr[], riskMd: string): string 
     if (p) add(phaseTally.get(p.key)!, s);
   });
 
-  const now = new Date().toISOString().replace('T', ' ').slice(0, 16);
+  // ── v2 shared computations ──
+  // Epic Gantt windows (milestone due_on overrides the EPIC_DATES estimate).
+  const epicWindowByNum = new Map<number, EpicWindow>();
+  epics.forEach((e) => {
+    const est = EPIC_DATES[epicCode(e.title)] ?? { start: '2026-06-01', days: 7 };
+    const dueOn = milestones.get(e.milestone?.title ?? '') ?? null;
+    epicWindowByNum.set(e.number, epicWindow(est, dueOn));
+  });
+  // Inverse-dependency map for the per-story "Blocks" column.
+  const blocksMap = buildBlocksMap(
+    stories.map((s) => ({ id: storyId(s.title), body: s.body })),
+  );
+
+  // KPI counts (stories only).
+  const totalStories = stories.length;
+  const doneCount = stories.filter(isClosed).length;
+  const blockedCount = stories.filter(
+    (s) => !isClosed(s) && hasLabel(s, 'blocked'),
+  ).length;
+  const inProgCount = stories.filter(
+    (s) =>
+      !isClosed(s) &&
+      s.assignees.length > 0 &&
+      s.labels.some((l) => isInProgressLabel(l.name)),
+  ).length;
+  const todoCount = totalStories - doneCount - blockedCount - inProgCount;
+
+  // Last 6 weeks + current week (oldest → newest).
+  const curMon = mondayOf(now);
+  const weeks: { mon: Date; sun: Date }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const mon = new Date(curMon);
+    mon.setUTCDate(mon.getUTCDate() - i * 7);
+    const sun = new Date(mon);
+    sun.setUTCDate(sun.getUTCDate() + 6);
+    weeks.push({ mon, sun });
+  }
+  const within = (iso: string | null, mon: Date, sun: Date): boolean => {
+    if (!iso) return false;
+    const t = new Date(iso).getTime();
+    return t >= mon.getTime() && t < sun.getTime() + 86_400_000;
+  };
+  const closedInWindow = stories.filter(
+    (s) => isClosed(s) && within(s.closedAt, weeks[0].mon, weeks[6].sun),
+  ).length;
+  const currentWeek = isoWeek(now);
+  const projected = projectCompletionWeek(
+    totalStories - doneCount,
+    closedInWindow,
+    weeks.length,
+    currentWeek,
+  );
+  const blockedOwners = stories
+    .filter((s) => !isClosed(s) && hasLabel(s, 'blocked'))
+    .map((s) => `${storyId(s.title)} (${s.assignees[0]?.login ?? 'unassigned'})`);
+
+  const updated = now.toISOString().replace('T', ' ').slice(0, 16);
 
   const out: string[] = [];
   out.push('# 📊 Agentic SDLC Pilot — Delivery Dashboard');
   out.push('');
   out.push(
-    `_Auto-generated from the [Issues](https://github.com/${REPO}/issues) · last updated **${now} UTC**. Do not edit by hand — see \`scripts/dashboard.ts\`._`,
+    `_Auto-generated from the [Issues](https://github.com/${REPO}/issues) · last updated **${updated} UTC**. Do not edit by hand — see \`scripts/dashboard.ts\`._`,
   );
   out.push('');
 
@@ -304,25 +559,87 @@ function buildDashboard(issues: GhIssue[], prs: GhPr[], riskMd: string): string 
   out.push(renderBar(overall.ptsClosed, overall.ptsTotal, 36));
   out.push('');
 
-  // Timeline (Gantt)
-  out.push('## 🗓️ Phase timeline');
+  // KPI tile strip (large cells via `## n`).
+  out.push('## 📊 KPIs');
   out.push('');
   out.push(
-    '_Planned windows (vertical line = today). Edit dates in `PHASES` in `scripts/dashboard.ts`._',
+    '| Total | ✅ Done | 🟧 Blocked | 🟨 In Progress | ⚪ To Do | 🎯 % | 📅 Week |',
+  );
+  out.push('| --- | --- | --- | --- | --- | --- | --- |');
+  out.push(
+    `| ## ${totalStories} | ## ${doneCount} | ## ${blockedCount} | ## ${inProgCount} | ## ${todoCount} | ## ${pct(doneCount, totalStories)}% | ## ${isoWeekLabel(now)} |`,
+  );
+  out.push('');
+
+  // Velocity callout (one line above the Gantt).
+  const curSun = new Date(curMon);
+  curSun.setUTCDate(curSun.getUTCDate() + 6);
+  const projText =
+    projected === null
+      ? 'n/a (no recent closures)'
+      : `~W${String(projected).padStart(2, '0')}`;
+  const critText = blockedOwners.length > 0 ? blockedOwners.join(', ') : 'none';
+  out.push(
+    `> **Velocity** — Today is ${isoWeekLabel(now)} (${fmtDay(curMon)}–${fmtDay(curSun)}). ` +
+      `${closedInWindow} of ${totalStories} stories closed in ${isoWeekLabel(weeks[0].mon)}–${isoWeekLabel(weeks[6].mon)}. ` +
+      `Projected completion at current pace: ${projText}. Critical path: ${critText}.`,
+  );
+  out.push('');
+
+  // Epic-level Gantt (ISO weeks, weekends excluded, tagged by aggregate state).
+  out.push('## 🗓️ Epic timeline');
+  out.push('');
+  out.push(
+    '_Bars are epics; axis in ISO weeks (`W%V`), weekends excluded. Colour = aggregate story state: `done` · `active` (in progress) · `crit` (blocked) · plain (planned). A milestone `due_on` overrides the planned end (else `EPIC_DATES`)._',
   );
   out.push('');
   out.push('```mermaid');
   out.push('gantt');
-  out.push('    title Agentic SDLC pilot — phase plan vs. progress');
+  out.push('    title Agentic SDLC pilot — epic timeline (ISO weeks)');
   out.push('    dateFormat YYYY-MM-DD');
-  out.push('    axisFormat %b %d');
+  out.push('    axisFormat W%V');
+  out.push('    excludes weekends');
   out.push('    todayMarker stroke-width:3px,stroke:#d93f0b,opacity:0.7');
-  PHASES.forEach((p) => {
-    const t = phaseTally.get(p.key)!;
-    const ratio = t.ptsTotal === 0 ? 0 : t.ptsClosed / t.ptsTotal;
-    out.push(ganttSection(p.label, p.start, p.end, ratio));
+  PHASES.forEach((ph) => {
+    const phaseEpics = epics
+      .filter((e) => hasLabel(e, ph.key))
+      .sort((a, b) => epicCode(a.title).localeCompare(epicCode(b.title)));
+    if (phaseEpics.length === 0) return;
+    out.push(`    section ${ph.label}`);
+    phaseEpics.forEach((e) => {
+      const code = epicCode(e.title);
+      const win = epicWindowByNum.get(e.number)!;
+      const tag = epicTag(stories.filter((s) => parentEpic(s.body) === e.number));
+      const name = e.title
+        .replace(/^\[EPIC\]\s*E-\d+:\s*/i, '')
+        .replace(/&/g, 'and')
+        .replace(/[^\w -]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const prefix = tag ? `${tag}, ` : '';
+      out.push(
+        `    ${code} ${name} :${prefix}${code.replace('-', '')}, ${win.start}, ${win.end}`,
+      );
+    });
   });
   out.push('```');
+  out.push('');
+
+  // Weekly activity (below the Gantt).
+  out.push('### Weekly activity');
+  out.push('');
+  out.push('| Week | Opened | Closed | Net | Notable |');
+  out.push('| --- | --- | --- | --- | --- |');
+  weeks.forEach((w) => {
+    const opened = issues.filter((i) => within(i.createdAt, w.mon, w.sun)).length;
+    const closed = issues.filter((i) => within(i.closedAt, w.mon, w.sun)).length;
+    const net = closed - opened;
+    const pr = mergedPrs.find((p) => within(p.mergedAt, w.mon, w.sun));
+    const notable = pr ? `#${pr.number} ${pr.title.replace(/\|/g, '/')}` : '—';
+    out.push(
+      `| ${isoWeekLabel(w.mon)} (${fmtDay(w.mon)}–${fmtDay(w.sun)}) | ${opened} | ${closed} | ${net >= 0 ? '+' : ''}${net} | ${notable} |`,
+    );
+  });
   out.push('');
 
   // Per-phase table
@@ -379,9 +696,11 @@ function buildDashboard(issues: GhIssue[], prs: GhPr[], riskMd: string): string 
       `<details><summary><strong>${name}</strong> — ${closed}/${epicStories.length} done</summary>`,
     );
     out.push('');
-    out.push('| Story | Title | Status |');
-    out.push('| --- | --- | --- |');
-    epicStories.forEach((s) => {
+    out.push('| Story | Title | Status | Est. Week | Blocks |');
+    out.push('| --- | --- | --- | --- | --- |');
+    const win = epicWindowByNum.get(e.number)!;
+    const spanDays = daysBetween(win.start, win.end);
+    epicStories.forEach((s, idx) => {
       const blocked = hasLabel(s, 'blocked');
       const inProgress =
         s.assignees.length > 0 && s.labels.some((l) => isInProgressLabel(l.name));
@@ -390,8 +709,16 @@ function buildDashboard(issues: GhIssue[], prs: GhPr[], riskMd: string): string 
         blocked,
         inProgress,
       });
+      const estDate = addCalendarDays(
+        win.start,
+        Math.round((idx / Math.max(1, epicStories.length)) * spanDays),
+      );
+      const estWeek = isoWeekLabel(new Date(`${estDate}T00:00:00Z`));
+      const id = storyId(s.title);
+      const blocks = [...(blocksMap.get(id) ?? [])].sort();
+      const blocksText = blocks.length > 0 ? blocks.join(', ') : '—';
       out.push(
-        `| [${storyId(s.title)}](https://github.com/${REPO}/issues/${s.number}) | ${storyTitle(s.title)} | ${status} |`,
+        `| [${id}](https://github.com/${REPO}/issues/${s.number}) | ${storyTitle(s.title)} | ${status} | ${estWeek} | ${blocksText} |`,
       );
     });
     out.push('');
@@ -463,9 +790,16 @@ function readRisks(): string {
 }
 
 function main(): void {
+  const now = new Date();
+  const since = new Date(now);
+  since.setUTCDate(since.getUTCDate() - 7 * 7); // 7 weeks back for merged-PR window
   const issues = fetchIssues();
   const prs = fetchAgentPrs();
-  const md = buildDashboard(issues, prs, readRisks());
+  const milestones = new Map(
+    fetchMilestones().map((m) => [m.title, m.dueOn] as const),
+  );
+  const mergedPrs = fetchMergedPrs(since.toISOString().slice(0, 10));
+  const md = buildDashboard(issues, prs, readRisks(), milestones, mergedPrs, now);
   writeFileSync('DASHBOARD.md', md);
   process.stdout.write(`DASHBOARD.md written — ${issues.length} issues.\n`);
 }
