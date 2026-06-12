@@ -1,11 +1,11 @@
 {
-  "run_id": "run-1781171231152",
-  "task": "Close R-03: real token capture demonstrated (US-022)",
+  "run_id": "run-1781282209950",
+  "task": "Add Severity column to docs/risks.md; dashboard risk register now shows real severities",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-06-11T09:47:11.149Z",
-  "finished_at": "2026-06-11T09:47:11.152Z",
+  "started_at": "2026-06-12T16:36:49.948Z",
+  "finished_at": "2026-06-12T16:36:49.950Z",
   "prompt_hash": "sha256:f396926f2ad915e9c9064b5423571caf195ed08d1f7228b14875cb2e09a22b59",
   "tool_trace": [
     "Read",
