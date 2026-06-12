@@ -4,13 +4,13 @@ _Auto-generated from the [Issues](https://github.com/carloshumbertoreyesortiz/ag
 
 ## Overall progress
 
-**Stories:** 18 / 47 done
+**Stories:** 19 / 47 done
 
-`██████████████░░░░░░░░░░░░░░░░░░░░░░` 38%
+`███████████████░░░░░░░░░░░░░░░░░░░░░` 40%
 
-**Story points:** 50 / 154 delivered
+**Story points:** 55 / 154 delivered
 
-`████████████░░░░░░░░░░░░░░░░░░░░░░░░` 32%
+`█████████████░░░░░░░░░░░░░░░░░░░░░░░` 36%
 
 ## 🗓️ Phase timeline
 
@@ -26,8 +26,8 @@ gantt
     33% complete :done, Phase0Fod, 2026-05-26, 6d
     remaining :active, Phase0For, after Phase0Fod, 12d
     section Phase 1 — Plan-only pilot
-    35% complete :done, Phase1Pld, 2026-06-09, 9d
-    remaining :active, Phase1Plr, after Phase1Pld, 16d
+    40% complete :done, Phase1Pld, 2026-06-09, 10d
+    remaining :active, Phase1Plr, after Phase1Pld, 15d
     section Phase 2 — Full agentic SDLC
     remaining :active, Phase2Fur, 2026-07-07, 25d
 ```
@@ -37,7 +37,7 @@ gantt
 | Phase | Stories | Points | Progress |
 | --- | --- | --- | --- |
 | Phase 0 — Foundation | 5/15 | 9/27 | `██████░░░░░░░░░░░░` 33% |
-| Phase 1 — Plan-only pilot | 13/28 | 41/116 | `██████░░░░░░░░░░░░` 35% |
+| Phase 1 — Plan-only pilot | 14/28 | 46/116 | `███████░░░░░░░░░░░` 40% |
 | Phase 2 — Full agentic SDLC | 0/4 | 0/11 | `░░░░░░░░░░░░░░░░░░` 0% |
 
 ## Status distribution
@@ -45,8 +45,8 @@ gantt
 ```mermaid
 pie showData
     title Stories by status
-    "Done" : 18
-    "In backlog" : 29
+    "Done" : 19
+    "In backlog" : 28
 ```
 
 ## Progress by epic
@@ -62,7 +62,7 @@ pie showData
 | [E-07: Provenance & Compliance Workflow](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/7) | 5/5 | 17/17 | `██████████████████` 100% |
 | [E-08: Browser Verification (Playwright)](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/8) | 0/4 | 0/11 | `░░░░░░░░░░░░░░░░░░` 0% |
 | [E-09: Slack Intake Bot](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/9) | 0/6 | 0/34 | `░░░░░░░░░░░░░░░░░░` 0% |
-| [E-10: Phase 0/1 Smoke Test & Pilot Launch](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/10) | 0/4 | 0/24 | `░░░░░░░░░░░░░░░░░░` 0% |
+| [E-10: Phase 0/1 Smoke Test & Pilot Launch](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/10) | 1/4 | 5/24 | `████░░░░░░░░░░░░░░` 21% |
 
 ### Stories by epic
 
@@ -174,12 +174,12 @@ _Click an epic to expand its stories._
 
 </details>
 
-<details><summary><strong>E-10: Phase 0/1 Smoke Test & Pilot Launch</strong> — 0/4 done</summary>
+<details><summary><strong>E-10: Phase 0/1 Smoke Test & Pilot Launch</strong> — 1/4 done</summary>
 
 | Story | Title | Status |
 | --- | --- | --- |
 | [US-044](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/54) | Run end-to-end smoke test per impl guide §13 | ⚪ To do |
-| [US-045](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/55) | Stand up metrics dashboard with 6 baseline metrics | ⚪ To do |
+| [US-045](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/55) | Stand up metrics dashboard with 6 baseline metrics | ✅ Done |
 | [US-046](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/56) | Run 2-week pilot with one squad, collect feedback | ⚪ To do |
 | [US-047](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/57) | Governance council Phase 0/1 sign-off review | ⚪ To do |
 
@@ -191,6 +191,7 @@ _No open `agent/*` pull requests right now._
 
 ## ✅ Recently shipped
 
+- `2026-06-12` [US-045: Stand up metrics dashboard with 6 baseline metrics](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/55)
 - `2026-06-11` [US-022: Build headless planner script via Anthropic SDK](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/32)
 - `2026-06-11` [US-011: Validate both runtimes with smoke tests](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/21)
 - `2026-06-11` [US-010: Secure ANTHROPIC_API_KEY in macOS Keychain](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/20)
@@ -198,7 +199,6 @@ _No open `agent/*` pull requests right now._
 - `2026-06-10` [US-025: Install filesystem MCP server](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/35)
 - `2026-06-10` [US-030: Implement provenance writer in custom agent](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/40)
 - `2026-06-10` [US-021: Drive first end-to-end /plan run against the CSV-escape seed task](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/31)
-- `2026-06-10` [US-033: Validate by attempting a no-provenance merge (negative test)](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/43)
 
 ## ⚠️ Risk register
 
