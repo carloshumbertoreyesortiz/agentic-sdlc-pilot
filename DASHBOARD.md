@@ -1,6 +1,6 @@
 # 📊 Agentic SDLC Pilot — Delivery Dashboard
 
-_Auto-generated from the [Issues](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues) · last updated **2026-06-12 16:33 UTC**. Do not edit by hand — see `scripts/dashboard.ts`._
+_Auto-generated from the [Issues](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues) · last updated **2026-06-12 16:36 UTC**. Do not edit by hand — see `scripts/dashboard.ts`._
 
 ## Overall progress
 
@@ -206,8 +206,6 @@ _Source: [docs/risks.md](docs/risks.md)._
 
 | ID | Severity | Status |
 | --- | --- | --- |
-| R-01 | — | Accepted (Phase 0/1) |
-| R-02 | — | Accepted (Phase 0/1) |
-| R-03 | — | Resolved 2026-06-11 |
-
-_Severity is not yet a column in `docs/risks.md`, so it shows as `—`. Add a `Severity` column there and it will populate automatically._
+| R-01 | Medium | Accepted (Phase 0/1) |
+| R-02 | High | Accepted (Phase 0/1) |
+| R-03 | Low | Resolved 2026-06-11 |
