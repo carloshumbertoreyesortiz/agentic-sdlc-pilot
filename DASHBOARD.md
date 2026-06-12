@@ -1,6 +1,6 @@
 # 📊 Agentic SDLC Pilot — Delivery Dashboard
 
-_Auto-generated from the [Issues](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues) · last updated **2026-06-12 16:36 UTC**. Do not edit by hand — see `scripts/dashboard.ts`._
+_Auto-generated from the [Issues](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues) · last updated **2026-06-12 16:38 UTC**. Do not edit by hand — see `scripts/dashboard.ts`._
 
 ## Overall progress
 
@@ -187,7 +187,7 @@ _Click an epic to expand its stories._
 
 ## 🚧 In flight
 
-- [#70](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/pull/70) feat(dashboard): self-updating delivery dashboard (US-045) — `agent/us045-delivery-dashboard`
+_No open `agent/*` pull requests right now._
 
 ## ✅ Recently shipped
 
