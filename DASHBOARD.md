@@ -1,6 +1,6 @@
 # 📊 Agentic SDLC Pilot — Delivery Dashboard
 
-_Auto-generated from the [Issues](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues) · last updated **2026-06-12 17:06 UTC**. Do not edit by hand — see `scripts/dashboard.ts`._
+_Auto-generated from the [Issues](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues) · last updated **2026-06-12 17:08 UTC**. Do not edit by hand — see `scripts/dashboard.ts`._
 
 ## Overall progress
 
@@ -56,7 +56,7 @@ gantt
 | W21 (May 18–May 24) | 0 | 0 | +0 | — |
 | W22 (May 25–May 31) | 0 | 0 | +0 | — |
 | W23 (Jun 01–Jun 07) | 0 | 0 | +0 | — |
-| W24 (Jun 08–Jun 14) | 58 | 20 | -38 | #72 feat(dashboard): KPI dashboard v2 — epic timelines, velocity, weekly activity (US-048) |
+| W24 (Jun 08–Jun 14) | 58 | 20 | -38 | #73 docs(dashboard): W24 seeding footnote + EPIC_DATES estimates-only note |
 
 _W24 spike: full backlog of 58 issues seeded this week (2026-06-09). True post-seeding velocity will show from W25 onward._
 
