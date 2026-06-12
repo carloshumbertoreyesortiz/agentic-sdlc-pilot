@@ -10,6 +10,14 @@ import {
   isInProgressLabel,
   storyStatusEmoji,
   parseRiskTable,
+  isoWeek,
+  isoWeekLabel,
+  addCalendarDays,
+  epicCode,
+  epicWindow,
+  parseDependsOn,
+  buildBlocksMap,
+  projectCompletionWeek,
 } from './dashboard.js';
 
 describe('parsePoints', () => {
@@ -148,5 +156,103 @@ describe('parseRiskTable', () => {
 
   it('returns [] for input with no table', () => {
     expect(parseRiskTable('just prose, no table')).toEqual([]);
+  });
+});
+
+describe('isoWeek / isoWeekLabel', () => {
+  it('puts 2026-01-01 (a Thursday) in ISO week 1', () => {
+    expect(isoWeek(new Date('2026-01-01T00:00:00Z'))).toBe(1);
+  });
+
+  it('computes the pilot current week (2026-06-12 → W24)', () => {
+    expect(isoWeek(new Date('2026-06-12T00:00:00Z'))).toBe(24);
+    expect(isoWeekLabel(new Date('2026-06-12T00:00:00Z'))).toBe('W24');
+  });
+
+  it('treats Monday and the following Sunday as the same ISO week', () => {
+    expect(isoWeek(new Date('2026-06-08T00:00:00Z'))).toBe(
+      isoWeek(new Date('2026-06-14T23:59:00Z')),
+    );
+  });
+
+  it('rolls a Thursday-starting year into week 53 at year-end', () => {
+    expect(isoWeek(new Date('2026-12-31T00:00:00Z'))).toBe(53);
+  });
+});
+
+describe('addCalendarDays', () => {
+  it('adds days across a month boundary', () => {
+    expect(addCalendarDays('2026-05-26', 7)).toBe('2026-06-02');
+    expect(addCalendarDays('2026-06-01', 0)).toBe('2026-06-01');
+  });
+});
+
+describe('epicCode', () => {
+  it('pulls the E-NN code from an epic title', () => {
+    expect(epicCode('[EPIC] E-07: Provenance & Compliance Workflow')).toBe('E-07');
+    expect(epicCode('no code')).toBe('');
+  });
+});
+
+describe('epicWindow (milestone override)', () => {
+  const est = { start: '2026-06-01', days: 8 };
+
+  it('falls back to start + duration when the milestone has no due_on', () => {
+    expect(epicWindow(est, null)).toEqual({
+      start: '2026-06-01',
+      end: '2026-06-09',
+      source: 'estimate',
+    });
+  });
+
+  it('overrides the end with the milestone due_on when present', () => {
+    expect(epicWindow(est, '2026-07-15T08:00:00Z')).toEqual({
+      start: '2026-06-01',
+      end: '2026-07-15',
+      source: 'milestone',
+    });
+  });
+});
+
+describe('dependencies → blocks inversion', () => {
+  it('parses the Depends on line', () => {
+    expect(parseDependsOn('**Depends on:** US-001, US-002, US-007')).toEqual([
+      'US-001',
+      'US-002',
+      'US-007',
+    ]);
+    expect(parseDependsOn('**Depends on:** —')).toEqual([]);
+  });
+
+  it('inverts depends-on into a blocks map (A blocks B if B depends on A)', () => {
+    const map = buildBlocksMap([
+      { id: 'US-001', body: '**Depends on:** —' },
+      { id: 'US-002', body: '**Depends on:** US-001' },
+      { id: 'US-008', body: '**Depends on:** US-001, US-002' },
+    ]);
+    expect([...(map.get('US-001') ?? [])].sort()).toEqual(['US-002', 'US-008']);
+    expect([...(map.get('US-002') ?? [])].sort()).toEqual(['US-008']);
+    expect(map.get('US-008')).toBeUndefined();
+  });
+
+  it('honours an explicit Blocks line too', () => {
+    const map = buildBlocksMap([{ id: 'US-005', body: '**Blocks:** US-009' }]);
+    expect([...(map.get('US-005') ?? [])]).toEqual(['US-009']);
+  });
+});
+
+describe('projectCompletionWeek', () => {
+  it('projects current week + open / weekly velocity', () => {
+    // 14 closed over 7 weeks = 2/wk; 20 open ⇒ 10 more weeks ⇒ W24 + 10 = W34.
+    expect(projectCompletionWeek(20, 14, 7, 24)).toBe(34);
+  });
+
+  it('rounds the projection up to a whole week', () => {
+    // velocity 3/wk, 10 open ⇒ 3.33 weeks ⇒ ceil ⇒ +4.
+    expect(projectCompletionWeek(10, 21, 7, 20)).toBe(24);
+  });
+
+  it('returns null when nothing has closed (no measurable velocity)', () => {
+    expect(projectCompletionWeek(30, 0, 7, 24)).toBeNull();
   });
 });
