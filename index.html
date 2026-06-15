@@ -34,6 +34,7 @@
       th { background: #f6f8fa; }
       code { background: #f6f8fa; padding: 0.1em 0.35em; border-radius: 4px; font-size: 90%; }
       .mermaid { background: #f6f8fa; border-radius: 8px; padding: 1rem; margin: 1rem 0; overflow-x: auto; }
+      .mermaid svg { max-width: 100%; height: auto; }
       blockquote { border-left: 4px solid #d0d7de; margin: 1rem 0; padding: 0.2rem 1rem; color: #57606a; }
       hr { border: none; border-top: 1px solid #d0d7de; margin: 2rem 0; }
       .meta { font-size: 0.85rem; color: #57606a; margin-bottom: 1.5rem; }
@@ -66,8 +67,56 @@
           div.textContent = code.textContent;
           code.closest('pre').replaceWith(div);
         });
+        // Use the 'base' theme with explicit, high-contrast variables so labels
+        // are never white-on-white: Gantt bar text and pie slice labels are
+        // forced dark, and bars/slices get defined fills (mermaid's default
+        // theme paints white labels on light fills, which vanish in light mode).
         const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'default' });
+        const fg = dark ? '#e6edf3' : '#1f2328';
+        const bg = dark ? '#161b22' : '#f6f8fa';
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: 'base',
+          themeVariables: {
+            fontFamily:
+              '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+            background: bg,
+            textColor: fg,
+            lineColor: dark ? '#8b949e' : '#94a3b8',
+            primaryColor: '#dbeafe',
+            primaryTextColor: '#1f2328',
+            primaryBorderColor: '#60a5fa',
+            // pie — dark slice labels so they read on light slices
+            pieTitleTextColor: fg,
+            pieSectionTextColor: '#1f2328',
+            pieStrokeColor: bg,
+            pieOuterStrokeColor: dark ? '#8b949e' : '#94a3b8',
+            pie1: '#60a5fa',
+            pie2: '#f59e0b',
+            pie3: '#34d399',
+            pie4: '#a78bfa',
+            pie5: '#f87171',
+            pie6: '#22d3ee',
+            // gantt — dark task text on defined light fills
+            taskTextColor: '#1f2328',
+            taskTextDarkColor: '#1f2328',
+            taskTextLightColor: '#1f2328',
+            taskTextOutsideColor: fg,
+            taskTextClickableColor: fg,
+            gridColor: dark ? '#30363d' : '#cbd5e1',
+            todayLineColor: '#d93f0b',
+            taskBkgColor: '#e2e8f0',
+            taskBorderColor: '#94a3b8',
+            doneTaskBkgColor: '#86efac',
+            doneTaskBorderColor: '#16a34a',
+            activeTaskBkgColor: '#93c5fd',
+            activeTaskBorderColor: '#2563eb',
+            critBkgColor: '#fca5a5',
+            critBorderColor: '#dc2626',
+            sectionBkgColor: dark ? '#1c2128' : '#eef2f7',
+            altSectionBkgColor: dark ? '#161b22' : '#f8fafc',
+          },
+        });
         await mermaid.run({ querySelector: '.mermaid' });
       } catch (err) {
         el.innerHTML = `<p class="error">Could not load DASHBOARD.md: ${err.message}</p>`;
