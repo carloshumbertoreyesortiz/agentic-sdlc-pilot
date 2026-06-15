@@ -27,13 +27,13 @@
         table, th, td { border-color: #30363d !important; }
         th { background: #161b22 !important; }
         code { background: #161b22; }
-        .mermaid { background: #161b22; }
       }
       table { border-collapse: collapse; margin: 1rem 0; width: 100%; }
       th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left; }
       th { background: #f6f8fa; }
       code { background: #f6f8fa; padding: 0.1em 0.35em; border-radius: 4px; font-size: 90%; }
-      .mermaid { background: #f6f8fa; border-radius: 8px; padding: 1rem; margin: 1rem 0; overflow-x: auto; }
+      /* Diagrams always sit on a dark panel — vivid fills, light labels, minimal white. */
+      .mermaid { background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 1rem; margin: 1.25rem 0; overflow-x: auto; }
       .mermaid svg { max-width: 100%; height: auto; }
       blockquote { border-left: 4px solid #d0d7de; margin: 1rem 0; padding: 0.2rem 1rem; color: #57606a; }
       hr { border: none; border-top: 1px solid #d0d7de; margin: 2rem 0; }
@@ -67,54 +67,52 @@
           div.textContent = code.textContent;
           code.closest('pre').replaceWith(div);
         });
-        // Use the 'base' theme with explicit, high-contrast variables so labels
-        // are never white-on-white: Gantt bar text and pie slice labels are
-        // forced dark, and bars/slices get defined fills (mermaid's default
-        // theme paints white labels on light fills, which vanish in light mode).
-        const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const fg = dark ? '#e6edf3' : '#1f2328';
-        const bg = dark ? '#161b22' : '#f6f8fa';
+        // Diagrams render on a fixed dark slate panel (see .mermaid CSS) with
+        // VIVID saturated fills and light labels — high contrast and very little
+        // white, regardless of the visitor's light/dark OS preference. (Pale
+        // fills + white labels were the earlier washed-out / white-on-white look.)
         mermaid.initialize({
           startOnLoad: false,
           theme: 'base',
           themeVariables: {
             fontFamily:
               '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
-            background: bg,
-            textColor: fg,
-            lineColor: dark ? '#8b949e' : '#94a3b8',
-            primaryColor: '#dbeafe',
-            primaryTextColor: '#1f2328',
-            primaryBorderColor: '#60a5fa',
-            // pie — dark slice labels so they read on light slices
-            pieTitleTextColor: fg,
-            pieSectionTextColor: '#1f2328',
-            pieStrokeColor: bg,
-            pieOuterStrokeColor: dark ? '#8b949e' : '#94a3b8',
-            pie1: '#60a5fa',
+            background: '#0f172a',
+            textColor: '#e2e8f0',
+            lineColor: '#64748b',
+            primaryColor: '#1e293b',
+            primaryTextColor: '#e2e8f0',
+            primaryBorderColor: '#475569',
+            // pie — saturated slices, white labels on top
+            pieTitleTextColor: '#e2e8f0',
+            pieSectionTextColor: '#ffffff',
+            pieStrokeColor: '#0f172a',
+            pieOuterStrokeColor: '#64748b',
+            pieLegendTextColor: '#e2e8f0',
+            pie1: '#3b82f6',
             pie2: '#f59e0b',
-            pie3: '#34d399',
-            pie4: '#a78bfa',
-            pie5: '#f87171',
-            pie6: '#22d3ee',
-            // gantt — dark task text on defined light fills
-            taskTextColor: '#1f2328',
-            taskTextDarkColor: '#1f2328',
-            taskTextLightColor: '#1f2328',
-            taskTextOutsideColor: fg,
-            taskTextClickableColor: fg,
-            gridColor: dark ? '#30363d' : '#cbd5e1',
-            todayLineColor: '#d93f0b',
-            taskBkgColor: '#e2e8f0',
+            pie3: '#22c55e',
+            pie4: '#a855f7',
+            pie5: '#ef4444',
+            pie6: '#06b6d4',
+            // gantt — saturated bars, light labels
+            taskTextColor: '#ffffff',
+            taskTextDarkColor: '#ffffff',
+            taskTextLightColor: '#ffffff',
+            taskTextOutsideColor: '#e2e8f0',
+            taskTextClickableColor: '#e2e8f0',
+            gridColor: '#334155',
+            todayLineColor: '#fb923c',
+            taskBkgColor: '#64748b',
             taskBorderColor: '#94a3b8',
-            doneTaskBkgColor: '#86efac',
+            doneTaskBkgColor: '#22c55e',
             doneTaskBorderColor: '#16a34a',
-            activeTaskBkgColor: '#93c5fd',
+            activeTaskBkgColor: '#3b82f6',
             activeTaskBorderColor: '#2563eb',
-            critBkgColor: '#fca5a5',
+            critBkgColor: '#ef4444',
             critBorderColor: '#dc2626',
-            sectionBkgColor: dark ? '#1c2128' : '#eef2f7',
-            altSectionBkgColor: dark ? '#161b22' : '#f8fafc',
+            sectionBkgColor: '#1e293b',
+            altSectionBkgColor: '#172033',
           },
         });
         await mermaid.run({ querySelector: '.mermaid' });
