@@ -1,0 +1,49 @@
+name: deploy-pages
+
+# Publishes the dashboard site (index.html + DASHBOARD.md) to GitHub Pages via
+# GitHub Actions — so Pages updates automatically on every relevant change to
+# main, instead of needing a manual API rebuild (the legacy branch builder did
+# not fire reliably on merge). Triggers when the site files or the daily
+# dashboard refresh land on main, plus manual dispatch.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - index.html
+      - DASHBOARD.md
+      - .nojekyll
+      - .github/workflows/deploy-pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment; let an in-flight deploy finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assemble static site
+        run: |
+          mkdir -p _site
+          cp index.html DASHBOARD.md _site/
+          touch _site/.nojekyll
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
