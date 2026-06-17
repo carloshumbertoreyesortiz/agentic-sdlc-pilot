@@ -30,7 +30,7 @@ export interface IntakeEvent {
   files?: IntakeFileInput[];
 }
 
-export interface IntakeAttachment {
+export interface NormalizedAttachment {
   name: string;
   mimetype: string;
   size: number;
@@ -42,13 +42,18 @@ export interface IntakeRejection {
   reason: string;
 }
 
-export interface IntakeBundle {
+/**
+ * Result of validating/normalising a raw event (US-040 layer). Distinct from
+ * the canonical §12.2 wire `IntakeBundle` in bot.ts: this carries validation
+ * detail (rejections, per-file mimetype/size, content hashes).
+ */
+export interface NormalizedIntake {
   channel: string;
   user: string;
   ts: string;
   prompt: string;
   urls: string[];
-  attachments: IntakeAttachment[];
+  attachments: NormalizedAttachment[];
   rejected: IntakeRejection[];
 }
 
@@ -87,9 +92,9 @@ function sha256(content: string): string {
   return `sha256:${createHash('sha256').update(content).digest('hex')}`;
 }
 
-/** Normalise a raw mention event into an IntakeBundle. */
-export function normalizeIntake(event: IntakeEvent): IntakeBundle {
-  const attachments: IntakeAttachment[] = [];
+/** Normalise + validate a raw mention event (US-040 layer). */
+export function normalizeIntake(event: IntakeEvent): NormalizedIntake {
+  const attachments: NormalizedAttachment[] = [];
   const rejected: IntakeRejection[] = [];
 
   for (const file of event.files ?? []) {
