@@ -1,24 +1,24 @@
 # 📊 Agentic SDLC Pilot — Delivery Dashboard
 
-_Auto-generated from the [Issues](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues) · last updated **2026-06-16 11:33 UTC**. Do not edit by hand — see `scripts/dashboard.ts`._
+_Auto-generated from the [Issues](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues) · last updated **2026-06-17 11:15 UTC**. Do not edit by hand — see `scripts/dashboard.ts`._
 
 ## Overall progress
 
-**Stories:** 22 / 50 done
+**Stories:** 28 / 50 done
 
-`████████████████░░░░░░░░░░░░░░░░░░░░` 44%
+`████████████████████░░░░░░░░░░░░░░░░` 56%
 
-**Story points:** 60 / 159 delivered
+**Story points:** 77 / 159 delivered
 
-`██████████████░░░░░░░░░░░░░░░░░░░░░░` 38%
+`█████████████████░░░░░░░░░░░░░░░░░░░` 48%
 
 ## 📊 KPIs
 
 | Total | ✅ Done | 🟧 Blocked | 🟨 In Progress | ⚪ To Do | 🎯 % | 📅 Week |
 | --- | --- | --- | --- | --- | --- | --- |
-| ## 50 | ## 22 | ## 1 | ## 0 | ## 27 | ## 44% | ## W25 |
+| ## 50 | ## 28 | ## 1 | ## 0 | ## 21 | ## 56% | ## W25 |
 
-> **Velocity** — Today is W25 (Jun 15–Jun 21). 22 of 50 stories closed in W19–W25. Projected completion at current pace: ~W34. Critical path: US-009 (unassigned).
+> **Velocity** — Today is W25 (Jun 15–Jun 21). 28 of 50 stories closed in W19–W25. Projected completion at current pace: ~W31. Critical path: US-009 (unassigned).
 
 ## 🗓️ Epic timeline
 
@@ -38,7 +38,7 @@ gantt
     section Phase 1 — Plan-only pilot
     E-03 Pilot Repository Scaffold :done, E03, 2026-06-09, 2026-06-15
     E-05 First Planner Agent Loop :E05, 2026-06-11, 2026-06-21
-    E-06 MCP Server Ecosystem :E06, 2026-06-16, 2026-06-22
+    E-06 MCP Server Ecosystem :done, E06, 2026-06-16, 2026-06-22
     E-07 Provenance and Compliance Workflow :done, E07, 2026-06-18, 2026-06-25
     E-09 Slack Intake Bot :E09, 2026-06-23, 2026-07-03
     E-10 Phase 01 Smoke Test and Pilot Launch :E10, 2026-07-01, 2026-07-07
@@ -56,7 +56,7 @@ gantt
 | W22 (May 25–May 31) | 0 | 0 | +0 | — |
 | W23 (Jun 01–Jun 07) | 0 | 0 | +0 | — |
 | W24 (Jun 08–Jun 14) | 59 | 21 | -38 | #75 ci(dashboard): refresh on schedule + dispatch only, drop issue triggers (US-049) |
-| W25 (Jun 15–Jun 21) | 1 | 1 | +0 | #80 fix(pages): cohesive dark theme — graphical bars, readable chips, large KPIs |
+| W25 (Jun 15–Jun 21) | 1 | 7 | +6 | #86 docs(csv): JSDoc for src/csv.ts exports (US-044 §13 smoke test) |
 
 _W24 spike: full backlog of 58 issues seeded this week (2026-06-09). True post-seeding velocity will show from W25 onward._
 
@@ -65,7 +65,7 @@ _W24 spike: full backlog of 58 issues seeded this week (2026-06-09). True post-s
 | Phase | Stories | Points | Progress |
 | --- | --- | --- | --- |
 | Phase 0 — Foundation | 5/15 | 9/27 | `██████░░░░░░░░░░░░` 33% |
-| Phase 1 — Plan-only pilot | 17/31 | 51/121 | `████████░░░░░░░░░░` 42% |
+| Phase 1 — Plan-only pilot | 23/31 | 68/121 | `██████████░░░░░░░░` 56% |
 | Phase 2 — Full agentic SDLC | 0/4 | 0/11 | `░░░░░░░░░░░░░░░░░░` 0% |
 
 ## Status distribution
@@ -73,8 +73,8 @@ _W24 spike: full backlog of 58 issues seeded this week (2026-06-09). True post-s
 ```mermaid
 pie showData
     title Stories by status
-    "Done" : 22
-    "In backlog" : 28
+    "Done" : 28
+    "In backlog" : 22
 ```
 
 ## Progress by epic
@@ -85,12 +85,12 @@ pie showData
 | [E-02: Agent Runtime Provisioning](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/2) | 3/6 | 5/11 | `████████░░░░░░░░░░` 45% |
 | [E-03: Pilot Repository Scaffold](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/3) | 5/5 | 10/10 | `██████████████████` 100% |
 | [E-04: Git Foundation & Branch Protection](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/4) | 2/4 | 4/9 | `████████░░░░░░░░░░` 44% |
-| [E-05: First Planner Agent Loop](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/5) | 2/4 | 13/24 | `██████████░░░░░░░░` 54% |
-| [E-06: MCP Server Ecosystem](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/6) | 1/4 | 1/7 | `███░░░░░░░░░░░░░░░` 14% |
+| [E-05: First Planner Agent Loop](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/5) | 3/4 | 16/24 | `████████████░░░░░░` 67% |
+| [E-06: MCP Server Ecosystem](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/6) | 4/4 | 7/7 | `██████████████████` 100% |
 | [E-07: Provenance & Compliance Workflow](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/7) | 5/5 | 17/17 | `██████████████████` 100% |
 | [E-08: Browser Verification (Playwright)](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/8) | 0/4 | 0/11 | `░░░░░░░░░░░░░░░░░░` 0% |
-| [E-09: Slack Intake Bot](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/9) | 0/6 | 0/34 | `░░░░░░░░░░░░░░░░░░` 0% |
-| [E-10: Phase 0/1 Smoke Test & Pilot Launch](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/10) | 4/7 | 10/29 | `██████░░░░░░░░░░░░` 34% |
+| [E-09: Slack Intake Bot](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/9) | 1/6 | 5/34 | `███░░░░░░░░░░░░░░░` 15% |
+| [E-10: Phase 0/1 Smoke Test & Pilot Launch](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/10) | 5/7 | 13/29 | `████████░░░░░░░░░░` 45% |
 
 ### Stories by epic
 
@@ -144,25 +144,25 @@ _Click an epic to expand its stories._
 
 </details>
 
-<details><summary><strong>E-05: First Planner Agent Loop</strong> — 2/4 done</summary>
+<details><summary><strong>E-05: First Planner Agent Loop</strong> — 3/4 done</summary>
 
 | Story | Title | Status | Est. Week | Blocks |
 | --- | --- | --- | --- | --- |
 | [US-021](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/31) | Drive first end-to-end /plan run against the CSV-escape seed task | ✅ Done | W24 | US-024, US-041 |
 | [US-022](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/32) | Build headless planner script via Anthropic SDK | ✅ Done | W24 | US-023, US-024, US-030 |
-| [US-023](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/33) | Implement untrusted-input tagging in planner system prompt | ⚪ To do | W25 | US-040 |
+| [US-023](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/33) | Implement untrusted-input tagging in planner system prompt | ✅ Done | W25 | US-040 |
 | [US-024](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/34) | Run 3 pilot tuning cycles and capture metrics | ⚪ To do | W25 | US-044, US-045 |
 
 </details>
 
-<details><summary><strong>E-06: MCP Server Ecosystem</strong> — 1/4 done</summary>
+<details><summary><strong>E-06: MCP Server Ecosystem</strong> — 4/4 done</summary>
 
 | Story | Title | Status | Est. Week | Blocks |
 | --- | --- | --- | --- | --- |
 | [US-025](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/35) | Install filesystem MCP server | ✅ Done | W25 | US-026 |
-| [US-026](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/36) | Install GitHub MCP server with fine-grained PAT | ⚪ To do | W25 | US-027 |
-| [US-027](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/37) | Configure project-scoped .claude/mcp.json | ⚪ To do | W25 | US-028, US-037 |
-| [US-028](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/38) | Verify MCP integration end-to-end | ⚪ To do | W25 | — |
+| [US-026](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/36) | Install GitHub MCP server with fine-grained PAT | ✅ Done | W25 | US-027 |
+| [US-027](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/37) | Configure project-scoped .claude/mcp.json | ✅ Done | W25 | US-028, US-037 |
+| [US-028](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/38) | Verify MCP integration end-to-end | ✅ Done | W25 | — |
 
 </details>
 
@@ -189,12 +189,12 @@ _Click an epic to expand its stories._
 
 </details>
 
-<details><summary><strong>E-09: Slack Intake Bot</strong> — 0/6 done</summary>
+<details><summary><strong>E-09: Slack Intake Bot</strong> — 1/6 done</summary>
 
 | Story | Title | Status | Est. Week | Blocks |
 | --- | --- | --- | --- | --- |
 | [US-038](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/48) | Register Slack app in Telenor workspace with required scopes | ⚪ To do | W26 | US-039 |
-| [US-039](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/49) | Build bot scaffold with read-only first run | ⚪ To do | W26 | US-040 |
+| [US-039](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/49) | Build bot scaffold with read-only first run | ✅ Done | W26 | US-040 |
 | [US-040](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/50) | Implement intake handler with attachment hashing | ⚪ To do | W26 | US-041 |
 | [US-041](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/51) | Implement Checkpoint 1 (plan approval) Block Kit flow | ⚪ To do | W26 | US-042 |
 | [US-042](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/52) | Implement Checkpoint 2 (PR review) DM flow | ⚪ To do | W27 | US-043 |
@@ -202,11 +202,11 @@ _Click an epic to expand its stories._
 
 </details>
 
-<details><summary><strong>E-10: Phase 0/1 Smoke Test & Pilot Launch</strong> — 4/7 done</summary>
+<details><summary><strong>E-10: Phase 0/1 Smoke Test & Pilot Launch</strong> — 5/7 done</summary>
 
 | Story | Title | Status | Est. Week | Blocks |
 | --- | --- | --- | --- | --- |
-| [US-044](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/54) | Run end-to-end smoke test per impl guide §13 | ⚪ To do | W27 | US-046 |
+| [US-044](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/54) | Run end-to-end smoke test per impl guide §13 | ✅ Done | W27 | US-046 |
 | [US-045](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/55) | Stand up metrics dashboard with 6 baseline metrics | ✅ Done | W27 | US-046, US-048, US-049 |
 | [US-046](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/56) | Run 2-week pilot with one squad, collect feedback | ⚪ To do | W27 | US-047 |
 | [US-047](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/57) | Governance council Phase 0/1 sign-off review | ⚪ To do | W27 | — |
@@ -222,14 +222,14 @@ _No open `agent/*` pull requests right now._
 
 ## ✅ Recently shipped
 
+- `2026-06-17` [US-044: Run end-to-end smoke test per impl guide §13](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/54)
+- `2026-06-17` [US-028: Verify MCP integration end-to-end](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/38)
+- `2026-06-17` [US-027: Configure project-scoped .claude/mcp.json](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/37)
+- `2026-06-17` [US-026: Install GitHub MCP server with fine-grained PAT](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/36)
+- `2026-06-17` [US-039: Build bot scaffold with read-only first run](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/49)
+- `2026-06-17` [US-023: Implement untrusted-input tagging in planner system prompt](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/33)
 - `2026-06-15` [US-050: Publish dashboard as a GitHub Pages site](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/76)
 - `2026-06-12` [US-049: Dashboard auto-refresh — remove issue-event trigger to eliminate write race](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/74)
-- `2026-06-12` [US-048: KPI dashboard v2 — epic timelines, week numbers, velocity, weekly activity](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/71)
-- `2026-06-12` [US-045: Stand up metrics dashboard with 6 baseline metrics](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/55)
-- `2026-06-11` [US-022: Build headless planner script via Anthropic SDK](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/32)
-- `2026-06-11` [US-011: Validate both runtimes with smoke tests](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/21)
-- `2026-06-11` [US-010: Secure ANTHROPIC_API_KEY in macOS Keychain](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/20)
-- `2026-06-11` [US-006: Provision Anthropic Console accounts on Telenor billing](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/16)
 
 ## ⚠️ Risk register
 
