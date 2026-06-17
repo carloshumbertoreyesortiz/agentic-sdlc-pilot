@@ -28,6 +28,30 @@ and credentials, tracked as **US-038**.
 - Registering the Slack app and providing `SLACK_BOT_TOKEN` / `SLACK_APP_TOKEN`
   is **US-038**, not US-039.
 
+## Checkpoint message details
+
+- **CP1 (plan approval):** task shown in the body (truncated to 200 chars); the
+  **Approve** button has a confirm dialog ("Approve plan and start coding?");
+  Reject does not.
+- **CP2 (PR review DM):** stats line flags **large PRs** (>10 files or >500
+  additions) with "review on GitHub"; a **provenance line** reads
+  `.agent/provenance.json` (✓ run_id/model/cost, or `✗ MISSING — do not
+  approve`); the reviewer mention resolves from config and **falls back to a
+  channel mention** — never a hardcoded id.
+- **CP3 (deploy approval):** lists **changes since the previous deploy ref**
+  (capped at 5 + "…and N more"), an explicit **tests-passing** line from the
+  last `check` run on the SHA, a **previous-deploy** context line, and an
+  env-named confirm on **Approve deploy** (strictest gate).
+
+## Open design questions (for US-041, not implemented here)
+
+- **Run-state persistence:** where does a checkpoint's run state live between
+  posting the message and a button click (in-memory map, KV store, the issue/PR
+  itself)? Button payloads carry only the run id today. **US-041 to decide.**
+- **Timeout / nudge flow:** what happens if a checkpoint message is never acted
+  on — auto-expire, reminder ping, or do nothing? Needs an explicit policy.
+  **Flag as a US-041 acceptance criterion.**
+
 ## Running
 
 ```bash
