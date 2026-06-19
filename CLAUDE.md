@@ -41,6 +41,20 @@ See `ARCH-AGENTIC-SDLC-001` (architecture) and `IMPL-AGENTIC-SDLC-001`
 - **Stay in scope.** Do only what the approved plan covers; surface anything
   beyond it instead of silently expanding.
 
+**Shell scripts** —
+- All `.sh` files MUST `bash -n` clean under `/bin/bash` (macOS ships
+  bash 3.2 only; we target that as the floor).
+- NEVER write heredoc inside `$(...)`. Use a helper function that reads
+  the body from stdin via `body=$(cat)`, with the heredoc piped to the
+  function call (see `create-issues.sh` for the canonical pattern).
+- When looking up GitHub issues by ID, use title-anchored or number-
+  anchored queries (`--search '<id> in:title'` or `gh issue view <num>`).
+  NEVER free-text search where exact match is needed — title collisions
+  silently match the wrong issue (see PR #88 Gate-C supersession bug).
+- Scripts that modify backlog state (create/close/comment on issues)
+  MUST re-fetch the resource after the write and assert expected fields
+  before continuing. Write-and-trust is forbidden.
+
 ## Plan-first mode
 For any non-trivial change, produce a plan **before** editing. Use the `/plan`
 command (`.claude/commands/plan.md`). The plan must be approved by a human
