@@ -15,6 +15,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # US-060: every committed .sh must `bash -n` clean (bash-3.2 floor).
+      - name: Shell-lint (bash -n on all committed .sh)
+        run: |
+          rc=0
+          for f in $(git ls-files '*.sh'); do
+            echo "bash -n $f"
+            bash -n "$f" || rc=1
+          done
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::shell-lint: one or more .sh failed bash -n"
+            exit 1
+          fi
+          echo "shell-lint OK (.sh files parse clean, or none present)"
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
