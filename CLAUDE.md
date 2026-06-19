@@ -7,7 +7,8 @@ Guidance for agents (and humans) working in this repository.
 a planner/coder/reviewer workflow driven by Claude Code with human checkpoints.
 See `ARCH-AGENTIC-SDLC-001` (architecture) and `IMPL-AGENTIC-SDLC-001`
 (implementation guide). The backlog is tracked in the Issues tab (10 epics /
-47 stories).
+47 stories). The Capture Layer (Step 0, §00.5) is documented in
+[docs/capture-layer.md](docs/capture-layer.md) — epic E-00 (US-052–US-059).
 
 ## Tech stack
 - **Language:** TypeScript (ESM), Node 22 LTS
