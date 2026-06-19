@@ -47,10 +47,15 @@ See `ARCH-AGENTIC-SDLC-001` (architecture) and `IMPL-AGENTIC-SDLC-001`
 - NEVER write heredoc inside `$(...)`. Use a helper function that reads
   the body from stdin via `body=$(cat)`, with the heredoc piped to the
   function call (see `create-issues.sh` for the canonical pattern).
-- When looking up GitHub issues by ID, use title-anchored or number-
-  anchored queries (`--search '<id> in:title'` or `gh issue view <num>`).
-  NEVER free-text search where exact match is needed — title collisions
-  silently match the wrong issue (see PR #88 Gate-C supersession bug).
+- When looking up GitHub issues by story/epic ID, use either
+  `gh issue view <number>` (when the number is known) or
+  `--search '<id> in:title'` with the `in:title` qualifier. NEVER use
+  `gh issue list --search '"<id>"'` — quoted free-text search matches
+  issue bodies AND titles AND comments, which silently matches the
+  wrong issue when one issue's text references another's ID. Real
+  bug: PR #88 Gate-C, 2026-06-19, where searching for 'US-038'
+  matched US-054 because US-054's title contained 'replaces US-038'.
+  The supersession step closed the wrong issue before it was caught.
 - Scripts that modify backlog state (create/close/comment on issues)
   MUST re-fetch the resource after the write and assert expected fields
   before continuing. Write-and-trust is forbidden.
