@@ -392,6 +392,20 @@ export function projectCompletionWeek(
   return Math.ceil(currentWeek + open / velocity);
 }
 
+/**
+ * Output path for the rendered dashboard, from `--output <path>`. Defaults to
+ * `DASHBOARD.md` (back-compat with the local `npm run dashboard` flow). The
+ * Pages deploy build passes `--output _site/DASHBOARD.md` so the dashboard is
+ * generated as a view at publish time instead of being committed to `main`
+ * (US-051 / R-05).
+ */
+export function parseOutputPath(argv: string[]): string {
+  const i = argv.indexOf('--output');
+  const next = argv[i + 1];
+  if (i >= 0 && next && !next.startsWith('--')) return next;
+  return 'DASHBOARD.md';
+}
+
 export function pct(done: number, total: number): number {
   return total === 0 ? 0 : Math.round((done / total) * 100);
 }
@@ -806,8 +820,9 @@ function main(): void {
   );
   const mergedPrs = fetchMergedPrs(since.toISOString().slice(0, 10));
   const md = buildDashboard(issues, prs, readRisks(), milestones, mergedPrs, now);
-  writeFileSync('DASHBOARD.md', md);
-  process.stdout.write(`DASHBOARD.md written — ${issues.length} issues.\n`);
+  const outPath = parseOutputPath(process.argv.slice(2));
+  writeFileSync(outPath, md);
+  process.stdout.write(`${outPath} written — ${issues.length} issues.\n`);
 }
 
 // Only run when executed directly, so tests can import the helpers.

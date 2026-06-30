@@ -1,23 +1,29 @@
 name: deploy-pages
 
-# Publishes the dashboard site (index.html + DASHBOARD.md) to GitHub Pages via
-# GitHub Actions — so Pages updates automatically on every relevant change to
-# main, instead of needing a manual API rebuild (the legacy branch builder did
-# not fire reliably on merge). Triggers when the site files or the daily
-# dashboard refresh land on main, plus manual dispatch.
+# Publishes the dashboard site to GitHub Pages via GitHub Actions. The dashboard
+# is generated AT DEPLOY TIME from live Issues state (scripts/dashboard.ts) into
+# the publish directory — it is no longer a committed artifact on main. This
+# decouples the refresh from a bot push to a protected branch (US-051 / R-05):
+# branch protection stays fully enforced, no bypass actor, no refresh PRs.
+#
+# Triggers: a daily heartbeat (so the live view tracks issue changes that never
+# touch main), pushes that change the site shell on main, plus manual dispatch.
 
 on:
+  schedule:
+    - cron: '17 6 * * *' # 06:17 UTC daily — preserves the cadence of the removed dashboard.yml
   push:
     branches: [main]
     paths:
       - index.html
-      - DASHBOARD.md
       - .nojekyll
+      - scripts/dashboard.ts
       - .github/workflows/deploy-pages.yml
   workflow_dispatch:
 
 permissions:
   contents: read
+  issues: read # scripts/dashboard.ts reads the backlog via the gh CLI
   pages: write
   id-token: write
 
@@ -35,11 +41,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install deps
+        run: npm ci --no-audit --no-fund
+
       - name: Assemble static site
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DASHBOARD_REPO: ${{ github.repository }}
         run: |
           mkdir -p _site
-          cp index.html DASHBOARD.md _site/
+          cp index.html _site/
           touch _site/.nojekyll
+          npx tsx scripts/dashboard.ts --output _site/DASHBOARD.md
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
