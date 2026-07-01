@@ -3,6 +3,7 @@
 **Prepared for:** Architecture Rev 1.7 + E-11 backlog seeding · **Status:** DRAFT for review
 **Date:** 2026-06-30 · **Repo:** [carloshumbertoreyesortiz/agentic-sdlc-pilot](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot)
 **Author:** Claude Code (read-only discovery — no schema/label/issue mutations performed)
+**Amended:** 2026-07-01 — incorporates Ingrid Marie Urdshals's 2026-06-30 reply (§3 role taxonomy **CONFIRMED**, §4 Flow C **CONFIRMED**; §7 US-072 phasing remains provisional).
 
 > **Scope.** This is a read-only discovery report comparing the current pilot
 > state (verified live from the repo on 2026-06-30) against the Telenor SFB
@@ -15,7 +16,7 @@
 **Evidence legend**
 - ✅ **Verified** — read live from this repo (Issues API, Project board, docs, source).
 - 📄 **Given** — sourced from the Telenor inputs (Confluence / Workshop #1 / RM email); authoritative per Carlos, not independently verifiable from this environment.
-- ⏳ **Provisional** — pending Carlos's answers to the two open questions from the RM 2026-06-30 email (Release Manager role; US-072 phasing). Marked inline; will be finalised before merge.
+- ⏳ **Provisional** — one item remains after Ingrid's 2026-06-30 reply: **§7 US-072 phasing** (Phase 1 vs 2). The role-taxonomy question is now **CONFIRMED** (§3). Marked inline; finalised before merge.
 
 ---
 
@@ -75,31 +76,42 @@ now; field changes ride on US-062 Project-admin work).
 
 ---
 
-## §3 Role taxonomy ⏳ PROVISIONAL
+## §3 Role taxonomy
 
-📄 Workshop #1 **Slides 4–5** — six confirmed roles. 📄 RM email proposes a
-candidate **seventh: Release Manager** — ⏳ *pending Carlos: distinct 7th role or
-overlap with an existing role?*
+📄 **CONFIRMED** (Ingrid Marie Urdshals, 2026-06-30 reply). Workshop #1
+**Slides 4–5** define **six** roles and **no distinct seventh**: the workshop's
+*"Other Roles Needed?"* item concluded with **no additions**. The **Release
+Manager** responsibility maps onto **Change Lead** — it is *not* a separate role.
 
-✅ Current pilot is **solo-operated** (Carlos fills every role). Agentic
-checkpoints today: **CP1** = plan approval (CLAUDE.md plan-first / `/plan`,
-Checkpoint 1); **CP2** = PR review + the two required gates (`check`,
-`agent-provenance`); **CP3** = deploy approval (E-09 Slack deploy flow,
+Two clarifications from the reply:
+- **Change Lead is per-initiative, not a fixed person.** **Ingrid Marie
+  Urdshals** holds Change Lead for **SFB-originated** requests; other initiatives
+  have their own Change Leads.
+- **Technical Lead is Apoorv** (runs the weekly technical meetings,
+  cross-developer coordination).
+
+✅ Current pilot is still **solo-operated** (Carlos fills every seat locally);
+the identities below are the Telenor-side owners the pilot must eventually map
+onto. Agentic checkpoints: **CP1** = plan approval (CLAUDE.md plan-first /
+`/plan`, Checkpoint 1); **CP2** = PR review + the two required gates (`check`,
+`agent-provenance`); **CP3** = deploy/closure approval (E-09 Slack deploy flow,
 scaffold/dormant).
 
-| Telenor role | Current pilot equivalent | Agentic checkpoint responsibility (proposed) | Gap |
+| Telenor role | Confirmed identity / binding | Checkpoint ownership | Gap |
 |---|---|---|---|
-| Business Analyst | Carlos (intake/triage) | CP1 — frames requirement → plan | Role not named in governance; intake mostly manual (§4). |
-| Administrator | Carlos (Project/repo admin) | CP1/CP2 — field & board hygiene | SF-admin duties out of pilot scope. |
-| Developer | Claude Code (agent) + Carlos | CP2 — authors `agent/*` PR | Agent-as-developer encoded; human dev role implicit. |
-| Change Lead | Carlos | CP3 — release/change gate | No distinct change-control role; CP3 dormant. |
-| Technical Lead | Carlos | CP2 — design/review authority | Not separated from reviewer. |
-| Initiative Lead | Carlos | CP1 — prioritises initiatives | No portfolio/initiative layer. |
-| **Release Manager** ⏳ | — | CP3 — deploy/release authority (per RM email) | ⏳ Whether distinct 7th role or Change-Lead overlap is unconfirmed. |
+| Business Analyst | per-initiative (frames requirement) | contributes to **CP1** | Role not named in repo governance. |
+| Administrator | SF / Project-board admin | field & board hygiene (no gate) | SF-admin duties out of pilot scope. |
+| Developer | Accenture developers + Claude Code (agent) | authors work reviewed at **CP2** | Agent-as-developer encoded; human dev role implicit. |
+| **Change Lead** | **Per-initiative** — **Ingrid M. Urdshals** for SFB | **owns CP1**; **CP3 joint — final closure authority** | Not encoded; CP1/CP3 currently collapsed to the solo operator. |
+| **Technical Lead** | **Apoorv** (weekly tech mtgs, cross-dev coordination) | **owns CP2**; **CP3 joint** | Not separated from the reviewer role today. |
+| Initiative Lead | per-initiative (prioritises initiatives) | portfolio input to **CP1** | No portfolio/initiative layer. |
 
-**Summary:** none of the six/seven roles is encoded in the repo's governance
-(CLAUDE.md/docs) — the pilot collapses all to one operator. Mapping roles →
-checkpoints is a documentation gap; the 7th-role question blocks finalisation.
+**Summary:** six confirmed roles, no seventh; Release Manager = Change Lead.
+Checkpoint ownership is now definite — **CP1: Change Lead** (per-initiative),
+**CP2: Technical Lead** (Apoorv today), **CP3: Change Lead + Technical Lead
+jointly, Change Lead as final closure authority.** None of this is yet encoded
+in the repo's governance (the pilot collapses all seats to one operator) — that
+mapping is the remaining gap (GAP-09/09a), no longer blocked on an open question.
 
 ---
 
@@ -127,14 +139,27 @@ channels (email names Teams/Slack/Confluence/Outlook).
 manual GitHub issue creation from a TCR Case. ✅ No SFB Case Number field or
 sync exists (§1, §7). 📄 US-072 will automate.
 
-**Flow C — Defects via Matrix system.** 📄 TBD pending RM clarification; **no
-integration today** (no Matrix references anywhere in the repo). 📄 US-075 will
-integrate.
+**Flow C — Defects via Matrix.** 📄 **CONFIRMED** (Ingrid Marie Urdshals,
+2026-06-30 reply):
+- **Matrix = Telenor's local ServiceNow instance** at **matrix.telenor.no**.
+- Access is controlled via the **"Authorized Incident Reporter (AIR)"** role,
+  requested per **KB0010037**.
+- **Current state** (from Ingrid's email; not repo-verifiable): **Accenture
+  developers lack Matrix access.** Ingrid **manually creates a GitHub issue for
+  each new Matrix incident** and **manually updates Matrix** from GitHub
+  progress — **bidirectional manual toil** borne by a named stakeholder.
+- **US-075 design implication:** the integration pattern is a **ServiceNow
+  Business Rule → GitHub webhook**. ServiceNow's mature REST API drops US-075
+  from **XL → L** effort.
+- **Scope note:** US-075 must cover **both Matrix → GitHub and GitHub → Matrix
+  status sync.** Ingrid's workaround is bidirectional; a one-directional US-075
+  would eliminate only half her toil.
 
 **Summary:** the pilot operates **only as Flow A, and only nominally** (design
-complete, 0 channels live); **Flow B is fully manual**; **Flow C is
-unaddressed**. The "(partially captured)" characterisation overstates today's
-state — nothing is captured through E-00 yet.
+complete, 0 channels live); **Flow B is fully manual**; **Flow C has no
+integration** — it is Ingrid's bidirectional manual toil today. The "(partially
+captured)" characterisation overstates today's state — nothing is captured
+through E-00 yet.
 
 ---
 
@@ -180,9 +205,10 @@ today** and is the automation target of **US-072**.
 ✅ Current: no SFB Case Number field, no Salesforce↔GitHub sync, no webhook —
 fully manual.
 
-⏳ **Provisional:** whether US-072 lands in **Phase 1 or Phase 2** is pending
-Carlos's answer (RM 2026-06-30 email). This affects §10 sequencing and whether
-the SFB Case Number field (US-062) is required earlier.
+⏳ **Provisional:** whether US-072 lands in **Phase 1 or Phase 2** is still open.
+This affects §10 sequencing and whether the SFB Case Number field (US-062) is
+required earlier. **Note:** US-072 phasing is pending Carlos's follow-up ping to
+Ingrid (2026-06-30) — Ingrid's first reply did not settle it.
 
 ---
 
@@ -235,10 +261,11 @@ between the SF SFB Request Backlog and the GitHub delivery dashboard.
 | GAP-06 | Fields: Business Area | Absent | Business Area field (Slide 6) | US-062 |
 | GAP-07 | Status taxonomy | 4-value board (Todo/In Progress/Blocked/Done) | 7-state lifecycle | US-063 |
 | GAP-08 | Deployment states | None (Done = closed) | Ready for Deployment, Deployed | US-063 |
-| GAP-09 | Roles ⏳ | Solo-operated; roles not encoded | 6–7 roles mapped to CP1/CP2/CP3 | US-066 (proposed) ⏳ |
+| GAP-09 | Roles | Solo-operated; roles not encoded | **6** roles → CP1/CP2/CP3 (no 7th; Release Mgr = Change Lead) | US-066 (proposed) |
+| GAP-09a | Roles: Change Lead binding | Not encoded | **Per-initiative** Change Lead (Ingrid for SFB); owns CP1 + CP3 final-closure authority | US-066 (proposed) |
 | GAP-10 | Intake Flow A | E-00 designed, 0/6 channels live; Slack dormant | Operational capture channels | E-00 (US-052–059) |
 | GAP-11 | Intake Flow B | Manual TCR Case → issue | Automated SFB sync | US-072 ⏳ phase |
-| GAP-12 | Intake Flow C | Matrix unaddressed | Matrix defect integration | US-075 |
+| GAP-12 | Intake Flow C | Matrix (ServiceNow) — manual **bidirectional** toil (Ingrid); Accenture devs lack access | **Bidirectional** Matrix↔GitHub sync (ServiceNow Business Rule → webhook) | US-075 (**effort L**, was XL) |
 | GAP-13 | Sprint cadence | None (milestones = phases) | 2-week sprints, Plan/Close | US-064 (proposed) |
 | GAP-14 | Scope-freeze rule | Not in CLAUDE.md ("stay in scope" only) | Scope-freeze at confirmation + new-ticket rule | US-071 |
 | GAP-15 | Concurrent-migration risk | Not in risks.md | R-TELENOR-CONCURRENT-MIGRATION registered | Carlos / Rev 1.7 (not a CC story) |
@@ -249,8 +276,8 @@ between the SF SFB Request Backlog and the GitHub delivery dashboard.
 ---
 
 ### Open questions blocking finalisation (⏳)
-1. **Release Manager** — distinct 7th role, or overlap with Change Lead? (§3)
-2. **US-072 SFB auto-sync** — Phase 1 or Phase 2? (§7, GAP-11)
+1. ~~**Release Manager** — distinct 7th role, or overlap with Change Lead? (§3)~~ **RESOLVED** 2026-06-30 (Ingrid): no 7th role; Release Manager = Change Lead (§3).
+2. **US-072 SFB auto-sync** — Phase 1 or Phase 2? (§7, GAP-11) — still open, pending Carlos's follow-up ping to Ingrid.
 
 ### Explicitly out of scope for this report
 No issues filed, no labels/fields/status changed, no schema mutated, no CLAUDE.md
