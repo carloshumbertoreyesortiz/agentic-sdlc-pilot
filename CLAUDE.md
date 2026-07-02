@@ -30,6 +30,9 @@ See `ARCH-AGENTIC-SDLC-001` (architecture) and `IMPL-AGENTIC-SDLC-001`
 - Conventional-commit-style messages (`feat:`, `fix:`, `docs:`, `ci:`…).
 - Branching: all agent work happens on `agent/*` branches and lands via PR.
   See [docs/branching.md](docs/branching.md).
+- [docs/way-of-work.md](docs/way-of-work.md) — Telenor SFB DevOps way-of-work
+  integration (three intake flows, six roles, expanded status taxonomy,
+  external-system sync pattern). Authoritative for E-11 stories.
 
 ## Hard rules (do not violate)
 - **No secrets in the repo.** No API keys, tokens, `.env` files, or PEM/keys —

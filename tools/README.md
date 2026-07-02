@@ -42,3 +42,35 @@ commit:
 The original buggy version is intentionally **not** committed — only this
 corrected form. The bug history is documented here (US-061), not preserved as a
 wrong-direction file in git.
+
+## `create-e11-issues.sh` (Rev 1.3, 2026-07-02)
+
+Seeds the **E-11 epic + 18 stories (US-062…US-079)** covering the Telenor SFB
+DevOps way-of-work integration per **BACKLOG-AGENTIC-SDLC-001 Rev 1.3**. It
+created **#107** (E-11) + **#108…#125** (US-062…US-079), all linked as native
+sub-issues of #107. Idempotent: re-runs skip existing issues via title-anchored
+`in:title` lookups. Bash 3.2 clean per US-060.
+
+**When to re-run:** only if E-11 stories are deleted, or if Rev 1.4+ adds new
+stories.
+
+### Bug 6 (US-E11-seed, 2026-07-02): pipefail + `grep -q` + `gh` SIGPIPE race
+
+Under `set -o pipefail`, `gh label list | grep -qxF LABEL` returns exit 141
+(SIGPIPE) when `grep` exits early after finding the label; `gh` then fails
+writing to the now-closed pipe. The pipeline status of 141 causes `if !` to read
+a **present** label as **missing**, intermittently (timing-dependent on `gh`
+flush vs `grep` short-circuit — successive runs falsely flagged different early
+labels, `story` then `epic`).
+
+**Fix applied:** fetch the label list once into a variable; use a case-statement
+membership test with no pipe. See the preflight block in `create-e11-issues.sh`
+(search for `EXISTING_LABELS`).
+
+Not caught by `bash -n` or `shell-lint` because it's a runtime race, not a syntax
+issue. Not caught by the pre-flight because that container's `gh` flushed before
+`grep`'s SIGPIPE registered.
+
+**Standing rule reinforced:** pre-flight under bash 3.2 syntactically is
+necessary but not sufficient — runtime pipe behaviour must be tested against a
+real repo before delivery.
