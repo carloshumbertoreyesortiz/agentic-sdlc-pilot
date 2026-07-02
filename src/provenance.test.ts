@@ -33,4 +33,18 @@ describe('provenance', () => {
   it('serializes with a trailing newline', () => {
     expect(serializeProvenance(valid).endsWith('}\n')).toBe(true);
   });
+
+  it('accepts a record carrying a scope_anchor (US-071)', () => {
+    expect(missingFields({ ...valid, scope_anchor: 'us-071-plan-hash' })).toEqual([]);
+  });
+
+  // CANARY — US-071 Phase 1 grace period (ends 2026-08-02): scope_anchor is
+  // OPTIONAL, so a record without it must still validate. This test will need
+  // to be updated to expect a missing `scope_anchor` once US-071 Phase 2 (the
+  // follow-up story depending on US-066 / CP3 gate) flips it to required.
+  it('grace period: record without scope_anchor still passes (canary)', () => {
+    expect('scope_anchor' in valid).toBe(false);
+    expect(missingFields(valid)).toEqual([]);
+    expect(REQUIRED_FIELDS).not.toContain('scope_anchor');
+  });
 });

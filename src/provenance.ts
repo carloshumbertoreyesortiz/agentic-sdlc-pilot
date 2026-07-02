@@ -19,6 +19,13 @@ export interface Provenance {
   tool_trace: string[];
   attachment_hashes: string[];
   token_cost: TokenCost;
+  /**
+   * Reference to the CP1-approved plan hash for this work. Optional during the
+   * grace period ending 2026-08-02 (US-071 Phase 1); becomes required in the
+   * follow-up story that depends on US-066 (CP3 gate). Not in REQUIRED_FIELDS
+   * yet — absence must not fail validation during the grace period.
+   */
+  scope_anchor?: string | null;
 }
 
 export const REQUIRED_FIELDS: (keyof Provenance)[] = [
