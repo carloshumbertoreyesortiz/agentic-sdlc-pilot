@@ -11,7 +11,8 @@ import { writeProvenance, type Provenance } from '../src/provenance.js';
  *
  *   npx tsx scripts/write-provenance.ts "<task>"
  * Optional env: PROV_RUN_ID, PROV_APPROVER, PROV_MODEL, PROV_STARTED_AT,
- *               PROV_TOOLS (comma list), PROV_TOKENS_IN, PROV_TOKENS_OUT
+ *               PROV_TOOLS (comma list), PROV_TOKENS_IN, PROV_TOKENS_OUT,
+ *               SCOPE_ANCHOR (US-071 CP1 plan-hash; optional during grace period)
  */
 function sha256(text: string): string {
   return `sha256:${createHash('sha256').update(text).digest('hex')}`;
@@ -35,6 +36,9 @@ const record: Provenance = {
     input: Number(process.env.PROV_TOKENS_IN ?? 0),
     output: Number(process.env.PROV_TOKENS_OUT ?? 0),
   },
+  // US-071: optional CP1 plan-hash anchor. Written only when provided (grace
+  // period ends 2026-08-02); absence must not fail validation yet.
+  ...(process.env.SCOPE_ANCHOR ? { scope_anchor: process.env.SCOPE_ANCHOR } : {}),
 };
 
 writeProvenance('.agent/provenance.json', record);

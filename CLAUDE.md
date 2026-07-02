@@ -43,6 +43,11 @@ See `ARCH-AGENTIC-SDLC-001` (architecture) and `IMPL-AGENTIC-SDLC-001`
   incomplete.
 - **Stay in scope.** Do only what the approved plan covers; surface anything
   beyond it instead of silently expanding.
+- **Scope freeze at CP1 approval.** Once a plan is approved at CP1, its scope
+  binds the CP2 PR and CP3 confirmation. New requirements surfacing during
+  Create/Review or UAT are new tickets, not scope extensions — see
+  [docs/way-of-work.md](docs/way-of-work.md) §8 (Workshop #1 slide 11 origin,
+  US-071).
 
 **Shell scripts** —
 - All `.sh` files MUST `bash -n` clean under `/bin/bash` (macOS ships

@@ -36,6 +36,11 @@
         "input": { "type": "number" },
         "output": { "type": "number" }
       }
+    },
+    "scope_anchor": {
+      "type": ["string", "null"],
+      "description": "Reference to the CP1-approved plan hash for this work. Optional during grace period ending 2026-08-02 per US-071; will become required in follow-up story that depends on US-066 (CP3 gate).",
+      "$comment": "US-071 Phase 1 (this PR): field added optional. US-071 Phase 2 (follow-up, blocked on US-066): field becomes required + CP3 gate enforces comparison."
     }
   }
 }
