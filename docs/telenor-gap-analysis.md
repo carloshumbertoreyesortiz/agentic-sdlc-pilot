@@ -1,9 +1,10 @@
 # Telenor SFB Way-of-Work — Gap Analysis (Phase 1 Discovery)
 
-**Prepared for:** Architecture Rev 1.7 + E-11 backlog seeding · **Status:** DRAFT for review
+**Prepared for:** Architecture Rev 1.7 + E-11 backlog seeding · **Status:** Ready for review — no provisional items remain
 **Date:** 2026-06-30 · **Repo:** [carloshumbertoreyesortiz/agentic-sdlc-pilot](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot)
 **Author:** Claude Code (read-only discovery — no schema/label/issue mutations performed)
-**Amended:** 2026-07-01 — incorporates Ingrid Marie Urdshals's 2026-06-30 reply (§3 role taxonomy **CONFIRMED**, §4 Flow C **CONFIRMED**; §7 US-072 phasing remains provisional).
+**Amended:** 2026-07-01 — Ingrid's 2026-06-30 reply: §3 roles **CONFIRMED**, §4 Flow C **CONFIRMED**.
+**Amended:** 2026-07-02 — Ingrid's 2026-06-30 second reply + [#1121]: §4 Flow B + §7 **CONFIRMED** (US-072 = conformance to upstream #1121, not implementation), §10 GAP-11 updated + GAP-19/20/21 added, §11 priority ordering added. **No provisional items remain.**
 
 > **Scope.** This is a read-only discovery report comparing the current pilot
 > state (verified live from the repo on 2026-06-30) against the Telenor SFB
@@ -16,7 +17,7 @@
 **Evidence legend**
 - ✅ **Verified** — read live from this repo (Issues API, Project board, docs, source).
 - 📄 **Given** — sourced from the Telenor inputs (Confluence / Workshop #1 / RM email); authoritative per Carlos, not independently verifiable from this environment.
-- ⏳ **Provisional** — one item remains after Ingrid's 2026-06-30 reply: **§7 US-072 phasing** (Phase 1 vs 2). The role-taxonomy question is now **CONFIRMED** (§3). Marked inline; finalised before merge.
+- ⏳ **Provisional** — *(none remain as of 2026-07-02)*. All prior provisional items (§3 roles, §7 US-072 phasing) are resolved via Ingrid's two 2026-06-30 replies + [#1121].
 
 ---
 
@@ -135,9 +136,23 @@ channels (email names Teams/Slack/Confluence/Outlook).
   self-serve pair (VS Code, CLI) — the channels usable without admin tickets —
   is absent from the email's framing.
 
-**Flow B — End-user requirements via SFB TCR Case in Salesforce.** 📄 Today:
-manual GitHub issue creation from a TCR Case. ✅ No SFB Case Number field or
-sync exists (§1, §7). 📄 US-072 will automate.
+**Flow B — End-user requirements via SFB TCR Case in Salesforce.** 📄 **CONFIRMED
+with corrected ownership** (Ingrid Marie Urdshals 2026-06-30 second reply +
+issue [#1121]).
+- The Flow B automation is specified in ✅ [**TelenorNorgeInternal/s06065-sfb-telenor-sfdc#1121**](https://github.com/TelenorNorgeInternal/s06065-sfb-telenor-sfdc/issues/1121)
+  *("📝 Sync between SFB and GitHub")* — opened by Ingrid Marie Urdshals
+  2026-01-07, currently **self-assigned to Apoorv Shukla** (`apoorv-shukla-telenor`)
+  and marked **"In progress"** on the *SfB Mobile CPQ Tasks* board.
+  (Existence, title, assignee, OPEN state ✅ verified live; scope below 📄 from the issue.)
+- **Parent:** *"GitHub / DevOps Changes '26"* (#1593) in the same repo.
+- 📄 **Scope:** bidirectional **SF TCR Case ↔ GitHub Issue** sync with a defined
+  field mapping, Type/Sub-Epic taxonomy, complexity→size mapping, and status
+  transition rules.
+- **Ownership: the SFB team (Apoorv) — NOT the agentic pilot.**
+- **Pilot implication:** the pilot's **US-072 rescopes** from *"implement SF
+  sync"* to *"ensure the pilot schema is **conformant** with what #1121 emits, so
+  pilot-owned repos can receive SF-sourced issues without translation shims."*
+  Effort drops **L → S**.
 
 **Flow C — Defects via Matrix.** 📄 **CONFIRMED** (Ingrid Marie Urdshals,
 2026-06-30 reply):
@@ -197,18 +212,22 @@ provenance schema so confirmation is auditable. Documentation-only; CC-doable.
 
 ---
 
-## §7 SFB Case → GitHub auto-sync ⏳ PROVISIONAL
+## §7 SFB Case → GitHub auto-sync
 
-📄 Per the RM email, the SFB TCR Case → GitHub issue link (Flow B) is **manual
-today** and is the automation target of **US-072**.
+📄 **CONFIRMED** (Ingrid 2026-06-30 second reply + #1121). The SFB TCR Case ↔
+GitHub sync (Flow B) is **owned upstream by the SFB team** as
+[#1121](https://github.com/TelenorNorgeInternal/s06065-sfb-telenor-sfdc/issues/1121)
+(assignee Apoorv Shukla, in progress) — **not** something the pilot implements.
 
-✅ Current: no SFB Case Number field, no Salesforce↔GitHub sync, no webhook —
-fully manual.
+✅ Current pilot state: no SFB Case Number field, no Salesforce↔GitHub sync, no
+webhook — the pilot side is empty; the automation itself lives in #1121.
 
-⏳ **Provisional:** whether US-072 lands in **Phase 1 or Phase 2** is still open.
-This affects §10 sequencing and whether the SFB Case Number field (US-062) is
-required earlier. **Note:** US-072 phasing is pending Carlos's follow-up ping to
-Ingrid (2026-06-30) — Ingrid's first reply did not settle it.
+**Pilot's US-072 is rescoped to conformance/compatibility, not implementation:**
+guarantee the pilot schema is compatible with what #1121 emits (field mapping,
+Type/Sub-Epic taxonomy, complexity→size, status transitions) so SF-sourced
+issues land in pilot-owned repos without translation shims. Effort **L → S**
+(see §4 Flow B, GAP-11). No longer provisional — the earlier "Phase 1 vs 2 /
+who implements" question is resolved by the upstream-ownership finding.
 
 ---
 
@@ -264,7 +283,7 @@ between the SF SFB Request Backlog and the GitHub delivery dashboard.
 | GAP-09 | Roles | Solo-operated; roles not encoded | **6** roles → CP1/CP2/CP3 (no 7th; Release Mgr = Change Lead) | US-066 (proposed) |
 | GAP-09a | Roles: Change Lead binding | Not encoded | **Per-initiative** Change Lead (Ingrid for SFB); owns CP1 + CP3 final-closure authority | US-066 (proposed) |
 | GAP-10 | Intake Flow A | E-00 designed, 0/6 channels live; Slack dormant | Operational capture channels | E-00 (US-052–059) |
-| GAP-11 | Intake Flow B | Manual TCR Case → issue | Automated SFB sync | US-072 ⏳ phase |
+| GAP-11 | Intake Flow B | Manual TCR Case → issue; automation is **upstream #1121 (SFB team, Apoorv)** | Pilot schema **conformant** with #1121's emitted issues (no shims) | **US-072 conformance** (not implementation; effort S) |
 | GAP-12 | Intake Flow C | Matrix (ServiceNow) — manual **bidirectional** toil (Ingrid); Accenture devs lack access | **Bidirectional** Matrix↔GitHub sync (ServiceNow Business Rule → webhook) | US-075 (**effort L**, was XL) |
 | GAP-13 | Sprint cadence | None (milestones = phases) | 2-week sprints, Plan/Close | US-064 (proposed) |
 | GAP-14 | Scope-freeze rule | Not in CLAUDE.md ("stay in scope" only) | Scope-freeze at confirmation + new-ticket rule | US-071 |
@@ -272,12 +291,33 @@ between the SF SFB Request Backlog and the GitHub delivery dashboard.
 | GAP-16 | Cross-dashboard nav | Pages dashboard, no cross-link | Bidirectional SF ↔ GitHub links | US-073 (proposed) |
 | GAP-17 | Issue templates | None in `.github/ISSUE_TEMPLATE/` | Three templates (Type/fields enforced) | US-068 |
 | GAP-18 | Board coverage | 58/72 issues on board | All issues on board | US-062 (migration) |
+| GAP-19 | Status taxonomy richer than documented | Workshop #1 short list | 📄 SFB/#1121 fuller set incl. **Pending Requestor, Analysis, Development, User Acceptance Test, Leveransesjekk** | US-063 (expanded) |
+| GAP-20 | Type taxonomy | `epic`/`story` label approximation | 📄 SFB/#1121 native GitHub **Issue Types (Task, Feature, Story, Bug) + Sub-Epic** | US-068 (expanded) |
+| GAP-21 | Source-system back-links | None | 📄 SFB/#1121 **External References** mechanism linking issues to SF/Matrix sources; reuse for US-075 (Matrix) for a consistent pattern | US-075 (design update) |
 
 ---
 
-### Open questions blocking finalisation (⏳)
-1. ~~**Release Manager** — distinct 7th role, or overlap with Change Lead? (§3)~~ **RESOLVED** 2026-06-30 (Ingrid): no 7th role; Release Manager = Change Lead (§3).
-2. **US-072 SFB auto-sync** — Phase 1 or Phase 2? (§7, GAP-11) — still open, pending Carlos's follow-up ping to Ingrid.
+## §11 Priority ordering (Ingrid 2026-06-30 second reply)
+
+📄 Ingrid gave an explicit execution priority for the two SF-integration stories:
+
+1. **US-075 — Matrix ↔ GitHub sync — HIGHEST priority.** Flagged as the *"most
+   vulnerable and person-dependent task"* — a **business-continuity risk**: today
+   it is entirely Ingrid's manual bidirectional toil, so if she is unavailable
+   Matrix incidents stop reaching GitHub.
+2. **US-072 — SFB conformance work — "as soon as possible,"** but framed as
+   **toil reduction**, not risk mitigation.
+
+This **reprioritises E-11 execution order** (US-075 ahead of US-072) but **does
+not change which stories are in Phase 1** — both remain Phase 1; only their
+relative sequencing changes.
+
+---
+
+### Open questions
+All resolved as of 2026-07-02 — **no items block finalisation.**
+1. ~~**Release Manager** — distinct 7th role? (§3)~~ **RESOLVED** 2026-06-30 (Ingrid): no 7th role; Release Manager = Change Lead.
+2. ~~**US-072 SFB auto-sync** — Phase 1 or Phase 2 / who implements? (§7)~~ **RESOLVED** 2026-06-30 (2nd reply + #1121): automation is upstream **#1121** (SFB team); pilot US-072 rescoped to **conformance** (§4 Flow B, §7).
 
 ### Explicitly out of scope for this report
 No issues filed, no labels/fields/status changed, no schema mutated, no CLAUDE.md
