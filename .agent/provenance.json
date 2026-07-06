@@ -1,11 +1,11 @@
 {
-  "run_id": "run-1783359881833",
-  "task": "US-068: add four issue templates (feature, story-or-task, bug, incident) + config.yml disabling blank issues; field strings match US-062 (Type/Sub Epic/Priority/Size); incident.md carries Caller/Alternate Contact/External References per #1595; reconcile way-of-work §6 (three->four templates, add Type=Incident)",
+  "run_id": "run-1783360909802",
+  "task": "US-062 (draft): author tools/create-e11-fields.sh — bash-3.2-clean, idempotent, re-fetch-and-assert ProjectV2 custom-field creator (Priority, Size, Type, Sub Epic, Business Area, Business Analyst, External Reference Type/Id/URL, SFB Case Number, Caller, Alternate Contact); Sprint deferred (API cannot create iteration fields); RUN BY CARLOS (Project admin); no existing-issue migration",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-07-06T17:44:41.831Z",
-  "finished_at": "2026-07-06T17:44:41.833Z",
+  "started_at": "2026-07-06T18:01:49.800Z",
+  "finished_at": "2026-07-06T18:01:49.802Z",
   "prompt_hash": "sha256:b267f500f6896eae02133b2e2876961e5e135aa522691a28a4cedb1c8f295548",
   "tool_trace": [
     "Read",
@@ -18,5 +18,5 @@
     "input": 0,
     "output": 0
   },
-  "scope_anchor": "us-068-issue-templates"
+  "scope_anchor": "us-062-project-fields-script"
 }
