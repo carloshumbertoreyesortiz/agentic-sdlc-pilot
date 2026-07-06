@@ -181,6 +181,8 @@ The pilot participates in the SFB team's existing rhythms rather than introducin
 
 **Council review.** The Phase 0/1 governance council (per docs/PHASE-0-1-REPORT.md) reviews Rev 1.7 for approval to proceed to Phase 1 execution. Council asks (b), (c), (d) from PR #87 remain outstanding on human stakeholders.
 
+**Adoption risks.** The coordination and dependency risks this cadence exists to manage are tracked in [risks.md](risks.md): **R-TELENOR-CONCURRENT-MIGRATION** (four concurrent SFB migrations), **R-SERVICENOW-DEPENDENCY** (AIR service account gating US-075), and **R-SFB-COORDINATION** (schema drift vs upstream #1121/#1595). Each carries an explicit exit trigger (US-077).
+
 ## §12 Named stakeholders
 
 Recording explicitly for traceability. Named individuals are cited with their role, primary responsibility for the pilot, and the source that documents them. Individuals not listed here are still part of the SFB team but do not have a pilot-specific coordination role at this time.
