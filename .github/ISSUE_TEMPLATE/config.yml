@@ -1,0 +1,2 @@
+# US-068: disable blank issues so every issue carries a Type + Sub Epic.
+blank_issues_enabled: false

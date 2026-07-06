@@ -109,13 +109,15 @@ The pilot adopts issue #1121's Type and Sub Epic model as first-class categoriza
 
 **Type = Task.** A minor change or clean-up. Body requires a description only. Mapped from SFB Type = Clean-Up, or Type = Improvement + Complexity = Easy.
 
-**Type = Bug.** A defect. Mapped from Matrix incidents via US-075.
+**Type = Bug.** A defect in existing functionality (non-Matrix).
+
+**Type = Incident.** A Matrix / ServiceNow-sourced incident (Flow C). Carries Matrix-specific fields (Caller, Alternate Contact), Sub Epic = Matrix Defect, and an External References record pointing at the `INC…` source; auto-populated by the #1595 sync (US-075).
 
 **Sub Epic values.** Clean-Up, New Feature, Minor Improvements and Bug Fixes, Major Improvements and Bug Fixes, Matrix Defect. The first four match #1121's mapping table; Matrix Defect is a pilot-side addition for US-075's outputs.
 
 Complexity → Size mapping follows #1121: Easy or Fair → S, Medium → M, Hard → L. The pilot does not use XL — the SFB team's scale stops at L, and the pilot conforms.
 
-The three issue templates in `.github/ISSUE_TEMPLATE/` (established by US-068) surface Type as a required field, Sub Epic as a required Project field, and the Type-specific body sections (Feature: full template with business value + user story + AC; Story: user story + AC; Task: description only).
+The **four** issue templates in `.github/ISSUE_TEMPLATE/` (established by US-068 — `feature.md`, `story-or-task.md`, `bug.md`, `incident.md`, plus `config.yml` disabling blank issues) surface Type + Sub Epic as required Project fields and the Type-specific body sections: **Feature** (background/pains + business value + user story + AC), **Story/Task** (description; AC required for Story), **Bug** (expected vs actual + repro steps), and **Incident** (Matrix-sourced — Caller required, Alternate Contact, and the External References link to the `INC…` record).
 
 ## §7 External System Bidirectional Sync pattern
 
