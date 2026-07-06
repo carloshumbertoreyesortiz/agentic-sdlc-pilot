@@ -1,14 +1,15 @@
 {
-  "run_id": "run-1783359305337",
-  "task": "US-077: add three adoption risks to docs/risks.md with exit triggers + way-of-work §11 cross-ref (rebased onto main after #130/US-069 merged)",
+  "run_id": "run-1783359881833",
+  "task": "US-068: add four issue templates (feature, story-or-task, bug, incident) + config.yml disabling blank issues; field strings match US-062 (Type/Sub Epic/Priority/Size); incident.md carries Caller/Alternate Contact/External References per #1595; reconcile way-of-work §6 (three->four templates, add Type=Incident)",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-07-06T17:35:05.333Z",
-  "finished_at": "2026-07-06T17:35:05.337Z",
+  "started_at": "2026-07-06T17:44:41.831Z",
+  "finished_at": "2026-07-06T17:44:41.833Z",
   "prompt_hash": "sha256:b267f500f6896eae02133b2e2876961e5e135aa522691a28a4cedb1c8f295548",
   "tool_trace": [
     "Read",
+    "Write",
     "Edit",
     "Bash"
   ],
@@ -17,5 +18,5 @@
     "input": 0,
     "output": 0
   },
-  "scope_anchor": "us-077-adoption-risk-register"
+  "scope_anchor": "us-068-issue-templates"
 }
