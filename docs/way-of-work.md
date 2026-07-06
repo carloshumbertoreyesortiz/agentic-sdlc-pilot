@@ -19,6 +19,16 @@ The SFB team's requirement and defect intake flows through three distinct paths,
 
 The three-flow model corrects an earlier two-flow assumption in the architecture. The pilot's value proposition differs meaningfully by flow, which is why US-078 introduces per-flow success metrics rather than aggregating across all intake.
 
+**E-00 ↔ three-flow channel mapping (US-069).** The E-00 capture channels map onto the three flows as below; see [capture-layer.md](capture-layer.md) §00.5.0 for the full channel table.
+
+| Flow | Capture channels | Ownership |
+|---|---|---|
+| A — meetings/dialogue | Teams, Slack, Confluence, **Outlook** (email, ~50% of intake), VS Code, Terminal CLI | Pilot (E-00) |
+| B — SFB TCR Cases | Salesforce | Upstream #1121 — pilot *receives* |
+| C — Matrix defects | Matrix / ServiceNow | Upstream #1595 — pilot *receives* |
+
+**Jira** is **deprecated for the SFB context** (SFB uses Salesforce + Matrix, not Jira); E-00 schema support is retained for other teams. The canonical `NormalizedIntake` code type (US-052, open) must include the `outlook`, `salesforce`, and `matrix` source values when implemented (US-069 updates the documented source union; the code lands with US-052).
+
 ## §2 Sprint cadence
 
 Telenor SFB operates on a **2-week sprint** cadence with three continuous phases surrounding a discrete Plan/Close boundary.

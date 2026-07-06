@@ -1,11 +1,11 @@
 {
-  "run_id": "run-1783082618159",
-  "task": "US-065: reference Telenor six-role model + checkpoint routing in CLAUDE.md (way-of-work §3/§4 already present from Rev 1.7a); no seventh role; team-routing.yaml deferred to US-070",
+  "run_id": "run-1783350285545",
+  "task": "US-069: rationalize capture-layer channel inventory vs three-flow reality — add Outlook/Salesforce/Matrix, deprecate Jira-for-SFB, update documented NormalizedIntake source union (code type deferred to US-052 #90), add E-00<->three-flow mapping to way-of-work §1; docs-only, no channel-handler code changes",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-07-03T12:43:38.156Z",
-  "finished_at": "2026-07-03T12:43:38.159Z",
+  "started_at": "2026-07-06T15:04:45.544Z",
+  "finished_at": "2026-07-06T15:04:45.545Z",
   "prompt_hash": "sha256:b267f500f6896eae02133b2e2876961e5e135aa522691a28a4cedb1c8f295548",
   "tool_trace": [
     "Read",
@@ -17,5 +17,5 @@
     "input": 0,
     "output": 0
   },
-  "scope_anchor": "us-065-role-taxonomy-docs"
+  "scope_anchor": "us-069-channel-inventory-docs"
 }
