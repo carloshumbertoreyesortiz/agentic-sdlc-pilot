@@ -74,3 +74,28 @@ issue. Not caught by the pre-flight because that container's `gh` flushed before
 **Standing rule reinforced:** pre-flight under bash 3.2 syntactically is
 necessary but not sufficient — runtime pipe behaviour must be tested against a
 real repo before delivery.
+
+## `create-e11-fields.sh` (US-062)
+
+Creates the Telenor SFB **GitHub Project custom fields** (Priority, Size, Type,
+Sub Epic, Business Area, Business Analyst, External Reference Type/Id/URL, SFB
+Case Number, Caller, Alternate Contact) on the pilot's ProjectV2 via
+`gh api graphql`. Idempotent (skips existing fields via the same pipe-free
+membership check as Bug 6) and re-fetch-and-asserts each field after creation.
+
+**Run by Carlos (Project owner) — not an agent.** ProjectV2 mutations require
+Project-admin permission; an agent token cannot create fields.
+
+```
+./tools/create-e11-fields.sh [owner-login] [project-number]   # defaults: carloshumbertoreyesortiz 1
+```
+
+**Limitations, by design:**
+- **Sprint (iteration) is not created** — the GraphQL `createProjectV2Field`
+  mutation has no `ITERATION` dataType. Create it in the Project UI (US-064).
+- **External References** is modelled as three fields (Type single-select + Id +
+  URL text), since ProjectV2 has no composite field type.
+- **`Type`** is created as a Project single-select (US-062's documented fallback);
+  native GitHub Issue Types can be set up separately in repo settings if preferred.
+- Existing 60+ issues are **not** migrated — that is a separate Carlos-mediated
+  pass with rollback (US-062 constraint).
