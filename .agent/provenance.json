@@ -1,11 +1,11 @@
 {
-  "run_id": "run-1783351621231",
-  "task": "US-077: add three adoption risks (R-TELENOR-CONCURRENT-MIGRATION, R-SERVICENOW-DEPENDENCY, R-SFB-COORDINATION) to docs/risks.md with explicit exit triggers; cross-reference from way-of-work §11; architecture-doc cross-ref deferred to Carlos (external doc); docs-only",
+  "run_id": "run-1783359305337",
+  "task": "US-077: add three adoption risks to docs/risks.md with exit triggers + way-of-work §11 cross-ref (rebased onto main after #130/US-069 merged)",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-07-06T15:27:01.230Z",
-  "finished_at": "2026-07-06T15:27:01.231Z",
+  "started_at": "2026-07-06T17:35:05.333Z",
+  "finished_at": "2026-07-06T17:35:05.337Z",
   "prompt_hash": "sha256:b267f500f6896eae02133b2e2876961e5e135aa522691a28a4cedb1c8f295548",
   "tool_trace": [
     "Read",

@@ -11,18 +11,23 @@ You don't need all six channels working before you start §01. Set up at least t
 
 ---
 
-## §00.5.0 — Overview: the six channels
+## §00.5.0 — Overview: capture channels
 
 | Channel | Source | Who sets it up | Capture trigger |
 |---|---|---|---|
 | **Teams** | Microsoft Teams meeting transcripts | M365 admin | Meeting with `[agentic]` in subject ends |
 | **Slack** | Slack messages | Slack workspace admin | `@-mention` of the agentic bot |
 | **Confluence** | Confluence pages | Confluence space admin | Page published or edited (5-min poll) |
-| **Jira** | Jira tickets and comments | Jira project admin | Ticket created or commented (webhook) |
+| **Outlook** | Email intake (~50% of SFB requirements arrive by email — Ingrid 2026-06-30) | M365 admin | Email to / forwarded to the agentic mailbox |
 | **VS Code** | Highlighted text in any file | Engineer (self-serve) | Command Palette → "Agentic: Send Selection" |
 | **Terminal CLI** | Anything you can pipe to stdin | Engineer (self-serve) | `agentic capture` command |
+| **Salesforce** _(Flow B)_ | SFB TCR Cases | Upstream — SFB team (#1121) | Pilot **receives** SF-sourced issues; sync owned by #1121, not implemented here |
+| **Matrix / ServiceNow** _(Flow C)_ | Matrix incidents (`matrix.telenor.no`) | Upstream — SFB team (#1595); AIR role per KB0010037 | Pilot **receives** Matrix-sourced issues; sync owned by #1595 (see US-075) |
+| ~~**Jira**~~ | Jira tickets and comments | Jira project admin | **Deprecated for the SFB context** (SFB uses Salesforce/Matrix, not Jira); schema support retained for other teams |
 
-All six produce the same `NormalizedIntake` shape, so downstream agents are channel-agnostic. The schema is defined in **§00.5.0a** below.
+These channels produce the same `NormalizedIntake` shape, so downstream agents are channel-agnostic. The schema is defined in **§00.5.0a** below.
+
+> **Channel-set reconciliation (US-069).** The original E-00 set was six self-hosted capture channels. Ingrid's 2026-06-30 email described the SFB reality as **three intake flows**: Flow A (larger initiatives via meetings/dialogue — Teams, Slack, Confluence, Outlook), Flow B (SFB TCR Cases via Salesforce/#1121), Flow C (defects via Matrix/#1595). So **Outlook** is added (email is ~50% of intake), **Salesforce** and **Matrix** are added as upstream-owned *receive* channels (the pilot consumes; it does not implement those syncs), and **Jira** is deprecated for SFB (retained for other teams). See the E-00 ↔ three-flow mapping in [way-of-work.md](way-of-work.md) §1.
 
 ### §00.5.0a — The NormalizedIntake schema
 
@@ -34,9 +39,15 @@ export type CaptureSource =
   | "teams"
   | "slack"
   | "confluence"
-  | "jira"
+  | "outlook"        // US-069: email intake (Flow A)
+  | "salesforce"     // US-069: SFB TCR Cases (Flow B, upstream #1121 — receive-only)
+  | "matrix"         // US-069: Matrix/ServiceNow incidents (Flow C, upstream #1595 — receive-only)
+  | "jira"           // deprecated for SFB (retained for other teams)
   | "vscode"
   | "cli";
+// NOTE: this is the documented source-of-truth. The committed code type is
+// delivered by US-052 (#90, still open) and MUST carry these same values,
+// including the US-069 additions (outlook, salesforce, matrix).
 
 export interface NormalizedIntake {
   source: CaptureSource;
