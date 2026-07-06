@@ -33,6 +33,13 @@ See `ARCH-AGENTIC-SDLC-001` (architecture) and `IMPL-AGENTIC-SDLC-001`
 - [docs/way-of-work.md](docs/way-of-work.md) — Telenor SFB DevOps way-of-work
   integration (three intake flows, six roles, expanded status taxonomy,
   external-system sync pattern). Authoritative for E-11 stories.
+- **Roles & checkpoints.** Approvals follow Telenor's six-role model — Business
+  Analyst, Administrator, Developer, Change Lead, Technical Lead, Initiative
+  Lead (no seventh; Release Manager responsibility = Change Lead), with
+  **per-initiative Change Lead binding** (not a hard-coded person). Checkpoint
+  authority: CP1 = Change Lead / Initiative Lead, CP2 = Technical Lead, CP3 =
+  Technical Lead readiness + Change Lead closure (both required). See
+  [docs/way-of-work.md](docs/way-of-work.md) §3–§4 (US-065).
 
 ## Hard rules (do not violate)
 - **No secrets in the repo.** No API keys, tokens, `.env` files, or PEM/keys —

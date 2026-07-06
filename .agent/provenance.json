@@ -1,22 +1,21 @@
 {
-  "run_id": "run-1783001971930",
-  "task": "US-071 Phase 1: add scope_anchor field to provenance schema (optional during grace period ending 2026-08-02); land scope-freeze rule in CLAUDE.md + way-of-work.md §8; defer enforcement AC items to follow-up story depending on US-066",
+  "run_id": "run-1783082618159",
+  "task": "US-065: reference Telenor six-role model + checkpoint routing in CLAUDE.md (way-of-work §3/§4 already present from Rev 1.7a); no seventh role; team-routing.yaml deferred to US-070",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-07-02T14:19:31.924Z",
-  "finished_at": "2026-07-02T14:19:31.930Z",
-  "prompt_hash": "sha256:4b766c8587bc7d05afbc70cc05ca9e1d2df6c88f67c7191019912d4e21e79c29",
+  "started_at": "2026-07-03T12:43:38.156Z",
+  "finished_at": "2026-07-03T12:43:38.159Z",
+  "prompt_hash": "sha256:b267f500f6896eae02133b2e2876961e5e135aa522691a28a4cedb1c8f295548",
   "tool_trace": [
     "Read",
     "Edit",
-    "Bash",
-    "Write"
+    "Bash"
   ],
   "attachment_hashes": [],
   "token_cost": {
     "input": 0,
     "output": 0
   },
-  "scope_anchor": "us-071-phase-1-scope-freeze-bootstrap"
+  "scope_anchor": "us-065-role-taxonomy-docs"
 }
