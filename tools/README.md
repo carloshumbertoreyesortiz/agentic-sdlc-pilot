@@ -99,3 +99,25 @@ Project-admin permission; an agent token cannot create fields.
   native GitHub Issue Types can be set up separately in repo settings if preferred.
 - Existing 60+ issues are **not** migrated — that is a separate Carlos-mediated
   pass with rollback (US-062 constraint).
+
+## `expand-status-field.sh` (US-063)
+
+Adds the Telenor SFB **ten-state status taxonomy** (Draft → Backlog → Ready for
+Development → Analysis → Development → User Acceptance Test → Ready for
+Deployment → Pending Requestor → Deployed → Done) to Project #1's `Status`
+single-select field via `gh api graphql`.
+
+**Run by Carlos (Project owner). Dry-run by default** — pass `--apply` to mutate.
+Review the dry-run output first; the Status field carries live item statuses.
+
+```
+./tools/expand-status-field.sh                 # dry-run (preview only)
+./tools/expand-status-field.sh --apply         # actually update the field
+```
+
+**Safe by design (US-063 AC "no orphans"):** ADD-ONLY. Existing options (Todo,
+In Progress, Blocked, Done) are preserved by their existing option id, so no
+in-flight item loses its status; legacy Todo/In Progress/Blocked are kept
+(tagged "legacy"). **Removing the legacy options and remapping existing items
+(Todo → Backlog, etc.) is the separate Carlos-mediated migration with rollback —
+not this script.** Re-fetch-and-asserts all ten states after `--apply`.

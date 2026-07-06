@@ -40,6 +40,12 @@ See `ARCH-AGENTIC-SDLC-001` (architecture) and `IMPL-AGENTIC-SDLC-001`
   authority: CP1 = Change Lead / Initiative Lead, CP2 = Technical Lead, CP3 =
   Technical Lead readiness + Change Lead closure (both required). See
   [docs/way-of-work.md](docs/way-of-work.md) §3–§4 (US-065).
+- **Status taxonomy.** Issues follow Telenor's **ten-state** model (Draft →
+  Backlog → Ready for Development → Analysis → Development → User Acceptance Test
+  ("Leveransesjekk") → Ready for Deployment → Pending Requestor → Deployed →
+  Done); `Blocked` is an orthogonal label, not a lifecycle status. See
+  [docs/way-of-work.md](docs/way-of-work.md) §5 (definitions) + §7 (SFB mapping)
+  (US-063).
 
 ## Hard rules (do not violate)
 - **No secrets in the repo.** No API keys, tokens, `.env` files, or PEM/keys —
