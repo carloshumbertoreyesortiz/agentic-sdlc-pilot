@@ -1,15 +1,14 @@
 {
-  "run_id": "run-1783362560165",
-  "task": "US-063: adopt SFB ten-state status taxonomy — CLAUDE.md ten-state reference + way-of-work §7 GitHub<->SFB status mapping table (SFB-side cells provisional pending #1121/US-072); draft tools/expand-status-field.sh (add-only Status expansion, dry-run default, no orphans) for Carlos to run; §5 already complete from Rev 1.7a",
+  "run_id": "run-1783425400691",
+  "task": "US-076: three-flow planner routing — src/planner.ts flowFromSource + plannerInstructions (Flow A full decomposition, Flow B verify-only, Flow C bug triage), wired into scripts/agent-planner.ts; 8 tests incl no-cross-flow-contamination; CLAUDE.md + way-of-work §1 docs",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-07-06T18:29:20.152Z",
-  "finished_at": "2026-07-06T18:29:20.165Z",
-  "prompt_hash": "sha256:3f22188a84a2cca2c16188600bbc8837ff2829b239b93fe01041d72ec9c29ee1",
+  "started_at": "2026-07-07T11:56:40.686Z",
+  "finished_at": "2026-07-07T11:56:40.691Z",
+  "prompt_hash": "sha256:1fbb84e3083872f3954b1afffe8e6fe5ff11632e40ab8ec50bb48d68059b7df0",
   "tool_trace": [
     "Read",
-    "Write",
     "Edit",
     "Bash"
   ],
@@ -18,5 +17,5 @@
     "input": 0,
     "output": 0
   },
-  "scope_anchor": "us-063-status-taxonomy"
+  "scope_anchor": "us-076-three-flow-routing"
 }

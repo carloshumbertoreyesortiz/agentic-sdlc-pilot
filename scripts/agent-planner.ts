@@ -3,7 +3,12 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
 import Anthropic from '@anthropic-ai/sdk';
 import { writeProvenance, type Provenance } from '../src/provenance.js';
-import { tokenCostFromUsage } from '../src/planner.js';
+import {
+  tokenCostFromUsage,
+  flowFromSource,
+  plannerInstructions,
+  type CaptureFlow,
+} from '../src/planner.js';
 import {
   UNTRUSTED_GUIDANCE,
   assemblePlannerPrompt,
@@ -44,6 +49,15 @@ const task = process.argv[2] ?? 'unspecified task';
 const model = process.env.PLANNER_MODEL ?? 'claude-opus-4-8';
 const startedAt = new Date().toISOString();
 
+// US-076: shape the plan per intake flow. Prefer an explicit PLANNER_FLOW
+// (A/B/C); otherwise derive the flow from the intake source (PLANNER_SOURCE),
+// which the capture layer sets from NormalizedIntake.source.
+const flowEnv = (process.env.PLANNER_FLOW ?? '').trim().toUpperCase();
+const flow: CaptureFlow =
+  flowEnv === 'A' || flowEnv === 'B' || flowEnv === 'C'
+    ? (flowEnv as CaptureFlow)
+    : flowFromSource(process.env.PLANNER_SOURCE);
+
 const systemContract = readFileSync('CLAUDE.md', 'utf8');
 const system = [
   systemContract,
@@ -51,6 +65,8 @@ const system = [
   'You are the Planner agent. Produce a concise implementation plan with these',
   'sections: Goal, Out of scope, Files to touch, Test plan, Acceptance criteria,',
   'Risk flags. Plan only — do not write code.',
+  '',
+  plannerInstructions(flow),
   '',
   UNTRUSTED_GUIDANCE,
 ].join('\n');
@@ -99,5 +115,5 @@ const record: Provenance = {
 writeProvenance('.agent/provenance.json', record);
 
 process.stdout.write(
-  `plan -> artifacts/plan.md | tokens input=${record.token_cost.input} output=${record.token_cost.output}\n`,
+  `plan -> artifacts/plan.md | flow=${flow} | tokens input=${record.token_cost.input} output=${record.token_cost.output}\n`,
 );
