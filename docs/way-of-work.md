@@ -137,6 +137,23 @@ Two integration stories — #1121 (SF TCR Case ↔ GitHub) owned by Apoorv's tea
 
 *Status mapping table.* Each external system has a defined status mapping. #1121's status mapping table (Ready for Development → Process Stage = In Active Sprint + Status = In Progress, etc.) is authoritative for SF. US-075 defines the equivalent for Matrix (Analysis → New / Assigned, Ready for Deployment → Awaiting Deployment, Deployed → Resolved, Done → Closed, etc.).
 
+The GitHub status ↔ SFB mapping (US-063). The GitHub ten-state taxonomy (§5) maps to the SFB Case **Process Stage** and **Sprint Status** as below. **The authoritative source is #1121; SFB-side cells marked _(confirm)_ are provisional and are reconciled with Apoorv during US-072 conformance** — they are not asserted here.
+
+| GitHub Status | SFB Case Process Stage | SFB Sprint Status |
+|---|---|---|
+| Draft | pre-case / gathering | — |
+| Backlog | Business Backlog _(confirm)_ | To Do _(confirm)_ |
+| Ready for Development | In Active Sprint | In Progress |
+| Analysis | In Active Sprint _(confirm)_ | In Progress _(confirm)_ |
+| Development | In Active Sprint _(confirm)_ | In Progress _(confirm)_ |
+| User Acceptance Test ("Leveransesjekk") | In Active Sprint _(confirm)_ | UAT _(confirm)_ |
+| Ready for Deployment | Ready for Deployment _(confirm)_ | Done (sprint) _(confirm)_ |
+| Pending Requestor | on hold — requestor _(confirm)_ | On Hold _(confirm)_ |
+| Deployed | Deployed _(confirm)_ | — |
+| Done | Closed | Done |
+
+_#1121's status **transition rules** (which state may move to which, and the gates between) are authoritative and are consumed by US-072; this table records the state correspondence only._
+
 *Comment forwarding.* When a comment is added to the GitHub issue, it is forwarded as a work note or comment on the source record. The forwarding preserves the GitHub commenter identity in the forwarded content.
 
 *Duplicate prevention.* Before creating a GitHub issue from an external event, the sink checks whether the source record already has a GitHub reference in its External References. If yes, no duplicate is created; the existing issue is updated instead.
