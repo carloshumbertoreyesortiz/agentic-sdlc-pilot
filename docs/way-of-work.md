@@ -63,7 +63,7 @@ The pilot's role configuration lives in `docs/team-routing.yaml` (established by
 
 ## §4 Checkpoint routing
 
-The agentic pilot has three human-in-the-loop checkpoints. Each maps to Telenor roles for approval authority.
+The agentic pilot has three human-in-the-loop checkpoints. Each maps to Telenor roles for approval authority. The specific person for each role is resolved per initiative from [`docs/team-routing.yaml`](team-routing.yaml) (US-070): CP1/CP3 route to the initiative's Change Lead, CP2/CP3 to its Technical Lead.
 
 **CP1 — Plan approval.** After the planner agent produces a plan from a `NormalizedIntake` record, a human reviews and approves the plan before any code work begins. This is the earliest and cheapest place to catch scope errors, misunderstood requirements, or approach mistakes. Approval authority: Change Lead (for SFB-originated work) or Initiative Lead (for initiative-scoped work). The plan itself is captured in the issue body and versioned; provenance records the CP1 approver identity, timestamp, and approved plan hash.
 

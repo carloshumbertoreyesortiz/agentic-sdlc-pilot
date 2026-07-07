@@ -1,0 +1,67 @@
+# docs/team-routing.yaml — Team routing configuration (US-070)
+#
+# Routes (a) captured requirements -> responsible Business Analyst by Business
+# Area, and (b) checkpoint approvals -> Change Lead / Technical Lead by
+# initiative. Consumed by the capture layer (BA routing) and the CP1/CP3 gates
+# (US-066). Source of truth for the people/areas: docs/way-of-work.md §12
+# (stakeholders) + §13 (business areas).
+#
+# ⚠️ DRAFT — PENDING INGRID REVIEW (US-070 AC: confidentiality check). Names are
+# already recorded in way-of-work §12; GitHub/Slack `handle` values and every
+# assignment marked "confirm" must be verified by Ingrid before merge. No raw
+# email addresses are used (AC).
+
+schema_version: 1
+
+# Initiative -> Change Lead / Technical Lead / Initiative Lead. Change Lead is
+# per-initiative (way-of-work §3); the CP1/CP3 gates route approvals here.
+initiatives:
+  sfb:
+    description: SFB-originated requests (Flow B via #1121, Flow C via #1595)
+    change_lead: { name: "Ingrid Marie Urdshals", handle: null }   # confirm handle
+    technical_lead: { name: "Apoorv Shukla", handle: "apoorv-shukla-telenor" }
+  agentic-pilot:
+    description: The agentic pilot's own delivery work
+    initiative_lead: { name: "Carlos Reyes", handle: "carloshumbertoreyesortiz" }
+    change_lead: { name: "Carlos Reyes", handle: "carloshumbertoreyesortiz" }
+    technical_lead: { name: "Carlos Reyes", handle: "carloshumbertoreyesortiz" }
+
+# Telenor-wide default Technical Lead (US-070 scope: "All Telenor: Apoorv").
+defaults:
+  technical_lead: { name: "Apoorv Shukla", handle: "apoorv-shukla-telenor" }
+
+# The eight Business Analysts (Workshop #1 slide 6 / way-of-work §12). Handles
+# to be filled by Ingrid.
+business_analysts:
+  - { name: "Nina Jakobsen", handle: null }
+  - { name: "Erik Lauvli", handle: null }
+  - { name: "Tommy Paulsen", handle: null }
+  - { name: "Espen Sanden", handle: null }
+  - { name: "Erik Moberg", handle: null }
+  - { name: "Ingrid Marie Urdshals", handle: null }
+  - { name: "Piero Notaro", handle: null }
+  - { name: "Johannes Dalholt", handle: null }
+
+# Business Area -> responsible BA(s). All 20 areas from way-of-work §13. Areas
+# with no BA documented in §12 have an empty list and are marked "confirm".
+business_areas:
+  - { area: "DPSS Sales", business_analysts: ["Nina Jakobsen", "Johannes Dalholt"] }
+  - { area: "Mobile Sales", business_analysts: ["Piero Notaro"] }
+  - { area: "Mobile Sales Enterprise", business_analysts: ["Johannes Dalholt"] }
+  - { area: "Mobile Sales Mass Market", business_analysts: ["Erik Lauvli"] }
+  - { area: "Dealers", business_analysts: ["Erik Lauvli"] }
+  - { area: "Content", business_analysts: ["Piero Notaro", "Johannes Dalholt"] }
+  - { area: "Product", business_analysts: ["Johannes Dalholt"] }        # admin only — confirm
+  - { area: "Customer Success", business_analysts: ["Tommy Paulsen", "Espen Sanden"] }
+  - { area: "Customer Service (Consumer & Business)", business_analysts: ["Erik Moberg", "Ingrid Marie Urdshals"] }
+  - { area: "Fixed Order and Delivery", business_analysts: ["Erik Moberg", "Ingrid Marie Urdshals"] }
+  - { area: "Fault Management", business_analysts: ["Erik Moberg", "Ingrid Marie Urdshals"] }
+  - { area: "Invoice and Credit", business_analysts: ["Erik Moberg", "Ingrid Marie Urdshals"] }
+  - { area: "Complaints", business_analysts: ["Erik Moberg", "Ingrid Marie Urdshals"] }
+  - { area: "Telesales", business_analysts: [] }                         # confirm with Ingrid
+  - { area: "Small / Medium Enterprises", business_analysts: [] }        # confirm with Ingrid
+  - { area: "Customer Onboarding", business_analysts: [] }               # confirm with Ingrid
+  - { area: "Technical Onboarding", business_analysts: [] }              # confirm with Ingrid
+  - { area: "E-Commerce", business_analysts: [] }                        # confirm with Ingrid
+  - { area: "UC & Cloud", business_analysts: [] }                        # confirm with Ingrid
+  - { area: "Mobile Order and Delivery", business_analysts: [] }         # confirm with Ingrid
