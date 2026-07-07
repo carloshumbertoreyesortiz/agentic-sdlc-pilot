@@ -1,11 +1,11 @@
 {
-  "run_id": "run-1783425400691",
-  "task": "US-076: three-flow planner routing — src/planner.ts flowFromSource + plannerInstructions (Flow A full decomposition, Flow B verify-only, Flow C bug triage), wired into scripts/agent-planner.ts; 8 tests incl no-cross-flow-contamination; CLAUDE.md + way-of-work §1 docs",
+  "run_id": "run-1783427064726",
+  "task": "US-073: cross-dashboard nav — index.html banner linking the Pages delivery dashboard to the SF SFB Request Backlog dashboard (id 01ZdV000000uD2bUAE) with one-line descriptions; SF My Domain host flagged for Ingrid confirmation; reverse link out of scope; way-of-work §9 updated",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-07-07T11:56:40.686Z",
-  "finished_at": "2026-07-07T11:56:40.691Z",
+  "started_at": "2026-07-07T12:24:24.723Z",
+  "finished_at": "2026-07-07T12:24:24.726Z",
   "prompt_hash": "sha256:1fbb84e3083872f3954b1afffe8e6fe5ff11632e40ab8ec50bb48d68059b7df0",
   "tool_trace": [
     "Read",
@@ -17,5 +17,5 @@
     "input": 0,
     "output": 0
   },
-  "scope_anchor": "us-076-three-flow-routing"
+  "scope_anchor": "us-073-cross-dashboard"
 }
