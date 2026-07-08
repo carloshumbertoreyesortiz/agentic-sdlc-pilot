@@ -29,7 +29,7 @@ jobs:
           with open('docs/team-routing.yaml') as f:
               doc = yaml.safe_load(f)
           errs = []
-          for key in ('schema_version', 'initiatives', 'business_analysts', 'business_areas'):
+          for key in ('schema_version', 'initiatives', 'business_areas'):
               if key not in doc:
                   errs.append(f'missing top-level key: {key}')
           inits = doc.get('initiatives', {}) or {}
@@ -37,16 +37,15 @@ jobs:
               if not isinstance(cfg, dict) or 'change_lead' not in cfg:
                   errs.append(f'initiative "{name}" missing change_lead')
           areas = doc.get('business_areas', []) or []
-          for i, a in enumerate(areas):
-              if 'area' not in a or 'business_analysts' not in a:
-                  errs.append(f'business_areas[{i}] missing area/business_analysts')
-              elif not isinstance(a['business_analysts'], list):
-                  errs.append(f'business_areas[{i}] ({a.get("area")}) business_analysts must be a list')
+          # US-070 rev (Ingrid #136): BAs work in the SFB case, not GitHub, so
+          # business_areas is a plain list of area-name strings (Project-field
+          # values), not area->BA objects.
+          if not areas or not all(isinstance(a, str) and a.strip() for a in areas):
+              errs.append('business_areas must be a non-empty list of area-name strings')
           if errs:
               print('::error::team-routing.yaml validation failed:')
               for e in errs:
                   print(f'  - {e}')
               sys.exit(1)
-          print(f'team-routing.yaml OK — {len(inits)} initiatives, '
-                f'{len(doc.get("business_analysts", []))} BAs, {len(areas)} business areas.')
+          print(f'team-routing.yaml OK — {len(inits)} initiatives, {len(areas)} business areas.')
           PY

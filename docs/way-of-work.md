@@ -236,11 +236,11 @@ Recording explicitly for traceability. Named individuals are cited with their ro
 
 ## §13 Business areas
 
-The SFB team supports approximately 20 business areas. Requirements from each area route to the responsible Business Analyst per §12. The pilot's `docs/team-routing.yaml` (established by US-070) encodes the area → BA mapping and is used by the capture layer to route intake automatically.
+The SFB team defines **eleven** business areas (authoritative per Ingrid, PR #136 review 2026-07-08 — this supersedes the ~20-area workshop list). They are the values of the Project **Business Area** field:
 
-Product · Content · DPSS Sales · Mobile Sales · Mobile Sales Enterprise · Mobile Sales Mass Market · Telesales · Small / Medium Enterprises · Dealers · Customer Success · Customer Onboarding · Technical Onboarding · E-Commerce · UC & Cloud · Mobile Order and Delivery · Customer Service (Consumer & Business) · Fixed Order and Delivery · Fault Management · Invoice and Credit · Complaints.
+Complaints · Content · Customer Service · Customer Success · Dealers · DPSS Sales · Fault Management · Fixed Order and Delivery · Invoice and Credit · Mobile Sales · Product.
 
-The list is stable as of Workshop #1 (2026). Additions or reorganizations of business areas are reflected in `docs/team-routing.yaml` and this document.
+**Business Analysts work in the SFB Salesforce case, not GitHub** (Ingrid, #136): a BA completes analysis and tasks on the case *before* the issue reaches GitHub, then hands the issue to the Change Lead, and thereafter follows request status from the SFB case. So the pilot performs **no area → Business-Analyst routing in GitHub** — the Business Areas are a classification field only, and GitHub checkpoint routing is Change Lead / Technical Lead (§4). `docs/team-routing.yaml` (US-070) encodes the initiative → Change Lead / Technical Lead map plus this area list.
 
 ## §14 Change log
 

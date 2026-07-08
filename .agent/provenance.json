@@ -1,11 +1,11 @@
 {
-  "run_id": "run-1783426820550",
-  "task": "US-070 (draft, pending Ingrid review): docs/team-routing.yaml (initiatives->CL/TL, 20 business-areas->BA from §12/§13, names+handles-where-known, no raw email, 7 areas flagged confirm), .github/workflows/validate-routing.yml, way-of-work §4 reference",
+  "run_id": "run-1783499127241",
+  "task": "US-070: apply Ingrid #136 review — team-routing.yaml schema v2 (11 authoritative business areas as strings; drop area->BA routing since BAs work in the SFB case not GitHub; keep initiative->CL/TL), update validate-routing.yml for the new shape, way-of-work §13 (11 areas + BA-in-SFB clarification)",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-07-07T12:20:20.545Z",
-  "finished_at": "2026-07-07T12:20:20.550Z",
+  "started_at": "2026-07-08T08:25:27.239Z",
+  "finished_at": "2026-07-08T08:25:27.241Z",
   "prompt_hash": "sha256:1fbb84e3083872f3954b1afffe8e6fe5ff11632e40ab8ec50bb48d68059b7df0",
   "tool_trace": [
     "Read",
