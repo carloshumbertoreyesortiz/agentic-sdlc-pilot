@@ -1,0 +1,10 @@
+# CODEOWNERS — CP2 (PR review) routing, US-066.
+#
+# During Phase 0/1 the pilot is solo-operated, so the default reviewer is Carlos.
+# `require_code_owner_reviews` is OFF on `main`, so this is advisory (it suggests
+# reviewers; it does not add a required gate) — the R-01 posture for solo
+# operation. When the SFB team joins, per-initiative Technical Lead routing is
+# driven by docs/team-routing.yaml (US-070; default Technical Lead: Apoorv
+# Shukla / @apoorv-shukla-telenor), and this file is expanded accordingly.
+
+* @carloshumbertoreyesortiz

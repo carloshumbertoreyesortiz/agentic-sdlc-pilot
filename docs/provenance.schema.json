@@ -41,6 +41,23 @@
       "type": ["string", "null"],
       "description": "Reference to the CP1-approved plan hash for this work. Optional during grace period ending 2026-08-02 per US-071; will become required in follow-up story that depends on US-066 (CP3 gate).",
       "$comment": "US-071 Phase 1 (this PR): field added optional. US-071 Phase 2 (follow-up, blocked on US-066): field becomes required + CP3 gate enforces comparison."
+    },
+    "cp1_approver": {
+      "type": ["object", "null"],
+      "description": "CP1 (plan approval) approver — US-066. Validated against the initiative's Change Lead in docs/team-routing.yaml when gate enforcement is enabled (US-066 Phase 2). Optional during Phase 0/1 (solo-operated).",
+      "properties": {
+        "identity": { "type": "string", "description": "Approver handle or name." },
+        "approved_at": { "type": "string", "format": "date-time" },
+        "plan_hash": { "type": "string", "description": "Hash of the CP1-approved plan." }
+      }
+    },
+    "cp3_approver": {
+      "type": ["object", "null"],
+      "description": "CP3 (deployment closure) approver — US-066. Change Lead performs final closure; validated against team-routing.yaml under Phase 2 enforcement. Optional during Phase 0/1.",
+      "properties": {
+        "identity": { "type": "string", "description": "Approver handle or name." },
+        "approved_at": { "type": "string", "format": "date-time" }
+      }
     }
   }
 }

@@ -26,6 +26,10 @@ export interface Provenance {
    * yet — absence must not fail validation during the grace period.
    */
   scope_anchor?: string | null;
+  /** CP1 (plan approval) approver — US-066. Optional during Phase 0/1 (solo). */
+  cp1_approver?: { identity: string; approved_at?: string; plan_hash?: string } | null;
+  /** CP3 (deployment closure) approver — US-066. Optional during Phase 0/1 (solo). */
+  cp3_approver?: { identity: string; approved_at?: string } | null;
 }
 
 export const REQUIRED_FIELDS: (keyof Provenance)[] = [
