@@ -267,6 +267,134 @@ export function parseRiskTable(md: string): RiskRow[] {
     }));
 }
 
+// ── Phase 1 metrics (US-074 sync health, US-078 per-flow + key-person-risk) ──
+//
+// Snapshot-driven: the numbers come from docs/metrics/phase1-metrics.json, NOT
+// a live SF/ServiceNow call at build time (Phase 1 constraint — US-074 scope 1,
+// US-078 "cleanly generated at Pages-deploy"). A metric with a `pending` string
+// is blocked on a dependency and renders as such — never as a fabricated number.
+
+export interface FlowMetric {
+  name: string;
+  value?: number | null;
+  target?: number | null;
+  unit?: string;
+  pending?: string;
+}
+export interface FlowMetrics {
+  label: string;
+  metrics: FlowMetric[];
+}
+export interface Phase1Metrics {
+  as_of: string;
+  key_person_risk: {
+    baseline: number;
+    current: number;
+    target: number;
+    note?: string;
+  };
+  sync_health: {
+    approved_sfb_cases: number | null;
+    issues_with_case_number: number;
+    pending?: string;
+    source?: string;
+  };
+  flows: Record<string, FlowMetrics>;
+  history?: { as_of: string; key_person_risk_current: number }[];
+}
+
+/** Renders one metric cell: a real value, or `⏳ pending: …` — never a fake number. */
+export function renderMetricValue(m: FlowMetric): string {
+  if (m.pending && m.pending.trim() !== '') {
+    return `⏳ _pending: ${m.pending}_`;
+  }
+  if (m.value === undefined || m.value === null) return '—';
+  const unit = m.unit ? ` ${m.unit}` : '';
+  const target =
+    m.target === undefined || m.target === null ? '' : ` _(target ${m.target})_`;
+  return `**${m.value}**${unit}${target}`;
+}
+
+/** Key-person-risk status: ✅ once current ≤ target, else 🟧 (still at risk). */
+export function keyPersonRiskEmoji(k: {
+  current: number;
+  target: number;
+}): string {
+  return k.current <= k.target ? '✅' : '🟧';
+}
+
+/**
+ * Sync-health cell (US-074). Renders `pending` when the count isn't measurable
+ * yet (no approved-case denominator); otherwise `n / d (p%)`.
+ */
+export function syncHealthText(s: Phase1Metrics['sync_health']): string {
+  if (s.pending && s.pending.trim() !== '') return `⏳ pending: ${s.pending}`;
+  if (s.approved_sfb_cases === null || s.approved_sfb_cases === undefined) {
+    return '⏳ pending: no approved-case snapshot';
+  }
+  return `${s.issues_with_case_number} / ${s.approved_sfb_cases} (${pct(s.issues_with_case_number, s.approved_sfb_cases)}%)`;
+}
+
+/**
+ * The Phase-1 metrics sections (US-074 + US-078) as markdown lines. Returns
+ * `[]` when no snapshot is present, so the dashboard degrades cleanly (mirrors
+ * the risk-register behaviour). No fabricated numbers: dependency-blocked
+ * metrics render as `pending`.
+ */
+export function buildMetricsSections(m: Phase1Metrics | null): string[] {
+  if (!m) return [];
+  const out: string[] = [];
+
+  // Headline: key-person-risk KPI (US-078 requires it prominent).
+  const k = m.key_person_risk;
+  const emoji = keyPersonRiskEmoji(k);
+  const trend =
+    (m.history ?? [])
+      .map((h) => h.key_person_risk_current)
+      .join(' → ') || String(k.current);
+  out.push('## 🔑 Key-person-risk KPI');
+  out.push('');
+  out.push('| Metric | Baseline | Current | Target | Status |');
+  out.push('| --- | --- | --- | --- | --- |');
+  out.push(
+    `| Business-critical processes on one person's manual work | ## ${k.baseline} | ## ${k.current} | ## ${k.target} | ## ${emoji} |`,
+  );
+  out.push('');
+  if (k.note) out.push(`_${k.note}_`);
+  out.push(`_Trend (current): ${trend}. Source: \`docs/metrics/phase1-metrics.json\` (as of ${m.as_of})._`);
+  out.push('');
+
+  // Sync-health tile (US-074).
+  out.push('## 🔗 SFB ↔ GitHub sync health');
+  out.push('');
+  out.push(`**Approved SFB Cases with a linked GitHub issue:** ${syncHealthText(m.sync_health)}`);
+  out.push('');
+  if (m.sync_health.source) out.push(`_${m.sync_health.source}_`);
+  out.push('');
+
+  // Per-flow metrics (US-078).
+  out.push('## 🧭 Per-flow Phase 1 metrics');
+  out.push('');
+  out.push(
+    '_Aggregated progress hides which intake flow is landing value. These are per-flow; a metric shows `pending` until its data source (sync / capture layer) is live — no placeholder numbers._',
+  );
+  out.push('');
+  ['A', 'B', 'C'].forEach((key) => {
+    const f = m.flows[key];
+    if (!f) return;
+    out.push(`### ${f.label}`);
+    out.push('');
+    out.push('| Metric | Value |');
+    out.push('| --- | --- |');
+    f.metrics.forEach((met) => {
+      out.push(`| ${met.name} | ${renderMetricValue(met)} |`);
+    });
+    out.push('');
+  });
+
+  return out;
+}
+
 // ── v2: weeks, epic windows, dependencies, velocity ──────────────────────────
 
 /** ISO-8601 week number (1–53) for a date. */
@@ -478,6 +606,7 @@ function buildDashboard(
   milestones: Map<string, string | null>,
   mergedPrs: MergedPr[],
   now: Date,
+  metrics: Phase1Metrics | null = null,
 ): string {
   const stories = issues.filter((i) => hasLabel(i, 'story'));
   const epics = issues
@@ -586,6 +715,11 @@ function buildDashboard(
     `| ## ${totalStories} | ## ${doneCount} | ## ${blockedCount} | ## ${inProgCount} | ## ${todoCount} | ## ${pct(doneCount, totalStories)}% | ## ${isoWeekLabel(now)} |`,
   );
   out.push('');
+
+  // Phase-1 metrics: key-person-risk KPI (headline), sync health, per-flow
+  // (US-074 / US-078). Rendered right after the KPI strip so the key-person-risk
+  // KPI stays prominent. Empty when no snapshot is present.
+  buildMetricsSections(metrics).forEach((l) => out.push(l));
 
   // Velocity callout (one line above the Gantt).
   const curSun = new Date(curMon);
@@ -809,6 +943,21 @@ function readRisks(): string {
   }
 }
 
+/**
+ * Reads the Phase-1 metrics snapshot (US-074 / US-078). Returns null when
+ * absent or unparseable, so the dashboard degrades cleanly (metrics sections
+ * are simply omitted) — same posture as readRisks().
+ */
+function readMetrics(): Phase1Metrics | null {
+  try {
+    return JSON.parse(
+      readFileSync('docs/metrics/phase1-metrics.json', 'utf8'),
+    ) as Phase1Metrics;
+  } catch {
+    return null;
+  }
+}
+
 function main(): void {
   const now = new Date();
   const since = new Date(now);
@@ -819,7 +968,15 @@ function main(): void {
     fetchMilestones().map((m) => [m.title, m.dueOn] as const),
   );
   const mergedPrs = fetchMergedPrs(since.toISOString().slice(0, 10));
-  const md = buildDashboard(issues, prs, readRisks(), milestones, mergedPrs, now);
+  const md = buildDashboard(
+    issues,
+    prs,
+    readRisks(),
+    milestones,
+    mergedPrs,
+    now,
+    readMetrics(),
+  );
   const outPath = parseOutputPath(process.argv.slice(2));
   writeFileSync(outPath, md);
   process.stdout.write(`${outPath} written — ${issues.length} issues.\n`);

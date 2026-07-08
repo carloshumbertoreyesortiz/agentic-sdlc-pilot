@@ -18,6 +18,11 @@ import {
   parseDependsOn,
   buildBlocksMap,
   projectCompletionWeek,
+  renderMetricValue,
+  keyPersonRiskEmoji,
+  syncHealthText,
+  buildMetricsSections,
+  type Phase1Metrics,
 } from './dashboard.js';
 
 describe('parsePoints', () => {
@@ -254,5 +259,64 @@ describe('projectCompletionWeek', () => {
 
   it('returns null when nothing has closed (no measurable velocity)', () => {
     expect(projectCompletionWeek(30, 0, 7, 24)).toBeNull();
+  });
+});
+
+describe('Phase 1 metrics — US-074 / US-078', () => {
+  it('renderMetricValue: pending metric never shows a number', () => {
+    expect(renderMetricValue({ name: 'x', pending: '#1121 not live' })).toBe(
+      '⏳ _pending: #1121 not live_',
+    );
+  });
+
+  it('renderMetricValue: value with unit + target', () => {
+    expect(
+      renderMetricValue({ name: 'Channels', value: 0, target: 4, unit: 'of 6' }),
+    ).toBe('**0** of 6 _(target 4)_');
+  });
+
+  it('renderMetricValue: bare value, and em-dash when absent', () => {
+    expect(renderMetricValue({ name: 'x', value: 3 })).toBe('**3**');
+    expect(renderMetricValue({ name: 'x' })).toBe('—');
+  });
+
+  it('keyPersonRiskEmoji: 🟧 while above target, ✅ once at/below', () => {
+    expect(keyPersonRiskEmoji({ current: 1, target: 0 })).toBe('🟧');
+    expect(keyPersonRiskEmoji({ current: 0, target: 0 })).toBe('✅');
+  });
+
+  it('syncHealthText: pending when no denominator; ratio + pct otherwise', () => {
+    expect(
+      syncHealthText({ approved_sfb_cases: null, issues_with_case_number: 0, pending: '#1121' }),
+    ).toBe('⏳ pending: #1121');
+    expect(
+      syncHealthText({ approved_sfb_cases: 8, issues_with_case_number: 6 }),
+    ).toBe('6 / 8 (75%)');
+  });
+
+  it('buildMetricsSections: empty when no snapshot', () => {
+    expect(buildMetricsSections(null)).toEqual([]);
+  });
+
+  it('buildMetricsSections: headline KPI + sync + per-flow, no fake numbers', () => {
+    const m: Phase1Metrics = {
+      as_of: '2026-07-08',
+      key_person_risk: { baseline: 1, current: 1, target: 0, note: 'Ingrid sync' },
+      sync_health: { approved_sfb_cases: null, issues_with_case_number: 0, pending: '#1121 not live' },
+      flows: {
+        A: { label: 'Flow A', metrics: [{ name: 'Channels', value: 0, target: 4, unit: 'of 6' }] },
+        B: { label: 'Flow B', metrics: [{ name: 'Synced', pending: '#1121' }] },
+        C: { label: 'Flow C', metrics: [{ name: 'Latency', pending: 'US-075' }] },
+      },
+      history: [{ as_of: '2026-07-08', key_person_risk_current: 1 }],
+    };
+    const md = buildMetricsSections(m).join('\n');
+    expect(md).toContain('Key-person-risk KPI');
+    expect(md).toContain('SFB ↔ GitHub sync health');
+    expect(md).toContain('Per-flow Phase 1 metrics');
+    expect(md).toContain('Flow A');
+    expect(md).toContain('⏳ _pending: #1121_');
+    // pending Flow B/C metrics must not render a stray numeric value
+    expect(md).not.toMatch(/Synced \| \*\*/);
   });
 });
