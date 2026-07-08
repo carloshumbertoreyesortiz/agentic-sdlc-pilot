@@ -11,14 +11,12 @@
 #   User Acceptance Test, Ready for Deployment, Pending Requestor, Deployed, Done
 #
 # SAFE BY DESIGN (US-063 AC: "no orphans"):
-#   - Sets the field to the ten canonical states (in order), reusing existing
-#     option ids where names match (e.g. Done) so items keep their value.
-#   - A non-canonical option (e.g. legacy Todo / In Progress / Blocked) is
-#     preserved ONLY while an item still uses it, and is otherwise dropped. So
-#     during migration nothing orphans, and once items are migrated off a legacy
-#     status a re-run retires that option automatically (US-063 cleanup).
-#   - REMAPPING existing items (Todo -> Backlog, etc.) is the separate
-#     Carlos-mediated migration with rollback — NOT this script.
+#   - ADD-ONLY: existing options (Todo, In Progress, Blocked, Done) are preserved
+#     by their existing option id, so no in-flight item loses its status.
+#   - The ten states are placed first (in order); legacy options that are not in
+#     the ten (Todo, In Progress, Blocked) are appended, tagged "(legacy)".
+#   - REMOVING legacy options and REMAPPING existing items (Todo -> Backlog, etc.)
+#     is the separate Carlos-mediated migration with rollback — NOT this script.
 #
 # DRY-RUN BY DEFAULT. Pass --apply to actually mutate the live Status field.
 #   ./tools/expand-status-field.sh [--apply] [owner-login] [project-number]
@@ -69,34 +67,6 @@ echo "-> Status field: $FIELD_ID"
 echo "-> Existing options:"
 printf '%s\n' "$EXISTING" | while IFS="$(printf '\t')" read -r _id nm; do echo "     - $nm"; done
 
-# Status values actually in use by items — so a non-canonical option is only
-# preserved while something still uses it, and is otherwise dropped. US-063
-# hygiene: post-migration this is empty, so the field converges to exactly the
-# ten canonical states and a re-run never re-adds retired legacy options.
-# Fail-CLOSED: if usage can't be determined, treat every option as in use so we
-# never drop an option that might still be referenced (no orphans).
-ITEMS_JSON="$(gh project item-list "$NUMBER" --owner "$OWNER" --format json --limit 500 2>/dev/null)" || true
-if printf '%s' "$ITEMS_JSON" | jq -e '.items' >/dev/null 2>&1; then
-  USAGE_KNOWN=1
-  IN_USE="$(printf '%s' "$ITEMS_JSON" | jq -r '.items[].status // empty' | sort -u)"
-else
-  USAGE_KNOWN=0
-  IN_USE=""
-  echo "-> WARNING: could not read item statuses — preserving all options (fail-closed)."
-fi
-
-in_use() {
-  [ "$USAGE_KNOWN" -eq 0 ] && return 0   # usage unknown -> preserve (fail-closed)
-  case "
-$IN_USE
-" in
-    *"
-$1
-"*) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
 # Look up an existing option id by exact name (empty if absent). Pipe-free
 # here-string read (no SIGPIPE race — see tools/README.md Bug 6).
 existing_id_for() {
@@ -121,10 +91,12 @@ build_options() {
       out="$out{name: \"$s\", color: GRAY, description: \"\"}"
     fi
   done <<< "$TARGETS"
+  # Preserve any non-target (e.g. legacy) option so nothing orphans mid-migration.
+  # This script never REMOVES options; retirement is the peer one-shot
+  # tools/retire-legacy-status.sh, run once no item references them (US-063 step 3).
   while IFS="$(printf '\t')" read -r eid enm; do
     if is_target "$enm"; then continue; fi
-    if ! in_use "$enm"; then continue; fi   # drop non-canonical options no item uses
-    out="$out, {id: \"$eid\", name: \"$enm\", color: GRAY, description: \"(non-canonical — still in use; migrate items then re-run to drop)\"}"
+    out="$out, {id: \"$eid\", name: \"$enm\", color: GRAY, description: \"(legacy — retire via retire-legacy-status.sh)\"}"
   done <<< "$EXISTING"
   printf '%s' "$out"
 }
@@ -132,11 +104,9 @@ build_options() {
 OPTS="$(build_options)"
 
 echo ""
-echo "-> Planned Status options (ten canonical states; non-canonical kept only while in use):"
+echo "-> Planned Status options (ten states first, then legacy):"
 while IFS= read -r s; do [ -n "$s" ] && echo "     * $s"; done <<< "$TARGETS"
-while IFS="$(printf '\t')" read -r _eid enm; do
-  { is_target "$enm" || ! in_use "$enm"; } || echo "     * $enm  (non-canonical, still in use — preserved)"
-done <<< "$EXISTING"
+while IFS="$(printf '\t')" read -r _eid enm; do is_target "$enm" || echo "     * $enm  (legacy — kept, remapped later)"; done <<< "$EXISTING"
 
 if [ "$APPLY" -ne 1 ]; then
   echo ""
@@ -165,6 +135,7 @@ $s
 done <<< "$TARGETS"
 echo "  ok — all ten SFB states present on the Status field."
 echo ""
-echo "NOTE: legacy Todo / In Progress / Blocked are KEPT (no orphans). Remapping"
-echo "existing items to the new states and removing the legacy options is the"
-echo "separate Carlos-mediated migration with rollback (US-063 AC)."
+echo "NOTE: non-canonical options (e.g. legacy Todo / In Progress / Blocked) are"
+echo "KEPT here (no orphans). Migrate items off them (Carlos-mediated remap), then"
+echo "retire the options with the peer one-shot (US-063 step 3):"
+echo "  ./tools/retire-legacy-status.sh --apply $OWNER $NUMBER"

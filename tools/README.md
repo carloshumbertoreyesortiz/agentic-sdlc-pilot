@@ -115,13 +115,37 @@ Review the dry-run output first; the Status field carries live item statuses.
 ./tools/expand-status-field.sh --apply         # actually update the field
 ```
 
-**Safe by design (US-063 AC "no orphans"):** sets the field to the ten canonical
-states (reusing existing option ids where names match, so items keep their
-value). A **non-canonical** option (e.g. legacy Todo / In Progress / Blocked) is
-preserved **only while an item still uses it**, and is dropped otherwise — so
-during migration nothing orphans, and once items are migrated off a legacy
-status a **re-run retires that option automatically** (the US-063 cleanup). Item
-usage is read live; if it can't be determined, the script **fails closed**
-(preserves every option). Remapping existing items (Todo → Backlog, etc.) is the
-separate Carlos-mediated migration with rollback — not this script.
-Re-fetch-and-asserts all ten states after `--apply`.
+**Safe by design (US-063 AC "no orphans"):** ADD-ONLY. Existing options (Todo,
+In Progress, Blocked, Done) are preserved by their existing option id, so no
+in-flight item loses its status; legacy Todo/In Progress/Blocked are kept
+(tagged "legacy"). This script never removes options — retirement is the peer
+`retire-legacy-status.sh` (below). Re-fetch-and-asserts all ten states after
+`--apply`.
+
+### The Status migration sequence (US-063)
+
+Three one-shots, run in order:
+
+1. **`expand-status-field.sh --apply`** — add the ten SFB states (keep legacy; no orphan).
+2. **Carlos-mediated remap** — move existing items off any legacy status (e.g. the 7 stale-`Blocked` closed items → `Done`), with the `gh project item-list` snapshot as rollback.
+3. **`retire-legacy-status.sh --apply`** — drop everything that isn't one of the ten canonical states.
+
+## `retire-legacy-status.sh` (US-063)
+
+The **third** one-shot in the sequence above: reads the current `Status` options
+and sets the field to **exactly the ten canonical states, in order**, dropping
+any non-canonical option (legacy Todo / In Progress / Blocked).
+
+**Run by Carlos (Project owner). Dry-run by default** — pass `--apply` to mutate.
+
+```
+./tools/retire-legacy-status.sh                # dry-run (preview only)
+./tools/retire-legacy-status.sh --apply        # retire non-canonical options
+```
+
+**Safe by design (US-063 AC "no orphans"):** it **refuses to run (exits non-zero,
+loudly, listing the offenders)** if *any* item still references a non-canonical
+status — so retirement can never orphan an item. If item usage can't be read, it
+fails closed. Re-fetch-and-asserts the field holds exactly the ten states (no
+extras) after `--apply`. Idempotent: on an already-canonical field it is a no-op.
+Bash 3.2 clean (US-060).
