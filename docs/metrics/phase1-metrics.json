@@ -1,0 +1,45 @@
+{
+  "_doc": "Phase 1 metrics snapshot for the pilot dashboard — US-074 (SFB↔GitHub sync health) and US-078 (per-flow metrics + key-person-risk KPI). SNAPSHOT-DRIVEN BY DESIGN: Phase 1 avoids live Salesforce / ServiceNow API calls at dashboard-build time (US-074 scope 1, US-078 AC 'cleanly generated at Pages-deploy'), so this file is the single source. Update by hand (or a future sync job) — each edit is a committed, auditable data point. A metric carrying a non-empty \"pending\" is blocked on the noted dependency and renders as 'pending', NEVER as a fabricated number. Wire to live sources once #1121 (Flow B) / US-075 (Flow C) land.",
+  "as_of": "2026-07-08",
+  "key_person_risk": {
+    "baseline": 1,
+    "current": 1,
+    "target": 0,
+    "note": "Ingrid's Matrix ↔ GitHub manual sync — the single-person dependency US-075 retires."
+  },
+  "sync_health": {
+    "approved_sfb_cases": null,
+    "issues_with_case_number": 0,
+    "pending": "#1121 SF TCR → GitHub sync not live (US-072 / T1)",
+    "source": "Manual snapshot. Phase 1 measures Ingrid's manual-sync completeness; revisit a live SF API count when #1121 lands (US-074 scope 4)."
+  },
+  "flows": {
+    "A": {
+      "label": "Flow A — Dialogue / GitHub-native (E-00)",
+      "metrics": [
+        { "name": "Channels operational", "value": 0, "target": 4, "unit": "of 6" },
+        { "name": "Intakes per channel / week", "pending": "capture layer not yet in production" },
+        { "name": "CP1 acceptance rate (planner plans)", "pending": "no planner runs measured yet" },
+        { "name": "Intake → CP1 approval time", "pending": "no planner runs measured yet" }
+      ]
+    },
+    "B": {
+      "label": "Flow B — SFB TCR via #1121 (Apoorv)",
+      "metrics": [
+        { "name": "SF TCR Cases synced / sprint", "pending": "#1121 not live (T1)" },
+        { "name": "Schema conformance rate (no translation shim)", "pending": "#1121 schema not aligned (US-072)" },
+        { "name": "Manual copy-paste time saved / week", "pending": "baseline = Ingrid's current effort; not yet measured" }
+      ]
+    },
+    "C": {
+      "label": "Flow C — Matrix / ServiceNow via #1595 (Martin)",
+      "metrics": [
+        { "name": "Matrix incidents synced / week", "pending": "US-075 sync not operational (T2)" },
+        { "name": "Manual sync effort saved / week", "pending": "baseline = Ingrid's current effort; not yet measured" },
+        { "name": "GitHub → Matrix reverse-sync latency", "pending": "US-075 sync not operational (T2)" },
+        { "name": "Sync failure rate", "pending": "US-075 sync not operational (T2)" }
+      ]
+    }
+  },
+  "history": [{ "as_of": "2026-07-08", "key_person_risk_current": 1 }]
+}
