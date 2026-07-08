@@ -182,7 +182,7 @@ The pilot's existing CLAUDE.md hard rule *"Stay in scope — do only what the ap
 
 Two dashboards exist and complement each other. The pilot's GitHub Pages dashboard (US-051, US-050, US-048) tracks delivery — stories closed, PRs merged, epic progress, sprint velocity. The Telenor Salesforce dashboard at SF Dashboard ID `01ZdV000000uD2bUAE` tracks TCR intake — cases submitted, approved, in the SFB backlog, rejected. These are different abstractions and both are useful.
 
-The pilot's dashboard (from US-073) adds a top-level link to the Salesforce dashboard for viewers who need TCR intake context. The reverse link — Salesforce dashboard linking to the pilot's Pages URL — is out of scope for the pilot; it requires Salesforce admin work that Ingrid can arrange independently if she chooses.
+The pilot's dashboard (US-073) now shows a top-level cross-dashboard banner (`index.html`) with a one-line description of each dashboard and a link to the Salesforce **SFB Request Backlog** dashboard (`https://telenor.lightning.force.com/lightning/r/Dashboard/01ZdV000000uD2bUAE/view?queryScope=userFolders`, confirmed by Ingrid on 2026-07-08), which opens via Telenor SSO. The reverse link — Salesforce dashboard linking to the pilot's Pages URL — is out of scope for the pilot; it requires Salesforce admin work that Ingrid can arrange independently if she chooses.
 
 The two dashboards give the council a complete picture: SF dashboard answers "are requirements being captured and approved?" and the pilot dashboard answers "is approved work being delivered?"
 
