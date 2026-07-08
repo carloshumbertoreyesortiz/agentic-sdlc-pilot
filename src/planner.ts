@@ -48,9 +48,9 @@ export function plannerInstructions(flow: CaptureFlow): string {
       return [
         'INTAKE FLOW A — larger initiative via meetings/dialogue (free-form).',
         'Decompose the requirement into an epic plus stories. Give each story a',
-        'Type (Feature / Story / Task) and acceptance criteria, classify it by',
-        'Business Area, and route it to the responsible Business Analyst',
-        '(docs/way-of-work.md §12–§13). Full requirement decomposition.',
+        'Type (Feature / Story / Task), acceptance criteria, and a Business Area',
+        'classification (docs/way-of-work.md §13). Business Analysts work in the',
+        'SFB case, not GitHub, so do not route to a BA. Full decomposition.',
       ].join('\n');
     case 'B':
       return [

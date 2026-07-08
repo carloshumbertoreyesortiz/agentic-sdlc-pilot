@@ -49,7 +49,7 @@ See `ARCH-AGENTIC-SDLC-001` (architecture) and `IMPL-AGENTIC-SDLC-001`
 - **Three-flow planner routing.** The planner (`scripts/agent-planner.ts` via
   `src/planner.ts`) shapes plans by intake flow — keyed off
   `NormalizedIntake.source` (or `PLANNER_FLOW` / `PLANNER_SOURCE`): **Flow A**
-  (dialogue) → full epic + stories decomposition with Business-Area/BA routing;
+  (dialogue) → full epic + stories decomposition with Business-Area classification;
   **Flow B** (SFB TCR / #1121) → verification-only, skip planning if fields are
   present; **Flow C** (Matrix / #1595) → bug triage (repro + hypothesis + next
   action). The three blocks never cross-contaminate. See
