@@ -1,0 +1,48 @@
+# docs/team-routing.yaml — Team routing configuration (US-070)
+#
+# Routes GitHub checkpoint approvals -> Change Lead / Technical Lead by
+# initiative. Consumed by the CP1/CP3 approver validation (US-066).
+#
+# ✅ Reviewed by Ingrid (#136, 2026-07-08). Two clarifications applied:
+#   1. Business Analysts do NOT work in GitHub — they do their analysis in the
+#      SFB Salesforce case *before* an issue reaches GitHub, then hand off to the
+#      Change Lead. So there is NO area -> GitHub-BA routing; the Business Areas
+#      below are classification values only (the Project "Business Area" field).
+#      GitHub checkpoint routing is Change Lead / Technical Lead only.
+#   2. The authoritative SFB Business Areas are the eleven listed below.
+# No raw email addresses are used.
+
+schema_version: 2
+
+# Initiative -> Change Lead / Technical Lead / Initiative Lead. Change Lead is
+# per-initiative (way-of-work §3); the CP1/CP3 approver check (US-066) routes here.
+initiatives:
+  sfb:
+    description: SFB-originated requests (Flow B via #1121, Flow C via #1595)
+    change_lead: { name: "Ingrid Marie Urdshals", handle: null }   # handle: confirm
+    technical_lead: { name: "Apoorv Shukla", handle: "apoorv-shukla-telenor" }
+  agentic-pilot:
+    description: The agentic pilot's own delivery work
+    initiative_lead: { name: "Carlos Reyes", handle: "carloshumbertoreyesortiz" }
+    change_lead: { name: "Carlos Reyes", handle: "carloshumbertoreyesortiz" }
+    technical_lead: { name: "Carlos Reyes", handle: "carloshumbertoreyesortiz" }
+
+# Telenor-wide default Technical Lead (US-070 scope: "All Telenor: Apoorv").
+defaults:
+  technical_lead: { name: "Apoorv Shukla", handle: "apoorv-shukla-telenor" }
+
+# The eleven SFB Business Areas (authoritative — Ingrid, #136 2026-07-08). These
+# are the "Business Area" Project-field values. Not a GitHub routing target —
+# Business Analysts work in the SFB case, not GitHub.
+business_areas:
+  - Complaints
+  - Content
+  - Customer Service
+  - Customer Success
+  - Dealers
+  - DPSS Sales
+  - Fault Management
+  - Fixed Order and Delivery
+  - Invoice and Credit
+  - Mobile Sales
+  - Product

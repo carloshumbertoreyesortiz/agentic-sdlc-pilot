@@ -1,15 +1,16 @@
 {
-  "run_id": "run-1783428629710",
-  "task": "Add docs/next-steps.md — team handoff: pilot status + next steps organized by owner (Ingrid reviews #136/#137, Apoorv #1121 mapping+US-079, Martin #1595+ServiceNow AIR for US-075 critical path, Carlos Sprint field/migration)",
+  "run_id": "run-1783499574905",
+  "task": "US-070: team-routing.yaml (Ingrid-reviewed, 11 areas) — rebased onto main",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-07-07T12:50:29.705Z",
-  "finished_at": "2026-07-07T12:50:29.710Z",
+  "started_at": "2026-07-08T08:32:54.900Z",
+  "finished_at": "2026-07-08T08:32:54.905Z",
   "prompt_hash": "sha256:1fbb84e3083872f3954b1afffe8e6fe5ff11632e40ab8ec50bb48d68059b7df0",
   "tool_trace": [
     "Read",
     "Write",
+    "Edit",
     "Bash"
   ],
   "attachment_hashes": [],
@@ -17,5 +18,5 @@
     "input": 0,
     "output": 0
   },
-  "scope_anchor": "next-steps-handoff"
+  "scope_anchor": "us-070-team-routing"
 }
