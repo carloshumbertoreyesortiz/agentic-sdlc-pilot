@@ -73,6 +73,13 @@ jobs:
         if: ${{ startsWith(github.head_ref, 'agent/') }}
         run: npx tsx scripts/validate-approver.ts
 
+      # US-067: UAT-before-prod gate. When a provenance record claims CP3
+      # (deployment closure — cp3_approver present), fail unless UAT is
+      # documented with evidence. Inert for ordinary CP2 PRs.
+      - name: Validate UAT-before-prod (US-067)
+        if: ${{ startsWith(github.head_ref, 'agent/') }}
+        run: npx tsx scripts/validate-uat.ts
+
       - name: Post provenance summary
         if: ${{ startsWith(github.head_ref, 'agent/') }}
         env:
