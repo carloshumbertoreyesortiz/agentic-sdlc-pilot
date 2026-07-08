@@ -58,6 +58,21 @@ jobs:
             echo "PROV_COST=$(jq -r '.token_cost | "in=\(.input) out=\(.output)"' "$f")"
           } >> "$GITHUB_ENV"
 
+      # US-066 Phase 2: enforce that the CP1 approver is authorized for the work's
+      # initiative (validated against docs/team-routing.yaml). Phase 0/1: the
+      # agentic-pilot initiative is solo-operated, so Carlos passes; enforcement
+      # bites for any declared non-solo initiative (e.g. `initiative: sfb`).
+      - uses: actions/setup-node@v4
+        if: ${{ startsWith(github.head_ref, 'agent/') }}
+        with:
+          node-version: 22
+      - name: Install deps
+        if: ${{ startsWith(github.head_ref, 'agent/') }}
+        run: npm ci --no-audit --no-fund
+      - name: Validate CP1 approver (US-066)
+        if: ${{ startsWith(github.head_ref, 'agent/') }}
+        run: npx tsx scripts/validate-approver.ts
+
       - name: Post provenance summary
         if: ${{ startsWith(github.head_ref, 'agent/') }}
         env:
