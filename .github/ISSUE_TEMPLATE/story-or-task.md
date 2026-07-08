@@ -25,3 +25,15 @@ _Required for **Type = Story**; optional for **Type = Task** (a Task needs a des
 
 - [ ] …
 - [ ] …
+
+## UAT documentation
+
+<!-- US-067: the CP2 → CP3 (deploy) gate requires every acceptance criterion above
+to be tested and documented HERE before the change is promoted to production
+(Status → Ready for Deployment). Fill this in during UAT; leave blank until then. -->
+
+_Business Analyst records, per acceptance criterion: scenario tested · result (pass/fail) · date · tester. When all pass, set the provenance `uat_documented=true` and `uat_evidence_url` (link to this section) — the agent-provenance gate blocks CP3 otherwise._
+
+| Acceptance criterion | Scenario tested | Result | Date | Tester |
+| --- | --- | --- | --- | --- |
+| … | … | ⬜ | | |

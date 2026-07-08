@@ -62,6 +62,15 @@
     "initiative": {
       "type": "string",
       "description": "The initiative that owns this work (key in docs/team-routing.yaml). Determines which Change Lead the CP1/CP3 approver is validated against (US-066 Phase 2). Defaults to 'agentic-pilot' (solo-operated, Phase 0/1) when absent."
+    },
+    "uat_documented": {
+      "type": ["boolean", "null"],
+      "description": "US-067: true when all acceptance criteria / test scenarios are tested and documented in the GitHub issue. Required to be true at the CP2 → CP3 transition (when cp3_approver is present); the agent-provenance gate (scripts/validate-uat.ts) fails a CP3 promotion otherwise. Inert for ordinary CP2 PRs.",
+      "$comment": "Enforcement keys off cp3_approver presence — a record only claiming CP2 never trips the UAT gate."
+    },
+    "uat_evidence_url": {
+      "type": ["string", "null"],
+      "description": "US-067: link to the UAT documentation / evidence (typically the GitHub issue where acceptance criteria are documented). Must be non-empty at the CP2 → CP3 transition; enforced alongside uat_documented by scripts/validate-uat.ts."
     }
   }
 }

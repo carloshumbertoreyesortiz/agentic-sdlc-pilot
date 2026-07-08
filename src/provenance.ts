@@ -32,6 +32,14 @@ export interface Provenance {
   cp3_approver?: { identity: string; approved_at?: string } | null;
   /** Initiative owning this work (team-routing.yaml key); defaults to agentic-pilot. US-066. */
   initiative?: string;
+  /**
+   * US-067: true when all acceptance criteria are tested + documented in the
+   * GitHub issue (UAT). Enforced to be true at the CP2 → CP3 transition (when
+   * cp3_approver is present); see src/uat.ts + scripts/validate-uat.ts.
+   */
+  uat_documented?: boolean | null;
+  /** US-067: link to the UAT documentation / evidence. Non-empty required at CP3. */
+  uat_evidence_url?: string | null;
 }
 
 export const REQUIRED_FIELDS: (keyof Provenance)[] = [
