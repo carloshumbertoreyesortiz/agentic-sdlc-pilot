@@ -91,9 +91,12 @@ build_options() {
       out="$out{name: \"$s\", color: GRAY, description: \"\"}"
     fi
   done <<< "$TARGETS"
+  # Preserve any non-target (e.g. legacy) option so nothing orphans mid-migration.
+  # This script never REMOVES options; retirement is the peer one-shot
+  # tools/retire-legacy-status.sh, run once no item references them (US-063 step 3).
   while IFS="$(printf '\t')" read -r eid enm; do
     if is_target "$enm"; then continue; fi
-    out="$out, {id: \"$eid\", name: \"$enm\", color: GRAY, description: \"(legacy — remap + remove during migration)\"}"
+    out="$out, {id: \"$eid\", name: \"$enm\", color: GRAY, description: \"(legacy — retire via retire-legacy-status.sh)\"}"
   done <<< "$EXISTING"
   printf '%s' "$out"
 }
@@ -132,6 +135,7 @@ $s
 done <<< "$TARGETS"
 echo "  ok — all ten SFB states present on the Status field."
 echo ""
-echo "NOTE: legacy Todo / In Progress / Blocked are KEPT (no orphans). Remapping"
-echo "existing items to the new states and removing the legacy options is the"
-echo "separate Carlos-mediated migration with rollback (US-063 AC)."
+echo "NOTE: non-canonical options (e.g. legacy Todo / In Progress / Blocked) are"
+echo "KEPT here (no orphans). Migrate items off them (Carlos-mediated remap), then"
+echo "retire the options with the peer one-shot (US-063 step 3):"
+echo "  ./tools/retire-legacy-status.sh --apply $OWNER $NUMBER"

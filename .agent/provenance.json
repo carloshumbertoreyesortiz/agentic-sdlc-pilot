@@ -1,11 +1,11 @@
 {
-  "run_id": "run-1783506419391",
-  "task": "US-076 cleanup: drop the now-moot 'BA routing' from Flow A (BAs work in the SFB case, not GitHub — Ingrid #136) in src/planner.ts plannerInstructions, way-of-work §1, CLAUDE.md; keep Business-Area classification",
+  "run_id": "run-1783515583440",
+  "task": "US-063 cleanup (bundle): expand-status-field.sh hygiene — preserve a non-canonical Status option only while an item still uses it (usage read live, fail-closed if unknown); post-migration it converges to exactly the ten canonical states and a re-run retires legacy automatically. README updated. (Legacy options already retired live; migration done.)",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-07-08T10:26:59.390Z",
-  "finished_at": "2026-07-08T10:26:59.391Z",
+  "started_at": "2026-07-08T12:59:43.435Z",
+  "finished_at": "2026-07-08T12:59:43.440Z",
   "prompt_hash": "sha256:bb1b3f36f59b0cc5d581d245524c44fda19855b890584e53bb79cf5117b86d8d",
   "tool_trace": [
     "Read",
@@ -17,5 +17,5 @@
     "input": 0,
     "output": 0
   },
-  "scope_anchor": "us-076-ba-cleanup"
+  "scope_anchor": "us-063-script-hygiene"
 }

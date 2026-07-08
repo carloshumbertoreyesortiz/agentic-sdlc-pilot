@@ -118,6 +118,34 @@ Review the dry-run output first; the Status field carries live item statuses.
 **Safe by design (US-063 AC "no orphans"):** ADD-ONLY. Existing options (Todo,
 In Progress, Blocked, Done) are preserved by their existing option id, so no
 in-flight item loses its status; legacy Todo/In Progress/Blocked are kept
-(tagged "legacy"). **Removing the legacy options and remapping existing items
-(Todo → Backlog, etc.) is the separate Carlos-mediated migration with rollback —
-not this script.** Re-fetch-and-asserts all ten states after `--apply`.
+(tagged "legacy"). This script never removes options — retirement is the peer
+`retire-legacy-status.sh` (below). Re-fetch-and-asserts all ten states after
+`--apply`.
+
+### The Status migration sequence (US-063)
+
+Three one-shots, run in order:
+
+1. **`expand-status-field.sh --apply`** — add the ten SFB states (keep legacy; no orphan).
+2. **Carlos-mediated remap** — move existing items off any legacy status (e.g. the 7 stale-`Blocked` closed items → `Done`), with the `gh project item-list` snapshot as rollback.
+3. **`retire-legacy-status.sh --apply`** — drop everything that isn't one of the ten canonical states.
+
+## `retire-legacy-status.sh` (US-063)
+
+The **third** one-shot in the sequence above: reads the current `Status` options
+and sets the field to **exactly the ten canonical states, in order**, dropping
+any non-canonical option (legacy Todo / In Progress / Blocked).
+
+**Run by Carlos (Project owner). Dry-run by default** — pass `--apply` to mutate.
+
+```
+./tools/retire-legacy-status.sh                # dry-run (preview only)
+./tools/retire-legacy-status.sh --apply        # retire non-canonical options
+```
+
+**Safe by design (US-063 AC "no orphans"):** it **refuses to run (exits non-zero,
+loudly, listing the offenders)** if *any* item still references a non-canonical
+status — so retirement can never orphan an item. If item usage can't be read, it
+fails closed. Re-fetch-and-asserts the field holds exactly the ten states (no
+extras) after `--apply`. Idempotent: on an already-canonical field it is a no-op.
+Bash 3.2 clean (US-060).
