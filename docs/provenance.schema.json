@@ -58,6 +58,10 @@
         "identity": { "type": "string", "description": "Approver handle or name." },
         "approved_at": { "type": "string", "format": "date-time" }
       }
+    },
+    "initiative": {
+      "type": "string",
+      "description": "The initiative that owns this work (key in docs/team-routing.yaml). Determines which Change Lead the CP1/CP3 approver is validated against (US-066 Phase 2). Defaults to 'agentic-pilot' (solo-operated, Phase 0/1) when absent."
     }
   }
 }
