@@ -115,9 +115,13 @@ Review the dry-run output first; the Status field carries live item statuses.
 ./tools/expand-status-field.sh --apply         # actually update the field
 ```
 
-**Safe by design (US-063 AC "no orphans"):** ADD-ONLY. Existing options (Todo,
-In Progress, Blocked, Done) are preserved by their existing option id, so no
-in-flight item loses its status; legacy Todo/In Progress/Blocked are kept
-(tagged "legacy"). **Removing the legacy options and remapping existing items
-(Todo → Backlog, etc.) is the separate Carlos-mediated migration with rollback —
-not this script.** Re-fetch-and-asserts all ten states after `--apply`.
+**Safe by design (US-063 AC "no orphans"):** sets the field to the ten canonical
+states (reusing existing option ids where names match, so items keep their
+value). A **non-canonical** option (e.g. legacy Todo / In Progress / Blocked) is
+preserved **only while an item still uses it**, and is dropped otherwise — so
+during migration nothing orphans, and once items are migrated off a legacy
+status a **re-run retires that option automatically** (the US-063 cleanup). Item
+usage is read live; if it can't be determined, the script **fails closed**
+(preserves every option). Remapping existing items (Todo → Backlog, etc.) is the
+separate Carlos-mediated migration with rollback — not this script.
+Re-fetch-and-asserts all ten states after `--apply`.
