@@ -48,6 +48,8 @@
       blockquote { border-left: 4px solid var(--accent1); margin: 1rem 0; padding: 0.4rem 1rem; color: var(--text); background: var(--panel); border-radius: 0 6px 6px 0; }
       hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
       .meta { font-size: 0.85rem; color: var(--muted); margin-bottom: 1.5rem; }
+      /* US-073: cross-dashboard nav banner. */
+      .xdash { font-size: 0.9rem; color: var(--text); background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 0.6rem 1rem; margin-bottom: 1.25rem; }
       .error { color: #ff7b72; }
       /* Charts: dark slate panel, vivid fills, light labels — set in JS theme too. */
       .mermaid { background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 1rem; margin: 1.25rem 0; overflow-x: auto; }
@@ -65,6 +67,18 @@
       <a href="https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/blob/main/DASHBOARD.md">DASHBOARD.md</a>
       · generated from live Issues state at deploy time by the
       <code>deploy-pages</code> workflow.
+    </p>
+    <!--
+      US-073 cross-dashboard navigation. Salesforce dashboard URL confirmed by
+      Ingrid (#137 review, 2026-07-08). Reverse link (SF -> here) is out of scope;
+      it needs SF admin work Ingrid arranges separately.
+    -->
+    <p class="xdash">
+      <strong>Two complementary dashboards.</strong>
+      <em>This</em> one tracks <strong>delivery</strong> — stories closed, PRs merged, epic progress.
+      The
+      <a href="https://telenor.lightning.force.com/lightning/r/Dashboard/01ZdV000000uD2bUAE/view?queryScope=userFolders">SFB Request Backlog</a>
+      (Salesforce, opens via Telenor SSO) tracks <strong>TCR intake</strong> — cases submitted, approved, and in the SFB backlog.
     </p>
     <main id="content">Loading dashboard…</main>
 

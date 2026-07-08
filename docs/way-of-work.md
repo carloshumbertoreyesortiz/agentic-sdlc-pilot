@@ -63,7 +63,7 @@ The pilot's role configuration lives in `docs/team-routing.yaml` (established by
 
 ## §4 Checkpoint routing
 
-The agentic pilot has three human-in-the-loop checkpoints. Each maps to Telenor roles for approval authority.
+The agentic pilot has three human-in-the-loop checkpoints. Each maps to Telenor roles for approval authority. The specific person for each role is resolved per initiative from [`docs/team-routing.yaml`](team-routing.yaml) (US-070): CP1/CP3 route to the initiative's Change Lead, CP2/CP3 to its Technical Lead.
 
 **CP1 — Plan approval.** After the planner agent produces a plan from a `NormalizedIntake` record, a human reviews and approves the plan before any code work begins. This is the earliest and cheapest place to catch scope errors, misunderstood requirements, or approach mistakes. Approval authority: Change Lead (for SFB-originated work) or Initiative Lead (for initiative-scoped work). The plan itself is captured in the issue body and versioned; provenance records the CP1 approver identity, timestamp, and approved plan hash.
 
@@ -184,7 +184,7 @@ The pilot's existing CLAUDE.md hard rule *"Stay in scope — do only what the ap
 
 Two dashboards exist and complement each other. The pilot's GitHub Pages dashboard (US-051, US-050, US-048) tracks delivery — stories closed, PRs merged, epic progress, sprint velocity. The Telenor Salesforce dashboard at SF Dashboard ID `01ZdV000000uD2bUAE` tracks TCR intake — cases submitted, approved, in the SFB backlog, rejected. These are different abstractions and both are useful.
 
-The pilot's dashboard (from US-073) adds a top-level link to the Salesforce dashboard for viewers who need TCR intake context. The reverse link — Salesforce dashboard linking to the pilot's Pages URL — is out of scope for the pilot; it requires Salesforce admin work that Ingrid can arrange independently if she chooses.
+The pilot's dashboard (US-073) now shows a top-level cross-dashboard banner (`index.html`) with a one-line description of each dashboard and a link to the Salesforce **SFB Request Backlog** dashboard (`https://telenor.lightning.force.com/lightning/r/Dashboard/01ZdV000000uD2bUAE/view?queryScope=userFolders`, confirmed by Ingrid on 2026-07-08), which opens via Telenor SSO. The reverse link — Salesforce dashboard linking to the pilot's Pages URL — is out of scope for the pilot; it requires Salesforce admin work that Ingrid can arrange independently if she chooses.
 
 The two dashboards give the council a complete picture: SF dashboard answers "are requirements being captured and approved?" and the pilot dashboard answers "is approved work being delivered?"
 
@@ -238,11 +238,11 @@ Recording explicitly for traceability. Named individuals are cited with their ro
 
 ## §13 Business areas
 
-The SFB team supports approximately 20 business areas. Requirements from each area route to the responsible Business Analyst per §12. The pilot's `docs/team-routing.yaml` (established by US-070) encodes the area → BA mapping and is used by the capture layer to route intake automatically.
+The SFB team defines **eleven** business areas (authoritative per Ingrid, PR #136 review 2026-07-08 — this supersedes the ~20-area workshop list). They are the values of the Project **Business Area** field:
 
-Product · Content · DPSS Sales · Mobile Sales · Mobile Sales Enterprise · Mobile Sales Mass Market · Telesales · Small / Medium Enterprises · Dealers · Customer Success · Customer Onboarding · Technical Onboarding · E-Commerce · UC & Cloud · Mobile Order and Delivery · Customer Service (Consumer & Business) · Fixed Order and Delivery · Fault Management · Invoice and Credit · Complaints.
+Complaints · Content · Customer Service · Customer Success · Dealers · DPSS Sales · Fault Management · Fixed Order and Delivery · Invoice and Credit · Mobile Sales · Product.
 
-The list is stable as of Workshop #1 (2026). Additions or reorganizations of business areas are reflected in `docs/team-routing.yaml` and this document.
+**Business Analysts work in the SFB Salesforce case, not GitHub** (Ingrid, #136): a BA completes analysis and tasks on the case *before* the issue reaches GitHub, then hands the issue to the Change Lead, and thereafter follows request status from the SFB case. So the pilot performs **no area → Business-Analyst routing in GitHub** — the Business Areas are a classification field only, and GitHub checkpoint routing is Change Lead / Technical Lead (§4). `docs/team-routing.yaml` (US-070) encodes the initiative → Change Lead / Technical Lead map plus this area list.
 
 ## §14 Change log
 
