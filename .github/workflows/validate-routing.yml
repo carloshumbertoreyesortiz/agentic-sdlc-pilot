@@ -1,0 +1,51 @@
+name: validate-routing
+
+# US-070: validates docs/team-routing.yaml on any PR that touches it — parses as
+# YAML and checks the required structure so a malformed routing config can't land.
+
+on:
+  pull_request:
+    paths:
+      - docs/team-routing.yaml
+      - .github/workflows/validate-routing.yml
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install PyYAML
+        run: pip install --quiet pyyaml
+      - name: Validate docs/team-routing.yaml
+        run: |
+          python3 - <<'PY'
+          import sys, yaml
+          with open('docs/team-routing.yaml') as f:
+              doc = yaml.safe_load(f)
+          errs = []
+          for key in ('schema_version', 'initiatives', 'business_areas'):
+              if key not in doc:
+                  errs.append(f'missing top-level key: {key}')
+          inits = doc.get('initiatives', {}) or {}
+          for name, cfg in inits.items():
+              if not isinstance(cfg, dict) or 'change_lead' not in cfg:
+                  errs.append(f'initiative "{name}" missing change_lead')
+          areas = doc.get('business_areas', []) or []
+          # US-070 rev (Ingrid #136): BAs work in the SFB case, not GitHub, so
+          # business_areas is a plain list of area-name strings (Project-field
+          # values), not area->BA objects.
+          if not areas or not all(isinstance(a, str) and a.strip() for a in areas):
+              errs.append('business_areas must be a non-empty list of area-name strings')
+          if errs:
+              print('::error::team-routing.yaml validation failed:')
+              for e in errs:
+                  print(f'  - {e}')
+              sys.exit(1)
+          print(f'team-routing.yaml OK — {len(inits)} initiatives, {len(areas)} business areas.')
+          PY
