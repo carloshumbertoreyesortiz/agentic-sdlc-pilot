@@ -237,6 +237,8 @@ Recording explicitly for traceability. Named individuals are cited with their ro
 | Erik Moberg | Business Analyst (Customer Service + Fixed Order and Delivery + Fault Management + Invoice and Credit + Complaints) | Flow A intake for the customer-service cluster of business areas | Workshop #1 slide 6 |
 | Piero Notaro | Business Analyst (Mobile Sales, Content) | Flow A intake for Mobile Sales and Content requirements | Workshop #1 slide 6 |
 | Johannes Dalholt | Business Analyst + Administrator (Mobile Sales Enterprise, DPSS Sales - Admin, Product & Content - Admin) | Flow A + Admin work for Mobile Sales Enterprise, DPSS Sales admin, Product & Content admin | Workshop #1 slide 6 |
+| Isak Charrad | Incident-process owner (Matrix / #1595) | Owns note-handling and closure semantics for the Matrix ↔ GitHub sync (US-075); reviews the field mapping and joins the sync working session | Halvor referral, email 2026-07-13 |
+| Halvor Mortensen | ServiceNow-side governance contact | Sponsors / routes the Matrix base-access and AIR service-account request (KB0010037) for US-075; referred Isak Charrad as incident-process owner | Email 2026-07-13 |
 
 ## §13 Business areas
 
