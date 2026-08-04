@@ -15,15 +15,17 @@ Important: this is the **SFB team's integration** (ticket #1595). The pilot does
 
 We can't connect to Matrix at all yet:
 - The Matrix site (`https://matrix.telenor.no/`) does **not load**, even on a fresh VPN session.
-- The access-request (AIR catalog) page does **not open** either.
+- The service-catalog request page does **not open** either.
 
-This looks like a **base access** gap — a level below the AIR service-account role we ultimately need. So it needs someone to **sponsor the base Matrix access request** first.
+This looks like a **base access** gap — a level below the account we ultimately need. So it needs someone to **sponsor the base Matrix access request** first.
+
+For the account itself, we're **not** asking for the AIR role (that's for people reporting incidents). Following ServiceNow's own recommendation, we need a **dedicated integration user** (a non-personal service account) with permission to read and update incidents via the API.
 
 ## What we need — and from whom
 
 | Who | What we're asking | Why it matters |
 | --- | --- | --- |
-| **Halvor / Julie** | Sponsor the **base Matrix access** request (and then the AIR service-account role) | Nothing can start until we can reach Matrix |
+| **Halvor / Julie** | Sponsor the **base Matrix access** request, then set up a **dedicated integration user** (not the AIR role) | Nothing can start until we can reach Matrix |
 | **Isak Charrad** | Review the technical doc at your own pace; help define **how incidents are noted and closed** | So the automation matches the real process, not just the fields |
 | **Martin** | A **30-minute session** to agree how incident fields map to GitHub, plus the ServiceNow-side trigger | This is what makes incidents flow automatically |
 | **Ingrid** | Confirm a test run matches what you'd do by hand | Final check before we go live |

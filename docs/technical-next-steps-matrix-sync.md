@@ -13,14 +13,19 @@ Nothing downstream starts until Step 1 clears.
 
 ### Step 1a — Base Matrix access (the real first blocker) — owner: Halvor / Julie (sponsor)
 
-- Retesting on a fresh VPN session showed `https://matrix.telenor.no/` does **not** load and the **AIR catalog item page does not open** — this is an **underlying base-access gap**, beneath the AIR request.
+- Retesting on a fresh VPN session showed `https://matrix.telenor.no/` does **not** load and the **service-catalog request page does not open** — this is an **underlying base-access gap**, beneath any specific role request.
 - So the true first step is **base Matrix access** for Carlos / the pilot; **Halvor or Julie to sponsor** this request (ideally before Halvor's vacation, so it isn't stalled while he's away).
-- **Done when:** Matrix loads and the AIR catalog item is reachable.
+- **Done when:** Matrix loads and the service-catalog request page is reachable.
 
-### Step 1b — AIR service-account role — owner: ServiceNow governance (via Halvor → Isak / Julie)
+### Step 1b — Dedicated integration user (NOT the AIR role) — owner: ServiceNow governance (via Halvor → Isak / Julie)
 
-- On top of base access: grant the **AIR role to a service account** per **KB0010037** (read-only integration role — **not** admin).
-- **Done when:** service-account credentials issued + the AIR role attached; Carlos can authenticate against the ServiceNow REST endpoint.
+The ServiceNow contact flagged (correctly, 2026-08-04) that **AIR is an end-user role for humans reporting incidents — the wrong fit for a system-to-system integration.** ServiceNow standard practice — and what they recommend — is a **dedicated, non-personal integration (service) account**, not a personal user with AIR. We pivot the request accordingly (the KB0010037/AIR line is superseded).
+
+- **Account:** a dedicated **integration user** (e.g. `svc.github-matrix-sync`), non-personal, flagged **"Web service access only"** (no interactive UI login), and marked an internal integration user if the instance supports it (avoids consuming a fulfiller license).
+- **Auth:** **OAuth 2.0 (client credentials)** preferred over a personal password; REST API token as fallback.
+- **Capabilities (least-privilege, bidirectional → read + write):** REST / Table API access; **CRUD on `incident`**; **read/write on work notes & comments** (journal fields — Isak's note-handling / closure semantics); **read** on referenced tables the sync reads (assignment group / user). **Not `admin`; avoid instance-wide `itil` if a scoped custom integration role is available.**
+- **Open questions for the SN team:** (1) standard integration-role template vs. custom scoped role? (2) OAuth vs. API token on this instance? (3) any tables beyond `incident` + journal needed for closure/notes?
+- **Done when:** integration-user credentials (OAuth client or token) issued with the scoped role; Carlos can authenticate against the ServiceNow REST endpoint and read an incident.
 
 ### Step 2 — Connectivity check — owner: Pilot (Carlos + CC)
 
@@ -57,7 +62,7 @@ Nothing downstream starts until Step 1 clears.
 
 | Person | Ask | Unblocks |
 | --- | --- | --- |
-| **Halvor / Julie** | Sponsor **base Matrix access** (site + AIR catalog won't load), then route the AIR service-account request (KB0010037) | Steps 1a → 1b → everything |
+| **Halvor / Julie** | Sponsor **base Matrix access** (site + catalog won't load), then set up a **dedicated integration user** with scoped incident/REST access (NOT the AIR role) | Steps 1a → 1b → everything |
 | **Isak Charrad** | Review this doc async; define note-handling + closure semantics; join the field-mapping session | Step 3 correctness |
 | **Martin** | 30-min field-mapping session (Step 3) + the ServiceNow-side outbound trigger (Step 4) | Steps 3–4 |
 | **Ingrid** | Verify the dry-run matches her manual process (Step 5) | Step 5 sign-off |
