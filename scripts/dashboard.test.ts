@@ -18,6 +18,7 @@ import {
   parseDependsOn,
   buildBlocksMap,
   projectCompletionWeek,
+  parseOutputPath,
   renderMetricValue,
   keyPersonRiskEmoji,
   syncHealthText,
@@ -259,6 +260,23 @@ describe('projectCompletionWeek', () => {
 
   it('returns null when nothing has closed (no measurable velocity)', () => {
     expect(projectCompletionWeek(30, 0, 7, 24)).toBeNull();
+  });
+});
+
+describe('parseOutputPath — US-051 (default off the repo root)', () => {
+  it('defaults to the gitignored _site build path, never the repo root', () => {
+    expect(parseOutputPath([])).toBe('_site/DASHBOARD.md');
+    expect(parseOutputPath(['--other', 'x'])).toBe('_site/DASHBOARD.md');
+  });
+
+  it('honours an explicit --output path', () => {
+    expect(parseOutputPath(['--output', '_site/DASHBOARD.md'])).toBe('_site/DASHBOARD.md');
+    expect(parseOutputPath(['--output', 'build/out.md'])).toBe('build/out.md');
+  });
+
+  it('ignores a dangling --output with no value', () => {
+    expect(parseOutputPath(['--output'])).toBe('_site/DASHBOARD.md');
+    expect(parseOutputPath(['--output', '--verbose'])).toBe('_site/DASHBOARD.md');
   });
 });
 
