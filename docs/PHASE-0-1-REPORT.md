@@ -3,7 +3,7 @@
 **Prepared for:** Governance council · **Status:** DRAFT for council review (US-047 — *not* signed off)
 **Date:** 2026-06-17 · **Repo:** [carloshumbertoreyesortiz/agentic-sdlc-pilot](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot) · **Live dashboard:** https://carloshumbertoreyesortiz.github.io/agentic-sdlc-pilot/
 
-> **Verification note.** Every figure and PR link below was read from live sources on 2026-06-17 — the GitHub Issues backlog, merged PRs (`gh pr list`), the auto-generated [DASHBOARD.md](../DASHBOARD.md) (refreshed immediately before writing), `git log`, and live API checks. Items that could not be verified from this environment are marked **TBD** with what is needed to confirm them.
+> **Verification note.** Every figure and PR link below was read from live sources on 2026-06-17 — the GitHub Issues backlog, merged PRs (`gh pr list`), the auto-generated [live dashboard](https://carloshumbertoreyesortiz.github.io/agentic-sdlc-pilot/) (refreshed immediately before writing; the repo-root `DASHBOARD.md` is now only a redirect stub — US-051), `git log`, and live API checks. Items that could not be verified from this environment are marked **TBD** with what is needed to confirm them.
 
 ---
 
