@@ -17,15 +17,17 @@ Nothing downstream starts until Step 1 clears.
 - So the true first step is **base Matrix access** for Carlos / the pilot; **Halvor or Julie to sponsor** this request (ideally before Halvor's vacation, so it isn't stalled while he's away).
 - **Done when:** Matrix loads and the service-catalog request page is reachable.
 
-### Step 1b — Dedicated integration user (NOT the AIR role) — owner: ServiceNow governance (via Halvor → Isak / Julie)
+### Step 1b — Dedicated integration user + custom endpoint (NOT the AIR role) — owner: ServiceNow governance (Halvor / Julie), collaborative
 
-The ServiceNow contact flagged (correctly, 2026-08-04) that **AIR is an end-user role for humans reporting incidents — the wrong fit for a system-to-system integration.** ServiceNow standard practice — and what they recommend — is a **dedicated, non-personal integration (service) account**, not a personal user with AIR. We pivot the request accordingly (the KB0010037/AIR line is superseded).
+The ServiceNow contact flagged (correctly, 2026-08-04) that **AIR is an end-user role for humans reporting incidents — the wrong fit for a system-to-system integration.** There is **no formal template** for service accounts; they're set up in collaboration with the project and **tied to a system, whose owner is responsible for the account** (the KB0010037/AIR line is superseded).
 
-- **Account:** a dedicated **integration user** (e.g. `svc.github-matrix-sync`), non-personal, flagged **"Web service access only"** (no interactive UI login), and marked an internal integration user if the instance supports it (avoids consuming a fulfiller license).
-- **Auth:** **OAuth 2.0 (client credentials)** preferred over a personal password; REST API token as fallback.
-- **Capabilities (least-privilege, bidirectional → read + write):** REST / Table API access; **CRUD on `incident`**; **read/write on work notes & comments** (journal fields — Isak's note-handling / closure semantics); **read** on referenced tables the sync reads (assignment group / user). **Not `admin`; avoid instance-wide `itil` if a scoped custom integration role is available.**
-- **Open questions for the SN team:** (1) standard integration-role template vs. custom scoped role? (2) OAuth vs. API token on this instance? (3) any tables beyond `incident` + journal needed for closure/notes?
-- **Done when:** integration-user credentials (OAuth client or token) issued with the scoped role; Carlos can authenticate against the ServiceNow REST endpoint and read an incident.
+**Approach they recommend (their standard pattern, confirmed 2026-08-04):** a **custom Scripted REST endpoint** with its **own custom role**, exposed **web-service-only** and available **only to our integration user**. The endpoint can expose **several paths** depending on what we need — which lets them guarantee it's scoped to exactly us and exactly the operations we require (stronger than granting broad table roles). Their read of our docs: an endpoint over **the incident records relevant to us + the related work notes** covers the need.
+
+- **Account:** a dedicated, non-personal **integration user**, tied to the pilot's sync as its "system." **Responsible owner (our side): Carlos / the pilot** — we should state this explicitly, since SN holds the system owner accountable for the account.
+- **Endpoint:** SN-side custom Scripted REST API, web-service-only, gated to our custom role; paths per the contract we agree in Step 3.
+- **Auth:** **OAuth 2.0** preferred; **basic auth** is the fallback. (Token auth for custom endpoints is TBD — contact is checking.)
+- **Scope (least-privilege by construction):** only the incident records relevant to the pilot + their work notes/closure fields (Isak's note-handling semantics). No broad `itil`/`admin`.
+- **Done when:** the integration user + custom role + endpoint exist; Carlos can authenticate and call one path to read a real incident.
 
 ### Step 2 — Connectivity check — owner: Pilot (Carlos + CC)
 
@@ -36,15 +38,19 @@ The ServiceNow contact flagged (correctly, 2026-08-04) that **AIR is an end-user
 
 - Agree the mapping between a **Matrix/ServiceNow incident** and a **GitHub issue**: which fields flow, in which direction, and the key/identifier that links the two (so we never create duplicates).
 - Decide **direction of truth** per field (e.g. status flows ServiceNow → GitHub; comments may flow both ways).
+- **Define the endpoint path contract** (Step 1b): which paths the custom Scripted REST endpoint exposes — e.g. list-incidents-updated-since (inbound), get-one-incident-with-worknotes, add-worknote / update-status (outbound reverse-sync).
+- **Define "relevant to us":** the filter for which incidents are in scope for the pilot (e.g. by assignment group / category), so the endpoint only ever returns our subset.
 - **Isak Charrad** (incident-process owner) covers **note-handling and closure semantics** — how an incident is annotated and closed — so the mapping matches the real process, not just the field schema.
 - Timing: the working session is planned for **August** (when Halvor is back), looping in Isak, Ingrid, and the team. In the meantime this doc is the async reference for Isak to review.
 - **Done when:** a field-mapping table all sides sign off on. _(The pilot dashboard already has empty "Flow C" slots waiting for exactly these.)_
 
 ### Step 4 — Build the sync — owner: split
 
-- **ServiceNow side (Martin / SFB):** outbound trigger — a Business Rule (or scheduled job) that emits incident create/update events the pilot can consume.
-- **GitHub side (Pilot):** orchestration that receives those events, creates/updates the matching GitHub issue, and pushes the agreed fields back.
+- **ServiceNow side (SN team):** the **custom Scripted REST endpoint** (Step 1b) exposing the agreed paths; optionally a Business Rule / scheduled job to signal updates.
+- **GitHub side (Pilot):** orchestration that calls those paths — pulls in-scope incidents + work notes, creates/updates the matching GitHub issue, and pushes the agreed fields back via the outbound paths.
 - Built behind a flag / against a test record first — **no production writes** until Step 5 passes.
+
+**Future option — Kafka on Nova (noted 2026-08-04):** the SN team has discussed publishing incidents to a **Kafka topic on Nova**, but isn't there yet (resource-limited). If/when it lands, it's a cleaner **event-driven** source for the inbound direction than polling the REST endpoint. We'll build the GitHub side so the incident source is swappable — REST endpoint now, Kafka consumer later — with no rework of the mapping or the GitHub-side logic.
 
 ### Step 5 — Dry-run & validation — owner: Pilot + Martin, Ingrid verifies
 
