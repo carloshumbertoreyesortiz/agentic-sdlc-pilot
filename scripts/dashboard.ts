@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
@@ -17,7 +18,7 @@ import { fileURLToPath } from 'node:url';
  * Data comes from the GitHub Issues API via the `gh` CLI, so it behaves the
  * same locally and in CI (the workflow passes GH_TOKEN).
  *
- *   npm run dashboard            # writes DASHBOARD.md
+ *   npm run dashboard            # writes _site/DASHBOARD.md (gitignored build view)
  *
  * The phase windows in PHASES are *planned* dates — they are the single place
  * to edit as the schedule firms up (milestones in GitHub carry no due dates).
@@ -522,16 +523,17 @@ export function projectCompletionWeek(
 
 /**
  * Output path for the rendered dashboard, from `--output <path>`. Defaults to
- * `DASHBOARD.md` (back-compat with the local `npm run dashboard` flow). The
- * Pages deploy build passes `--output _site/DASHBOARD.md` so the dashboard is
- * generated as a view at publish time instead of being committed to `main`
- * (US-051 / R-05).
+ * `_site/DASHBOARD.md` — a **gitignored** build location, so a local
+ * `npm run dashboard` can never re-commit a stale dashboard to the repo root
+ * (the R-05 churn US-051 exists to prevent). The Pages deploy passes the same
+ * `--output _site/DASHBOARD.md` explicitly. The committed root `DASHBOARD.md`
+ * is now only a redirect stub to the live Pages view (US-051 finish).
  */
 export function parseOutputPath(argv: string[]): string {
   const i = argv.indexOf('--output');
   const next = argv[i + 1];
   if (i >= 0 && next && !next.startsWith('--')) return next;
-  return 'DASHBOARD.md';
+  return '_site/DASHBOARD.md';
 }
 
 export function pct(done: number, total: number): number {
@@ -978,6 +980,7 @@ function main(): void {
     readMetrics(),
   );
   const outPath = parseOutputPath(process.argv.slice(2));
+  mkdirSync(dirname(outPath), { recursive: true }); // default is _site/… — ensure it exists
   writeFileSync(outPath, md);
   process.stdout.write(`${outPath} written — ${issues.length} issues.\n`);
 }

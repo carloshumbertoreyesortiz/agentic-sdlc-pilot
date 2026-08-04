@@ -11,6 +11,10 @@ dist/
 coverage/
 *.log
 
+# GitHub Pages build dir — dashboard is generated here at deploy time, never
+# committed (US-051 / R-05). `npm run dashboard` writes _site/DASHBOARD.md too.
+_site/
+
 # OS / editor
 .DS_Store
 .vscode/settings.json
