@@ -22,7 +22,7 @@ You don't need all six channels working before you start §01. Set up at least t
 | **VS Code** | Highlighted text in any file | Engineer (self-serve) | Command Palette → "Agentic: Send Selection" |
 | **Terminal CLI** | Anything you can pipe to stdin | Engineer (self-serve) | `agentic capture` command |
 | **Salesforce** _(Flow B)_ | SFB TCR Cases | Upstream — SFB team (#1121) | Pilot **receives** SF-sourced issues; sync owned by #1121, not implemented here |
-| **Matrix / ServiceNow** _(Flow C)_ | Matrix incidents (`matrix.telenor.no`) | Upstream — SFB team (#1595); AIR role per KB0010037 | Pilot **receives** Matrix-sourced issues; sync owned by #1595 (see US-075) |
+| **Matrix / ServiceNow** _(Flow C)_ | Matrix incidents (`matrix.telenor.no`) | Upstream — SFB team (#1595); dedicated **integration user** + scoped REST endpoint (*not* the AIR role — that is for humans reporting incidents) | Pilot **receives** Matrix-sourced issues; sync owned by #1595 (see US-075) |
 | ~~**Jira**~~ | Jira tickets and comments | Jira project admin | **Deprecated for the SFB context** (SFB uses Salesforce/Matrix, not Jira); schema support retained for other teams |
 
 These channels produce the same `NormalizedIntake` shape, so downstream agents are channel-agnostic. The schema is defined in **§00.5.0a** below.
