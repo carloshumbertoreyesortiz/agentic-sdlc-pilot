@@ -32,15 +32,15 @@ The ServiceNow contact flagged (correctly, 2026-08-04) that **AIR is an end-user
 - **Sensitivity gate:** some ServiceNow instances hold sensitive data. **Isak must confirm the service-desk instance in scope is non-sensitive** before it's opened to us (Halvor is following up with Isak, who is returning from parental leave).
 - **Done when:** the integration user + custom role + endpoint exist; Carlos can authenticate and call one path to read a real incident.
 
-### Step 1c — Network / firewall opening (test-first) — owner: Halvor (orders) + Luis Carlos (supplies IPs)
+### Step 1c — Network / firewall opening (test-first) — owner: Halvor (orders)
 
-Confirmed as a concrete near-term step at the 2026-08-05 meeting. Matrix sits in **TNX**, so firewall openings must be ordered; the network team's turnaround is the main unknown.
+Confirmed as a concrete near-term step at the 2026-08-05 meeting; scope corrected by Ingrid. Matrix sits in **TNX**, so firewall openings must be ordered; the network team's turnaround is the main unknown.
 
-- **Source IP:** the pilot's outbound calls egress from a **single static IP via our outbound REST proxy** (owned by **Luis Carlos Martins**) — *not* GitHub-hosted Actions runners (those are ~7,300 rotating CIDRs, unusable for a firewall rule).
-- **Action — Carlos → Luis Carlos:** get the **static egress CIDR** (test + prod; confirm they're static), then send it to Halvor so he can order the opening.
-- **Test environment first:** open + test with the test integration user, prove the network path, then repeat for prod.
-- Firewall applies on the **TNX / Matrix side** (Halvor orders) and likely in front of Git as well; opening is for the request/response flow of our proxy → Matrix endpoint.
-- **Done when:** the test-environment firewall opening is live and our proxy IP can reach the endpoint.
+- **Path:** **Matrix (ServiceNow / TNX) ↔ GitHub only** — **nothing** between SFB and Matrix (Ingrid, 2026-08-05). So this is *not* about our proxy's egress IP; it's about letting ServiceNow reach GitHub.
+- **What Halvor allowlists:** **GitHub's REST API (`api.github.com`) IP ranges** on the Matrix / TNX egress side — the exact list is in **Appendix B** (26 CIDRs, kept fresh from `api.github.com/meta`).
+- **Same IPs for test and prod:** both the test GitHub repo and the prod one are reached via `api.github.com`, so the allowlist is identical — only the target repo/auth differs (Appendix D).
+- **Test environment first:** prove the path against the **test** GitHub repo (the pilot's personal repo is a candidate — Appendix D), then repeat for prod.
+- **Done when:** the test firewall opening is live and ServiceNow can reach `api.github.com`.
 
 ### Step 2 — Connectivity check — owner: Pilot (Carlos + CC)
 
@@ -81,9 +81,9 @@ Confirmed as a concrete near-term step at the 2026-08-05 meeting. Matrix sits in
 
 | Person | Ask | Unblocks |
 | --- | --- | --- |
-| **Halvor** | Create the **integration user** (test + prod) + **custom endpoint**; **order the test firewall opening** once he has our IP range | Steps 1b, 1c |
+| **Halvor** | Create the **integration user** (test + prod) + **custom endpoint**; **order the Matrix→GitHub firewall opening** using GitHub's REST API IPs (Appendix B — we supply the list) | Steps 1b, 1c |
 | **Isak Charrad** | **Confirm the service-desk instance is non-sensitive** (the gate); define note-handling / closure semantics; join the field-mapping session | Steps 1b gate, 3 |
-| **Luis Carlos Martins** | Supply the **outbound proxy's static egress CIDR** (test + prod) for the firewall order | Step 1c |
+| **Carlos** | Send Halvor the **`api.github.com` IP list** (Appendix B); decide the **test GitHub repo** (personal vs a Telenor test repo); start the **GitHub App** request for the prod org | Steps 1c, 4 |
 | **Martin** | Owner of #1595; the 30-min field-mapping session (Step 3) | Steps 3–4 |
 | **Ingrid** | Verify the dry-run matches her manual process (Step 5) | Step 5 sign-off |
 
@@ -93,21 +93,35 @@ The pilot reads incidents from ServiceNow and writes back work notes / status vi
 
 ## Appendix — Firewall / systems to open + GitHub-side integration model
 
-Clarified by Ingrid (2026-08-05): the firewall openings are about the **systems/endpoints in the API-proxy path**, *not* anyone's personal IP.
+Clarified by Ingrid (2026-08-05): the firewall openings are about the **systems/endpoints in the path**, *not* anyone's personal IP. **Corrected scope:** the opening is needed **between Matrix (ServiceNow / TNX) and GitHub only** — **nothing** is needed between SFB and Matrix.
 
-### A. The two sides of the path (systems, not personal IPs)
+### A. The path and what to allowlist
 
-| Side | What to allowlist | Owner |
-| --- | --- | --- |
-| **SFB / ServiceNow (TNX)** | Our outbound proxy's **static egress IP/CIDR** (test + prod) → the ServiceNow endpoint host | **Luis Carlos** (proxy) + **Apoorv** (SFB) |
-| **GitHub** | GitHub's **published endpoints** (below) — allowlisted on Telenor's egress side; GitHub is SaaS, so you don't open *its* firewall | **GHEC platform team** (Nova `dev-tools/github-enterprise-cloud`; urgent → `#nova-github` Slack) |
+- **Path:** **Matrix (ServiceNow, in TNX) ↔ GitHub** — specifically the GitHub org/repo **`TelenorNorgeInternal/s06065-sfb-telenor-sfdc`** (confirmed 2026-08-05; the same repo as #1121/#1595).
+- **What Halvor allowlists on the Matrix / TNX egress side:** **GitHub's REST API endpoint** (`api.github.com`) IP ranges — so ServiceNow/Matrix can reach GitHub. (GitHub is SaaS; you allowlist *its* published IPs on the Telenor egress, you don't "open GitHub's firewall".)
+- **Owner (GitHub / Telenor side):** GHEC platform team (Nova `dev-tools/github-enterprise-cloud`; urgent → `#nova-github` Slack).
 
-### B. GitHub endpoints to allowlist (Telenor egress side)
+### B. GitHub REST API IP ranges — the list for the firewall order
 
-Canonical, machine-readable source: **`https://api.github.com/meta`** — pull it, don't hand-maintain (it changes).
+Canonical sources: GitHub Docs — *["About GitHub's IP addresses"](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/about-githubs-ip-addresses)* — and the machine-readable **`https://api.github.com/meta`** (`.api`). **GitHub states these ranges change — pull from `meta`, don't hand-freeze.** Refresh with: `gh api meta -q '.api[]'` (or `curl -s https://api.github.com/meta | jq -r '.api[]'`).
 
-- **Hostnames:** `api.github.com` (REST/GraphQL), `github.com`, `codeload.github.com`, `*.githubusercontent.com`, `uploads.github.com`
-- **IP ranges (from `meta`):** `api` = 26 CIDRs (for `api.github.com`), `git` = 46, `web` = 26, `hooks` = 6 (only if GitHub pushes webhooks to a listener). The `api` set is the one the sync needs to reach GitHub's API.
+**`api.github.com` ranges as of 2026-08-05 (26 CIDRs):**
+
+_IPv4:_
+```
+192.30.252.0/22   185.199.108.0/22   140.82.112.0/20   143.55.64.0/20
+20.201.28.148/32  20.205.243.168/32  20.87.245.6/32    4.237.22.34/32
+4.228.31.149/32   20.207.73.85/32    20.27.177.116/32  20.200.245.245/32
+20.175.192.149/32 20.233.83.146/32   20.29.134.17/32   20.199.39.228/32
+20.217.135.0/32   4.225.11.201/32    4.208.26.200/32   20.26.156.210/32
+172.182.252.137/32 4.249.131.166/32  48.202.248.39/32  48.204.201.2/32
+```
+_IPv6:_
+```
+2a0a:a440::/29    2606:50c0::/32
+```
+
+Hostname reached: `api.github.com` (REST + GraphQL). If GitHub must also push webhooks to a ServiceNow listener, add the `hooks` set (6 CIDRs) from `meta`; not needed if ServiceNow only *calls* GitHub.
 
 ### C. GitHub-side integration & auth model — Telenor GHEC rules
 
@@ -120,6 +134,11 @@ The production GitHub side targets **Telenor-managed orgs** (#1121/#1595 live in
 - **Install request:** an org owner approves the installation (urgent → `#nova-github`).
 - **Auth as the app:** `octokit.js` handles it; from GitHub Actions use the whitelisted `actions/create-github-app-token`. One app **per org** (separate installation IDs + private keys) if more than one org is involved.
 
-### D. Open decision (blocks the firewall order being *right*)
+### D. GitHub target — test vs prod (resolved 2026-08-05)
 
-Confirm the **production GitHub target**: Telenor's **GHEC** (`TelenorNorgeInternal`, where #1595 lives — likely) **or** the pilot's personal `github.com` repo (sandbox only). If GHEC, section C applies and the pilot must move off any personal-PAT path onto a **GitHub App** before go-live. This decision sets who owns the GitHub side and which org's endpoints are allowlisted.
+| Env | GitHub target | Auth |
+| --- | --- | --- |
+| **Test** | The pilot's personal repo (`carloshumbertoreyesortiz/agentic-sdlc-pilot`) is a candidate — lets us prove the Matrix↔GitHub path without waiting on org onboarding | Carlos's own access (fine-grained PAT / personal app) |
+| **Prod** | **`TelenorNorgeInternal/s06065-sfb-telenor-sfdc`** (the #1121/#1595 repo, confirmed) | **GitHub App** (Section C — classic PATs banned; app installed to the org, ownership transferred) |
+
+**Firewall implication:** both test and prod are reached over **`api.github.com`**, so the allowlist (Appendix B) is **the same for both** — Halvor orders it once. Only the auth + target repo differ. **Before go-live**, the pilot must stand up the **GitHub App** on the prod org (a lead-time item — start the install request early via `#nova-github`).
