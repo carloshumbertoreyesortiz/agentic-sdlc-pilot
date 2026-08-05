@@ -90,3 +90,36 @@ Confirmed as a concrete near-term step at the 2026-08-05 meeting. Matrix sits in
 ## Governance note
 
 The pilot reads incidents from ServiceNow and writes back work notes / status via the **scoped custom endpoint** (least-privilege, only in-scope incidents), and **orchestrates on the GitHub side**. Stewardship of #1595 and the ServiceNow integration stays with the SFB team (**Martin** owns it; Carlos is technical POC) — the pilot conforms, it doesn't take over.
+
+## Appendix — Firewall / systems to open + GitHub-side integration model
+
+Clarified by Ingrid (2026-08-05): the firewall openings are about the **systems/endpoints in the API-proxy path**, *not* anyone's personal IP.
+
+### A. The two sides of the path (systems, not personal IPs)
+
+| Side | What to allowlist | Owner |
+| --- | --- | --- |
+| **SFB / ServiceNow (TNX)** | Our outbound proxy's **static egress IP/CIDR** (test + prod) → the ServiceNow endpoint host | **Luis Carlos** (proxy) + **Apoorv** (SFB) |
+| **GitHub** | GitHub's **published endpoints** (below) — allowlisted on Telenor's egress side; GitHub is SaaS, so you don't open *its* firewall | **GHEC platform team** (Nova `dev-tools/github-enterprise-cloud`; urgent → `#nova-github` Slack) |
+
+### B. GitHub endpoints to allowlist (Telenor egress side)
+
+Canonical, machine-readable source: **`https://api.github.com/meta`** — pull it, don't hand-maintain (it changes).
+
+- **Hostnames:** `api.github.com` (REST/GraphQL), `github.com`, `codeload.github.com`, `*.githubusercontent.com`, `uploads.github.com`
+- **IP ranges (from `meta`):** `api` = 26 CIDRs (for `api.github.com`), `git` = 46, `web` = 26, `hooks` = 6 (only if GitHub pushes webhooks to a listener). The `api` set is the one the sync needs to reach GitHub's API.
+
+### C. GitHub-side integration & auth model — Telenor GHEC rules
+
+The production GitHub side targets **Telenor-managed orgs** (#1121/#1595 live in `TelenorNorgeInternal`). Per Telenor's GHEC integration guide, programmatic access there **must** use, in order of preference:
+
+1. **GitHub App** (preferred), 2. OAuth App, 3. Fine-grained PAT.
+
+- **Classic PATs are banned** in Telenor and cannot be used for programmatic access. → The pilot's personal-repo / classic-PAT approach **cannot** be used against Telenor orgs; production needs a **GitHub App**.
+- **App setup (least privilege):** installable setting **"Only on this account"**; install to the target org, **only the relevant repositories**; then **transfer app ownership to the org** so it survives Carlos's membership (requester keeps "Application manager").
+- **Install request:** an org owner approves the installation (urgent → `#nova-github`).
+- **Auth as the app:** `octokit.js` handles it; from GitHub Actions use the whitelisted `actions/create-github-app-token`. One app **per org** (separate installation IDs + private keys) if more than one org is involved.
+
+### D. Open decision (blocks the firewall order being *right*)
+
+Confirm the **production GitHub target**: Telenor's **GHEC** (`TelenorNorgeInternal`, where #1595 lives — likely) **or** the pilot's personal `github.com` repo (sandbox only). If GHEC, section C applies and the pilot must move off any personal-PAT path onto a **GitHub App** before go-live. This decision sets who owns the GitHub side and which org's endpoints are allowlisted.
