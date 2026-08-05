@@ -1,43 +1,45 @@
 # Matrix ↔ GitHub Sync — Short Brief for the Team
 
-_From: Carlos Reyes · 3 August 2026_
+_From: Carlos Reyes · updated 5 August 2026_
 _A plain-language summary you can read in a minute. A fuller technical version lives in the pilot repo (`docs/technical-next-steps-matrix-sync.md`) for anyone who wants the detail._
 
 ## What this is about
 
 Today, incidents are moved between **Matrix (ServiceNow)** and **GitHub** by hand — Ingrid does this manually, every day. It's the most vulnerable single-person task in the workflow: if she's unavailable, the sync stops.
 
-The pilot has built the GitHub side to **automate this**. Once it's switched on, the manual daily task goes away, and the "only one person can do this" risk drops from **1 to 0**.
+The pilot automates this. Once it's switched on, the manual daily task goes away, and the "only one person can do this" risk drops from **1 to 0**.
 
-Important: this is the **SFB team's integration** (ticket #1595). The pilot doesn't take it over — it only reads from ServiceNow and handles the GitHub side. Ownership stays with your team.
+This is the **SFB team's integration** (ticket #1595) — Martin owns it, Carlos is the technical contact. The pilot conforms to your side; it doesn't take it over.
 
-## The one thing blocking us right now
+## Where we are now — good progress at the 5 August meeting ✅
 
-We can't connect to Matrix at all yet:
-- The Matrix site (`https://matrix.telenor.no/`) does **not load**, even on a fresh VPN session.
-- The service-catalog request page does **not open** either.
+We agreed the approach with Halvor and Martin:
+- **A dedicated integration user** (a non-personal service account) — Halvor will set this up. *Not* the AIR role (that's for people reporting incidents). Carlos doesn't need personal Matrix access.
+- **A custom, secure connection built just for us**, scoped to only the incidents relevant to the pilot plus their work notes — nothing more.
+- **Simple, standard authentication** (basic auth or OAuth).
 
-This looks like a **base access** gap — a level below the account we ultimately need. So it needs someone to **sponsor the base Matrix access request** first.
+## Two setup requests are now in motion (both waiting on others)
 
-For the account itself, we're **not** asking for the AIR role (that's for people reporting incidents). Following ServiceNow's own recommendation, we need a **dedicated integration user** (a non-personal service account) with permission to read and update incidents via the API.
+1. **Firewall opening (Matrix → GitHub).** The connection runs directly between Matrix and GitHub. Carlos has sent Halvor the GitHub addresses to allow, and Halvor is ordering the opening — the network team's timing is the main unknown.
+2. **A secure "GitHub App" for the production repo.** Telenor's rules require this (instead of personal tokens) for `TelenorNorgeInternal/s06065-sfb-telenor-sfdc`. Carlos has requested it via the platform team (#nova-github). We can start testing against a sandbox repo while this is approved.
 
-## What we need — and from whom
+## What we still need — and from whom
 
 | Who | What we're asking | Why it matters |
 | --- | --- | --- |
-| **Halvor / Julie** | Sponsor the **base Matrix access** request, then set up a **dedicated integration user** (not the AIR role) | Nothing can start until we can reach Matrix |
-| **Isak Charrad** | Review the technical doc at your own pace; help define **how incidents are noted and closed** | So the automation matches the real process, not just the fields |
-| **Martin** | A **30-minute session** to agree how incident fields map to GitHub, plus the ServiceNow-side trigger | This is what makes incidents flow automatically |
+| **Halvor** | Order the **firewall opening** (has the GitHub addresses); finish the **integration user + connection** | Lets Matrix and GitHub talk |
+| **Isak Charrad** | Confirm the **service-desk data isn't sensitive** (a quick governance check); help define how incidents are **noted and closed** | Green-lights our access + matches the real process |
+| **Martin** | Join a **30-minute session** to agree how incident fields map to GitHub | This is what makes incidents flow automatically |
 | **Ingrid** | Confirm a test run matches what you'd do by hand | Final check before we go live |
 
 ## Timing
 
-- **Now:** we just need the **base Matrix access** sponsored so it isn't stuck (ideally before anyone heads off on holiday).
-- **August:** a 30-minute working session (when Halvor is back), with Isak, Ingrid, and Martin as needed.
-- **After that:** we connect, test on a few safe incidents, and switch it on. The manual daily task retires.
+- **Now:** firewall opening + GitHub App approval are in progress (waiting on the network team and the GitHub platform team).
+- **August:** a 30-minute field-mapping session with Martin, Isak, and Ingrid as needed.
+- **After that:** connect, test on a few safe incidents, switch it on. The manual daily task retires.
 
 ## In one sentence
 
-Everything on the pilot side is built and waiting — **the single thing we need to move forward is base access to Matrix.**
+The approach is agreed and two setup requests are moving — we're now waiting on the **firewall opening** and the **GitHub App approval** to start testing.
 
 _Questions? Reply to Carlos any time._
