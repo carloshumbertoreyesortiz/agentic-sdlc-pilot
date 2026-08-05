@@ -42,6 +42,16 @@ Confirmed as a concrete near-term step at the 2026-08-05 meeting; scope correcte
 - **Test environment first:** prove the path against the **test** GitHub repo (the pilot's personal repo is a candidate — Appendix D), then repeat for prod.
 - **Done when:** the test firewall opening is live and ServiceNow can reach `api.github.com`.
 
+### Step 1d — GitHub App on the prod org (parallel lead-time) — owner: Carlos + GHEC platform team
+
+Runs **in parallel** with Steps 1a–1c — it has approval lead time, so start it now; don't serialize it after the firewall. Prod writes to `TelenorNorgeInternal/s06065-sfb-telenor-sfdc`, where **classic PATs are banned**, so programmatic access needs a **GitHub App** (see Appendix C/D).
+
+- **Request:** ask in `#nova-github` for the register/approve process + the org-owner approver (draft request prepared 2026-08-05).
+- **Create the app (least-privilege):** permissions **Issues: Read & write** + **Metadata: Read** only (add Issues/Issue-comment webhook events *only* if reverse-sync is event-driven); installable setting **"Only on this account"**.
+- **Install** to `TelenorNorgeInternal`, scoped to **only** `s06065-sfb-telenor-sfdc`; then **transfer app ownership to the org** (survives Carlos's membership; he keeps "Application manager").
+- **Test meanwhile:** the pilot's personal repo can be exercised with Carlos's own access, so this step doesn't block early testing.
+- **Done when:** the app is installed on the prod org/repo, ownership transferred, and the pilot can authenticate and create/update an issue there.
+
 ### Step 2 — Connectivity check — owner: Pilot (Carlos + CC)
 
 - Confirm the integration user can reach the ServiceNow REST endpoint and read the Matrix incident records in scope (a single authenticated read — no writes yet). Depends on Step 1c (firewall open).
