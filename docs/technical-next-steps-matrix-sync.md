@@ -69,7 +69,9 @@ Halvor's proposal (2026-08-10), and a better answer than the periodic push the p
 
 Confirmed as a concrete near-term step at the 2026-08-05 meeting; scope corrected by Ingrid. Matrix sits in **TNX**, so firewall openings must be ordered; the network team's turnaround is the main unknown.
 
-**Status (2026-08-10): ORDERED by Halvor — awaiting approval from the owners of the TNN GitHub system.** Carlos has no visibility of that ticket; Halvor will relay progress.
+**Status (2026-08-13): ✅ IMPLEMENTED.** Halvor: _"I was informed that the firewall rule has been implemented so we should be able to reach api.github.com now."_ Ordered 2026-08-10, approved by the TNN GitHub system owners, live within three days.
+
+- **Verify independently of auth before building on it:** an **unauthenticated** call to `https://api.github.com/rate_limit` from the instance returns `200` with no credentials. Two minutes, and it separates "the network path works" from "the credential works" — without it, the first failure is ambiguous across two teams and a change window. Requested of Halvor 2026-08-13.
 
 - **Path:** **Matrix (ServiceNow / TNX) → GitHub only** — **nothing** between SFB and Matrix (Ingrid, 2026-08-05). So this is *not* about our proxy's egress IP; it's about letting ServiceNow reach GitHub.
 - **Egress only, one direction.** Since the inversion, GitHub never calls ServiceNow: the **`hooks` set is not needed**, only the `api` ranges. No inbound opening into TNX.
@@ -78,9 +80,13 @@ Confirmed as a concrete near-term step at the 2026-08-05 meeting; scope correcte
 - **This gates every end-to-end test**, for the test repo as much as production — same hostname, same allowlist. Until it is live there is no path to exercise, and (post-inversion) the pilot cannot initiate a test at all: the caller is ServiceNow.
 - **Done when:** the test firewall opening is live and ServiceNow can reach `api.github.com`.
 
-### Step 1d — GitHub App on the prod org — **⭐ NOW THE CRITICAL PATH** — owner: Carlos + GHEC platform team
+### Step 1d — GitHub App on the prod org — **required before go-live, not before testing** — owner: Carlos + GHEC platform team
 
-Since the inversion this is no longer a parallel lead-time item — it is **the** gate. ServiceNow authenticates *to GitHub*, so without the App there is no credential for Halvor's job to use. Prod writes to `TelenorNorgeInternal/s06065-sfb-telenor-sfdc`, where **classic PATs are banned**, so programmatic access needs a **GitHub App** (see Appendix C/D).
+**Reclassified 2026-08-13, when the firewall went live.** While the opening was closed this was the sole gate. It no longer is: the **test** target is the pilot's personal repo authenticated with **Carlos's own fine-grained token** — issuable immediately, no Telenor approval — and the allowlist is identical for test and prod because both go through `api.github.com` (Appendix D). **So the full path can be proven end to end now**, and the App reverts to a parallel lead-time item required before **production** writes to `TelenorNorgeInternal/s06065-sfb-telenor-sfdc`, where **classic PATs are banned** (Appendix C/D).
+
+⚠️ **Revoke the test token when the App takes over.** A personal credential surviving into production recreates exactly the single-person dependency US-075 exists to remove. Scope it narrowly from the start: one repository, **Issues: Read & write** + **Metadata: Read**, short expiry.
+
+**The pilot must not become the blocker.** Halvor returns to the queue build within days; the test credential should be waiting for him, delivered by his team's credential process (not mail or Teams).
 
 **Auth mechanics ServiceNow must implement (confirmed acceptable by Halvor, 2026-08-10):** a GitHub App does **not** use a plain OAuth grant. The job signs a **JWT** with the App's private key, exchanges it for an **installation token that expires after one hour**, and refreshes when needed. Halvor: _"we'll just have the job check for a valid token before running and renew it if needed — I don't think that will be an issue."_ A simpler fine-grained token / machine account is still being checked with the GHEC platform team; it would remove the refresh logic, but **JWT is the working assumption and is not a blocker**.
 

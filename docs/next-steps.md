@@ -49,20 +49,21 @@ coordination and access items below.)*
 ### 👤 Martin (owner of #1595)
 8. Share the **Matrix #1595 field mapping** and join the 30-minute mapping session.
 
-### 👤 Carlos (pilot lead) — *holds the critical path*
-9. **Chase the GitHub App approval** in `#nova-github` — since the architecture inverted, this is the top blocker, and check whether the *"TNN GitHub system owners"* holding the firewall approval are the same team (if so, one thread unblocks both).
-10. **Build the GitHub-side receiver against a simulated payload**, so the receiving end is proven before the path opens.
-11. Create the **Sprint** field in the Project (the one field the automation could not add) — **US-064**.
+### 👤 Carlos (pilot lead)
+9. **Issue the test credential now, before Halvor is back on this** — a fine-grained token scoped to one repository, Issues read/write, short expiry. The first end-to-end test does *not* need the GitHub App; the test repo runs on this token, and the firewall covers it (same `api.github.com`). Deliver it by the SN team's credential process, not mail or Teams. **Revoke it when the App takes over.**
+10. **Build the GitHub-side receiver**, exercised against a simulated payload — issue creation, correlation write-back, dedupe on repeat delivery.
+11. **Keep chasing the GitHub App** in `#nova-github` — required before production go-live, on its own lead time.
+12. Create the **Sprint** field in the Project (the one field the automation could not add) — **US-064**.
 
 _Done since the last revision: **#136 / #137** merged (2026-07-08); the **status migration** to the 10-state SFB model executed with pre-migration snapshots kept as audit artifacts under [`docs/migrations/`](migrations/) (US-063 closed); **base Matrix access granted** 2026-08-04 (`RIT0469472`); the **firewall opening ordered**._
 
 ## The critical path (one sentence)
 
 The single most valuable next step — **automating Ingrid's manual Matrix sync
-(US-075)** — now waits on **the GitHub side, not ServiceNow**: the **GitHub App**
-on the production org and the **firewall approval**, both with Telenor's GitHub
-platform team. Until those clear there is no path to test at all, and — because
-ServiceNow is now the only caller — the pilot cannot initiate one.
+(US-075)** — is no longer blocked by an approval: the **firewall opening went
+live on 2026-08-13**, and the first end-to-end test needs only Halvor's queue job
+plus a test token the pilot can issue itself. The **GitHub App** is still
+required before production go-live, but it no longer gates testing.
 
 ## Once unblocked, the pilot will
 

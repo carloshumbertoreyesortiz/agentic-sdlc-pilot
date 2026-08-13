@@ -23,18 +23,19 @@ That simplified several things at once:
 - **A daily full check** on top of that, so if anything ever slips through the gaps, it's caught the next day rather than never.
 - **The two systems will know each other's records**, so an incident and its GitHub issue stay linked and we never create duplicates.
 
-## What's left before we can test
+## The door is now open ✅
 
-1. **Firewall opening** — **ordered by Halvor**, now waiting on approval from the owners of Telenor's GitHub system.
-2. **A secure "GitHub App"** for the production repo. Telenor's rules require this instead of personal tokens. Carlos has requested it via the platform team (#nova-github).
+**The firewall opening went live on 13 August.** Halvor ordered it on the 10th and Telenor's GitHub system owners approved it within three days — Matrix can now reach GitHub.
 
-Both are with the **same part of Telenor** — the GitHub platform side — and **nothing can be tested until they land**. That's the honest status: the work is understood and agreed, it's the approvals we're waiting on.
+That was the last approval standing between us and a first test. **Testing can now go ahead** using a sandbox repository, which needs no further permissions from anyone.
+
+One item remains, but it no longer holds anything up: a secure **"GitHub App"** for the *production* repository, which Telenor's rules require instead of personal tokens. Carlos has that request running with the platform team (#nova-github). It's needed before we switch on for real — not before we test.
 
 ## What we still need — and from whom
 
 | Who | What we're asking | Why it matters |
 | --- | --- | --- |
-| **Carlos** | Chase the **GitHub App** and the **firewall approval** | These are the only things blocking a first test |
+| **Carlos** | Have the **test credential ready** for Halvor; build our receiving end; keep the **GitHub App** moving for production | So nothing waits on us when Halvor picks this back up |
 | **Halvor** | Build the **queue + sending job**; confirm a few small design points | This is the engine that moves incidents |
 | **Isak Charrad** | Confirm the **service-desk data isn't sensitive**; decide whether our updates go to **work notes** (internal) rather than comments the reporter sees | A governance gate, and it keeps engineering chat away from customers |
 | **Ingrid** | Show us **which incidents you sync by hand today** — your choices define what the automation should pick up; later, confirm a test run matches what you'd have done | Without this, we'd be guessing at scope |
@@ -42,13 +43,12 @@ Both are with the **same part of Telenor** — the GitHub platform side — and 
 
 ## Timing
 
-- **Now:** waiting on the firewall approval and the GitHub App — both with Telenor's GitHub platform team.
-- **Meanwhile:** we're building and testing our receiving end with sample data, so it's ready the moment the door opens.
+- **Now:** the connection is open. Halvor builds the sending side when he's free of a higher-priority item; our receiving end is being built in parallel with sample data.
 - **August:** a 30-minute field-mapping session with Martin, Isak, and Ingrid as needed.
-- **After that:** test on a few safe incidents, then switch on. The manual daily task retires.
+- **Then:** test on a few safe incidents in a sandbox, then switch on for real once the production GitHub App is approved. The manual daily task retires.
 
 ## In one sentence
 
-The design is agreed and simpler than before — Matrix does the talking, so nothing reaches into Telenor's network — and we're now waiting on **two GitHub-side approvals** before the first test can run.
+The design is agreed and simpler than before — Matrix does the talking, so nothing reaches into Telenor's network — the connection is **now open**, and the first test needs only the sending job Halvor is building.
 
 _Questions? Reply to Carlos any time._
