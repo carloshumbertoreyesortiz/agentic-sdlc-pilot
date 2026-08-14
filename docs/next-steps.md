@@ -40,7 +40,7 @@ coordination and access items below.)*
 
 ### 👤 Halvor (ServiceNow) — *building the sending side*
 4. **Queue table + outbound job** — his own proposal (a transactional outbox with retry, success/error/failed states and failure reporting), plus the **daily full-scope run** he has agreed to. Three design points still to confirm: an **idempotency key** per queue record (retries mean the same event can arrive twice), **ordering preserved per incident**, and **failure notifications reaching the pilot**.
-5. **Relay the firewall approval** once the TNN GitHub system owners clear it, and specify how to receive the GitHub App's **private key** securely (not by mail or Teams).
+5. **Build it against the simple test token first.** The GitHub App's JWT/certificate chain is a *production* requirement, not a starting one — proving the path on a plain bearer token keeps the auth complexity out of the first attempt. _(Firewall: done — he verified an unauthenticated `200` from the test environment on 2026-08-14.)_
 
 ### 👤 Isak Charrad (incident-process owner) — *two gates*
 6. **Confirm the service-desk instance is non-sensitive.** The inversion did not remove this gate — incident content still leaves ServiceNow — and it can block late.
@@ -50,9 +50,9 @@ coordination and access items below.)*
 8. Share the **Matrix #1595 field mapping** and join the 30-minute mapping session.
 
 ### 👤 Carlos (pilot lead)
-9. **Issue the test credential now, before Halvor is back on this** — a fine-grained token scoped to one repository, Issues read/write, short expiry. The first end-to-end test does *not* need the GitHub App; the test repo runs on this token, and the firewall covers it (same `api.github.com`). Deliver it by the SN team's credential process, not mail or Teams. **Revoke it when the App takes over.**
+9. **Issue the test credential and hand it over via Webex** — Halvor is ready to build, so this is the one thing that could make the pilot the blocker. A fine-grained token scoped to one repository, Issues read/write, short expiry. The first end-to-end test does *not* need the GitHub App; the test repo runs on this token, and the firewall covers it (same `api.github.com`). **Revoke it when the App takes over.**
 10. **Build the GitHub-side receiver**, exercised against a simulated payload — issue creation, correlation write-back, dedupe on repeat delivery.
-11. **Keep chasing the GitHub App** in `#nova-github` — required before production go-live, on its own lead time.
+11. **Ask `#nova-github` whether a fine-grained PAT is permitted on the production org.** This is worth more than it first appeared: it would remove the certificate handling, keystore conversion and JWT signing from the ServiceNow side entirely, making production identical to test. Telenor's order of preference is App → OAuth App → fine-grained PAT, so it is permitted-but-least-preferred, not banned. Keep the **GitHub App** moving in parallel either way.
 12. Create the **Sprint** field in the Project (the one field the automation could not add) — **US-064**.
 
 _Done since the last revision: **#136 / #137** merged (2026-07-08); the **status migration** to the 10-state SFB model executed with pre-migration snapshots kept as audit artifacts under [`docs/migrations/`](migrations/) (US-063 closed); **base Matrix access granted** 2026-08-04 (`RIT0469472`); the **firewall opening ordered**._

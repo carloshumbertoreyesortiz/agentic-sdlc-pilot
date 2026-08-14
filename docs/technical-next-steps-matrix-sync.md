@@ -69,9 +69,9 @@ Halvor's proposal (2026-08-10), and a better answer than the periodic push the p
 
 Confirmed as a concrete near-term step at the 2026-08-05 meeting; scope corrected by Ingrid. Matrix sits in **TNX**, so firewall openings must be ordered; the network team's turnaround is the main unknown.
 
-**Status (2026-08-13): ✅ IMPLEMENTED.** Halvor: _"I was informed that the firewall rule has been implemented so we should be able to reach api.github.com now."_ Ordered 2026-08-10, approved by the TNN GitHub system owners, live within three days.
+**Status (2026-08-14): ✅ DONE AND VERIFIED.** Ordered 2026-08-10, approved by the TNN GitHub system owners, implemented 2026-08-13, and **verified from the ServiceNow test environment on 2026-08-14**: an unauthenticated `GET https://api.github.com/rate_limit` returned **200**. Halvor: _"I am confident that the network part is okey and that we can proceed with the integration."_
 
-- **Verify independently of auth before building on it:** an **unauthenticated** call to `https://api.github.com/rate_limit` from the instance returns `200` with no credentials. Two minutes, and it separates "the network path works" from "the credential works" — without it, the first failure is ambiguous across two teams and a change window. Requested of Halvor 2026-08-13.
+- **Why the unauthenticated call was the right check:** it returns `200` with no credentials, so it proves the network path **independently of auth**. Everything that fails from here is authentication or application logic — not the firewall. Two minutes spent to remove a whole layer from every future diagnosis, across two teams and a change window.
 
 - **Path:** **Matrix (ServiceNow / TNX) → GitHub only** — **nothing** between SFB and Matrix (Ingrid, 2026-08-05). So this is *not* about our proxy's egress IP; it's about letting ServiceNow reach GitHub.
 - **Egress only, one direction.** Since the inversion, GitHub never calls ServiceNow: the **`hooks` set is not needed**, only the `api` ranges. No inbound opening into TNX.
@@ -88,9 +88,27 @@ Confirmed as a concrete near-term step at the 2026-08-05 meeting; scope correcte
 
 **The pilot must not become the blocker.** Halvor returns to the queue build within days; the test credential should be waiting for him, delivered by his team's credential process (not mail or Teams).
 
-**Auth mechanics ServiceNow must implement (confirmed acceptable by Halvor, 2026-08-10):** a GitHub App does **not** use a plain OAuth grant. The job signs a **JWT** with the App's private key, exchanges it for an **installation token that expires after one hour**, and refreshes when needed. Halvor: _"we'll just have the job check for a valid token before running and renew it if needed — I don't think that will be an issue."_ A simpler fine-grained token / machine account is still being checked with the GHEC platform team; it would remove the refresh logic, but **JWT is the working assumption and is not a blocker**.
+#### Two-phase auth — do **not** build JWT first (decided 2026-08-14)
 
-**Credential handover — what Halvor needs from the pilot once the App exists:** the **App ID**, the **installation ID**, and the App's **private key (PEM)**. The private key must **not** travel by email or Teams — follow the SN team's credential-delivery process (Halvor to specify).
+Halvor read the GitHub App guide and asked whether the private-key + certificate-import + JWT chain is really required. It is — **for production**. It is **not** required to start, and conflating the two would front-load the hardest part of the integration onto the first attempt.
+
+| Phase | Target | Credential | ServiceNow-side work |
+| --- | --- | --- | --- |
+| **Test (now)** | Pilot's personal repo | Fine-grained token, self-issued by Carlos | `Authorization: Bearer <token>` — **no JWT, no certificate, no key import** |
+| **Production** | `TelenorNorgeInternal/s06065-sfb-telenor-sfdc` | GitHub App | JWT signing → installation-token exchange → hourly refresh |
+
+**So the whole queue table, outbound job, retry handling and correlation write-back can be built and proven end to end against a plain bearer token**, with the JWT layer added afterwards as an isolated change against already-working logic. Separates integration mechanics from auth complexity.
+
+**Production auth mechanics (Halvor's guide is correct):** sign a **JWT** with the App's private key — **RS256**, ten-minute maximum lifetime, issuer = the App ID — then exchange it at `POST /app/installations/{installation_id}/access_tokens` for an **installation token valid one hour**, and use that as the bearer. Halvor (2026-08-10): _"we'll just have the job check for a valid token before running and renew it if needed."_ That is exactly the right pattern.
+
+**Two known failure points, flagged before they cost a debugging cycle:**
+
+1. **Key format.** GitHub issues the private key as a **PKCS#1 PEM** (`-----BEGIN RSA PRIVATE KEY-----`). ServiceNow's certificate store generally expects **PKCS#8**, or a PKCS#12/JKS keystore — so a conversion step (`openssl pkcs8 -topk8`, or wrapping into PKCS#12) is normally needed before the import will succeed. An import failure here looks like a permissions problem and isn't.
+2. **Clock skew.** GitHub rejects a JWT whose `iat` is in the future. The instance clock must be accurate; backdating `iat` by ~60s avoids intermittent failures.
+
+**Still worth asking:** whether a **fine-grained PAT is permitted on the production org**. Appendix C records Telenor's order of preference as GitHub App → OAuth App → fine-grained PAT — permitted but least preferred, *not* banned (only **classic** PATs are). If it is accepted for this integration, the certificate handling, keystore conversion and JWT signing all disappear and production becomes identical to test. Open question with `#nova-github`; **not a blocker** — JWT remains the working assumption.
+
+**Credential handover — channel agreed 2026-08-14:** **Webex**, which Telenor encrypts with its own key and treats as safe for this data classification (Halvor's confirmation). Applies to the test token now, and to the App's **App ID + installation ID + private key** later. Never by email or Teams.
 
 **Possible shortcut worth trying:** the firewall order (Step 1c) is awaiting approval from *"the owners of the TNN GitHub system."* If that is the same GHEC platform team handling this App request, **one contact holds both blockers** — raise the firewall approval in the same `#nova-github` thread.
 
@@ -103,7 +121,7 @@ Confirmed as a concrete near-term step at the 2026-08-05 meeting; scope correcte
 ### Step 2 — Connectivity check — **direction reversed** — owner: Halvor initiates, Pilot receives
 
 - The pilot **cannot** run this check: since the inversion, ServiceNow is the caller. The check is Halvor's job sending **one queue record** to the GitHub-side receiver and getting a success response back.
-- Depends on **Step 1c** (firewall live) **and Step 1d** (GitHub credential). Neither is in the pilot's gift.
+- **Network half already proven** (Step 1c, 2026-08-14: unauthenticated `200` from the SN test environment). What remains is the authenticated call — which needs only the **test token**, not the GitHub App.
 - **What the pilot can do without either:** build and exercise the GitHub-side receiver against a **simulated payload** — issue creation, correlation write-back, dedupe on repeat delivery — so that when the path opens the receiving end is already proven.
 - **Done when:** one real queue record reaches the receiver, creates an issue, and is marked `success` in the queue table.
 
@@ -158,8 +176,8 @@ Confirmed as a concrete near-term step at the 2026-08-05 meeting; scope correcte
 
 | Person | Ask | Unblocks |
 | --- | --- | --- |
-| **Carlos** ⭐ | **Chase the GitHub App approval** (`#nova-github`) — now the critical path; ask whether a fine-grained token / machine account is permitted; check whether the *"TNN GitHub system owners"* blocking the firewall are the same team | Steps 1c, 1d — *everything* |
-| **Halvor** | Build the **queue table + outbound job** (Step 1b′); confirm the three open asks — **idempotency key**, **per-incident ordering**, **failure visibility to the pilot**; relay the firewall approval; specify how to receive the App private key securely | Steps 1b′, 1c, 2 |
+| **Carlos** ⭐ | **Issue the test token and hand it over via Webex** — Halvor is ready to build and the pilot must not become the blocker. Then: ask `#nova-github` whether a **fine-grained PAT is permitted on the prod org** (would delete the whole JWT layer), and keep the **GitHub App** moving for go-live | Step 2 now; Step 1d before prod |
+| **Halvor** | Build the **queue table + outbound job** (Step 1b′) **against the simple bearer token first** — JWT only when prod comes; confirm the three open asks — **idempotency key**, **per-incident ordering**, **failure visibility to the pilot** | Steps 1b′, 2 |
 | **Isak Charrad** | **Confirm the service-desk instance is non-sensitive** (the gate — the inversion does not remove it); confirm **work notes outbound / both inbound**; join the field-mapping session | Step 1b gate, 3 |
 | **Ingrid** | Identify which incidents she currently syncs by hand — her selection defines *"relevant to us"* (Step 3); verify the dry-run matches her manual process (Step 5) | Steps 3, 5 |
 | **Martin** | Owner of #1595; the 30-min field-mapping session (Step 3) | Steps 3–4 |

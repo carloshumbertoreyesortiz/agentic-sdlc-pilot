@@ -23,9 +23,9 @@ That simplified several things at once:
 - **A daily full check** on top of that, so if anything ever slips through the gaps, it's caught the next day rather than never.
 - **The two systems will know each other's records**, so an incident and its GitHub issue stay linked and we never create duplicates.
 
-## The door is now open ✅
+## The door is open — and tested ✅
 
-**The firewall opening went live on 13 August.** Halvor ordered it on the 10th and Telenor's GitHub system owners approved it within three days — Matrix can now reach GitHub.
+**The firewall opening went live on 13 August**, ordered on the 10th and approved by Telenor's GitHub system owners within three days. On the 14th Halvor **tested it from ServiceNow and got a clean response** — so this isn't a paper confirmation, the two systems can genuinely reach each other.
 
 That was the last approval standing between us and a first test. **Testing can now go ahead** using a sandbox repository, which needs no further permissions from anyone.
 
