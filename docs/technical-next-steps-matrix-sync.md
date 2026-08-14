@@ -108,7 +108,24 @@ Halvor read the GitHub App guide and asked whether the private-key + certificate
 
 **Still worth asking:** whether a **fine-grained PAT is permitted on the production org**. Appendix C records Telenor's order of preference as GitHub App → OAuth App → fine-grained PAT — permitted but least preferred, *not* banned (only **classic** PATs are). If it is accepted for this integration, the certificate handling, keystore conversion and JWT signing all disappear and production becomes identical to test. Open question with `#nova-github`; **not a blocker** — JWT remains the working assumption.
 
-**Credential handover — channel agreed 2026-08-14:** **Webex**, which Telenor encrypts with its own key and treats as safe for this data classification (Halvor's confirmation). Applies to the test token now, and to the App's **App ID + installation ID + private key** later. Never by email or Teams.
+#### Credential handover — the two credentials need different treatment
+
+Halvor first proposed **Webex** (Telenor-encrypted, cleared for this data classification). Carlos has no Webex access, and a personal Webex account would not carry the tenant encryption that makes it acceptable — so the property Halvor relies on would be lost while appearing satisfied. Resolved separately for each credential:
+
+| Credential | What it unlocks | Channel | Status |
+| --- | --- | --- | --- |
+| **Test token** (fine-grained PAT) | Issues on a *personal sandbox repo*. No Telenor data, no production, no org access | **OneDrive / SharePoint**, shared with Halvor alone, deleted on confirmation | **Agreed 2026-08-14** |
+| **App private key** | The **production** `TelenorNorgeInternal` org | Ideally **none** — see below | Open; Halvor checking with his team |
+
+**Scope is the real protection for the test token, not the channel:** single repository, **Issues: Read & write** + **Metadata: Read**, **short expiry (~7 days)**. A credential that narrow and that short-lived is low-value by construction. Note OneDrive cleanup is less complete than it appears — version history retains prior copies and deletion leaves recycle-bin entries in two places — which is precisely why the expiry is the backstop rather than the deletion.
+
+**Preferred answer for production — transmit nothing.** GitHub Apps support **App managers**: adding Halvor as a manager lets him generate and download the private key **directly from GitHub into ServiceNow**, so it never passes between the parties and no channel needs approving. *"The key was never transmitted"* is a stronger audit position than *"the key was transmitted over an approved channel."* Raised with Halvor 2026-08-14, ahead of his team's answer.
+
+_(Signal was floated by Halvor as something his team has used before. His team's call — noted only that it typically places a production credential on a personal device, which App managers avoids entirely.)_
+
+**Not urgent:** the production App is still awaiting approval, so the channel question has time to settle. Only the test token gates progress.
+
+**Also still available — eliminate the test transfer too:** the sandbox repo does **not** have to be the pilot's. If Halvor creates it on his own GitHub account, he generates his own token and nothing is exchanged at all; Carlos joins as a collaborator to observe and build the receiver against real payloads. Offered 2026-08-14; Halvor opted for OneDrive instead, which is fine for a credential this narrow.
 
 **Possible shortcut worth trying:** the firewall order (Step 1c) is awaiting approval from *"the owners of the TNN GitHub system."* If that is the same GHEC platform team handling this App request, **one contact holds both blockers** — raise the firewall approval in the same `#nova-github` thread.
 

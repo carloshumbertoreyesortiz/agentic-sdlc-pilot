@@ -1,11 +1,11 @@
 {
-  "run_id": "run-1786700237060",
-  "task": "docs(us075): two-phase auth, verified network path, Webex credential channel",
+  "run_id": "run-1786704166925",
+  "task": "docs(us075): credential channels — OneDrive for test token, App managers for prod",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-08-14T09:37:17.055Z",
-  "finished_at": "2026-08-14T09:37:17.060Z",
+  "started_at": "2026-08-14T10:42:46.920Z",
+  "finished_at": "2026-08-14T10:42:46.925Z",
   "prompt_hash": "sha256:bb1b3f36f59b0cc5d581d245524c44fda19855b890584e53bb79cf5117b86d8d",
   "tool_trace": [
     "Read",
