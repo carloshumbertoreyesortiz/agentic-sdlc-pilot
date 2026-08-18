@@ -133,9 +133,13 @@ Two integration stories — #1121 (SF TCR Case ↔ GitHub) owned by Apoorv's tea
 
 *Trigger direction (external → GitHub).* The external system fires an event when a case, incident, or ticket meeting defined criteria is created or transitions state. Salesforce uses a Business Rule + Platform Event; ServiceNow uses a Business Rule + outbound REST call. The event carries the source record identifier and enough context to construct the GitHub issue.
 
-*Sink direction (external → GitHub).* A GitHub Actions webhook receiver accepts the event, validates the payload, and creates or updates the GitHub issue using the field mapping table specific to that external system. The pilot's issue schema (fields, Types, Sub Epics, Status values) is designed to accommodate the fields both external systems emit.
+*Sink direction (external → GitHub).* A GitHub Actions webhook receiver accepts the event, validates the payload, and creates or updates the GitHub issue using the field mapping table specific to that external system. **Note the ServiceNow variant below inverts this:** where the external system sits behind a network boundary it calls GitHub's REST API directly and there is no receiver on the GitHub side at all — the field mapping is then a *contract the caller implements*, not code the receiver runs. The pilot's issue schema (fields, Types, Sub Epics, Status values) is designed to accommodate the fields both external systems emit.
 
-*Reverse direction (GitHub → external).* When the GitHub issue transitions status, receives a comment, or has fields changed (Priority, Size, Estimate, Time Used, Expected Completion Date), a GitHub Actions workflow on issue events uses the external system's REST API to update the source record and add a mirroring comment. For Salesforce, this is REST callout via Luis's proxy (SFB team infrastructure); for ServiceNow, this is Table API via ServiceNow's authenticated REST endpoint.
+*Reverse direction (GitHub → external).* When the GitHub issue transitions status, receives a comment, or has fields changed (Priority, Size, Estimate, Time Used, Expected Completion Date), the source record is updated and a mirroring comment added. For Salesforce, this is a REST callout via Luis's proxy (SFB team infrastructure).
+
+> **ServiceNow variant — the external system initiates in *both* directions (decided 2026-08-10, US-075).** Matrix sits in TNX, and having GitHub Actions call inwards would mean allowlisting GitHub's Actions egress — **over 5,600 IPv4 ranges that GitHub changes regularly** — plus an inbound opening into TNX. So ServiceNow both pushes incident changes *and* polls GitHub for issue changes: all traffic is TNX **egress to `api.github.com`**, one allowlist, nothing inbound. Delivery reliability comes from a **queue table on the ServiceNow side** (a transactional outbox with retry and success/error/failed states) rather than from webhook receipt. The trade is that the GitHub side cannot query the source system — so a **periodic full-scope run** is required to detect what was never enqueued, and each queue record needs an **idempotency key**, since retry makes delivery at-least-once. Details in [technical-next-steps-matrix-sync.md](technical-next-steps-matrix-sync.md).
+>
+> This variant is worth inheriting wherever the external system sits behind a corporate network boundary: it converts a firewall problem into a scheduling problem.
 
 *External References mechanism.* Every GitHub issue created from an external system carries an External References record: `Reference Id` (the source-system identifier — SFB Case Number or Matrix Incident Number), `Reference Type` (SFB / Matrix / Jira / etc.), `Reference URL` (a deep link back to the source record). This mechanism was established by #1121 for SF TCR Cases and is adopted verbatim by US-075 for Matrix incidents. It is the canonical way to answer "what is the source of this issue?"
 
@@ -216,7 +220,7 @@ The pilot participates in the SFB team's existing rhythms rather than introducin
 
 **Council review.** The Phase 0/1 governance council (per docs/PHASE-0-1-REPORT.md) reviews Rev 1.7 for approval to proceed to Phase 1 execution. Council asks (b), (c), (d) from PR #87 remain outstanding on human stakeholders.
 
-**Adoption risks.** The coordination and dependency risks this cadence exists to manage are tracked in [risks.md](risks.md): **R-TELENOR-CONCURRENT-MIGRATION** (four concurrent SFB migrations), **R-SERVICENOW-DEPENDENCY** (AIR service account gating US-075), and **R-SFB-COORDINATION** (schema drift vs upstream #1121/#1595). Each carries an explicit exit trigger (US-077).
+**Adoption risks.** The coordination and dependency risks this cadence exists to manage are tracked in [risks.md](risks.md): **R-TELENOR-CONCURRENT-MIGRATION** (four concurrent SFB migrations), **R-GITHUB-PLATFORM-DEPENDENCY** (the GitHub App + firewall approval now gating US-075), **R-SERVICENOW-DEPENDENCY** (the remaining ServiceNow-side build and Isak's sensitivity gate), and **R-SFB-COORDINATION** (schema drift vs upstream #1121/#1595). Each carries an explicit exit trigger (US-077).
 
 ## §12 Named stakeholders
 
@@ -238,7 +242,7 @@ Recording explicitly for traceability. Named individuals are cited with their ro
 | Piero Notaro | Business Analyst (Mobile Sales, Content) | Flow A intake for Mobile Sales and Content requirements | Workshop #1 slide 6 |
 | Johannes Dalholt | Business Analyst + Administrator (Mobile Sales Enterprise, DPSS Sales - Admin, Product & Content - Admin) | Flow A + Admin work for Mobile Sales Enterprise, DPSS Sales admin, Product & Content admin | Workshop #1 slide 6 |
 | Isak Charrad | Incident-process owner (Matrix / #1595) | Owns note-handling and closure semantics for the Matrix ↔ GitHub sync (US-075); reviews the field mapping and joins the sync working session | Halvor referral, email 2026-07-13 |
-| Halvor Mortensen | ServiceNow-side governance contact | Sponsors / routes the Matrix base-access and AIR service-account request (KB0010037) for US-075; referred Isak Charrad as incident-process owner | Email 2026-07-13 |
+| Halvor Mortensen | ServiceNow-side contact and builder | Sponsored the Matrix base-access request (granted 2026-08-04); **builds the ServiceNow queue table + outbound job** that drives the sync (*not* an AIR service account — that framing was superseded 2026-08-04); ordered the Matrix→GitHub firewall opening; referred Isak Charrad as incident-process owner | Email 2026-07-13; meeting 2026-08-05; email 2026-08-10 |
 
 ## §13 Business areas
 
