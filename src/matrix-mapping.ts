@@ -41,23 +41,52 @@ export interface GitHubIssuePayload {
 /** Marker carrying the match key. An HTML comment: searchable, not rendered. */
 const SYS_ID_MARKER = 'Matrix-Sys-Id:';
 
+/**
+ * Second marker, carrying the values that CANNOT be set through the issues API.
+ *
+ * `POST /issues` accepts only title, body, labels and assignees. Everything the
+ * board actually runs on — Status, Priority, Type, Sub Epic, Caller, External
+ * Reference — lives in GitHub Projects and needs the Projects v2 GraphQL API.
+ * ServiceNow therefore cannot set them, and asking it to would mean building
+ * GraphQL on the ServiceNow side for fields it does not own.
+ *
+ * So the values ride along in the body as JSON, and
+ * .github/workflows/matrix-issue-fields.yml applies them GitHub-side, where the
+ * Projects API is reachable without any network path or firewall involvement.
+ */
+const FIELDS_MARKER = 'matrix-fields:';
+
+/** The values the GitHub-side workflow reads back out to set Project fields. */
+export interface MatrixFieldValues {
+  sys_id: string;
+  number: string;
+  priority?: string;
+  status?: string | null;
+  caller?: string;
+  url: string;
+}
+
 /** GitHub titles stay readable; the full text is always in the body regardless. */
 const MAX_TITLE = 200;
 
 /**
- * ServiceNow priority → pilot Priority field.
+ * ServiceNow priority → the pilot Priority field.
  *
- * NOTE 1 and 2 both collapse to P1. Five levels into four loses information;
- * this split is a PROPOSAL on the grounds that Critical and High are both
- * "drop everything" in practice. Ingrid has been making this call by hand and
- * may map them differently — if the distinction matters, 2 → P2 and shift down.
+ * The board's actual options are P0, P1, P2, P3 — verified against the live
+ * Project 2026-08-18. (An earlier draft of the mapping doc assumed P1–P4 and
+ * emitted a P4 that does not exist; corrected here.)
+ *
+ * Because P0 exists, the top of the scale maps 1:1 and no information is lost
+ * where it matters. The collapse lands at the bottom instead — 4 Low and
+ * 5 Planning both become P3 — which is far less consequential than merging
+ * Critical with High would have been.
  */
 const PRIORITY: Record<number, string> = {
-  1: 'P1',
+  1: 'P0',
   2: 'P1',
   3: 'P2',
   4: 'P3',
-  5: 'P4',
+  5: 'P3',
 };
 
 /**
@@ -116,6 +145,41 @@ export function extractSysId(body: string): string | null {
   return match ? match[1] : null;
 }
 
+/** Builds the JSON metadata comment the GitHub-side workflow consumes. */
+export function buildFieldsMetadata(
+  incident: MatrixIncident,
+  matrixBaseUrl = 'https://matrix.telenor.no',
+): string {
+  const values: MatrixFieldValues = {
+    sys_id: incident.sys_id,
+    number: incident.number,
+    url: incidentUrl(incident.sys_id, matrixBaseUrl),
+  };
+  const priority = mapPriority(incident.priority);
+  if (priority) values.priority = priority;
+  const status = mapStatus(incident.state);
+  if (status !== undefined) values.status = status;
+  if (incident.caller_id) values.caller = incident.caller_id;
+
+  return `<!-- ${FIELDS_MARKER} ${JSON.stringify(values)} -->`;
+}
+
+/**
+ * Reads the metadata block back. Returns null when absent or unparseable —
+ * a hand-written issue that happens to carry the `matrix` label must not throw
+ * and stop the workflow.
+ */
+export function extractFields(body: string): MatrixFieldValues | null {
+  const match = body.match(/<!--\s*matrix-fields:\s*(\{.*?\})\s*-->/s);
+  if (!match) return null;
+  try {
+    const parsed = JSON.parse(match[1]) as MatrixFieldValues;
+    return parsed.sys_id ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Renders a Matrix work note as an issue comment, tagged with its origin. */
 export function buildWorkNoteComment(author: string, at: string, text: string): string {
   return `**[Matrix work note]** — ${author}, ${at}\n\n${text}`;
@@ -124,11 +188,15 @@ export function buildWorkNoteComment(author: string, at: string, text: string): 
 const NBSP_ROW = (label: string, value: string) => `| ${label} | ${value} |`;
 
 /** Builds the full POST body. Pure — no I/O, no clock, no network. */
+export function incidentUrl(sysId: string, matrixBaseUrl = 'https://matrix.telenor.no'): string {
+  return `${matrixBaseUrl}/nav_to.do?uri=incident.do?sys_id=${sysId}`;
+}
+
 export function buildIssuePayload(
   incident: MatrixIncident,
   matrixBaseUrl = 'https://matrix.telenor.no',
 ): GitHubIssuePayload {
-  const link = `${matrixBaseUrl}/nav_to.do?uri=incident.do?sys_id=${incident.sys_id}`;
+  const link = incidentUrl(incident.sys_id, matrixBaseUrl);
 
   const rows = [
     NBSP_ROW('Matrix incident', `[${incident.number}](${link})`),
@@ -150,6 +218,7 @@ export function buildIssuePayload(
     ...rows,
     '',
     `<!-- ${SYS_ID_MARKER} ${incident.sys_id} -->`,
+    buildFieldsMetadata(incident, matrixBaseUrl),
     '_Synced from Matrix by the SFB integration. Do not edit the Source table by hand._',
   ].join('\n');
 
