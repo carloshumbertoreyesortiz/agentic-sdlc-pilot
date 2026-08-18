@@ -1,0 +1,53 @@
+name: matrix-issue-fields
+
+# US-075: sets the GitHub Project fields on issues arriving from Matrix.
+#
+# ServiceNow creates the issue with a plain REST call, which can only carry
+# title, body and labels. Status, Priority, Type, Sub Epic, Caller and the
+# External Reference fields live in GitHub Projects and need the Projects v2
+# GraphQL API — so ServiceNow embeds those values in the issue body and this
+# workflow applies them here, inside GitHub, where the Projects API needs no
+# network path, no firewall opening and no credential crossing a boundary.
+#
+# Runs on `labeled` as well as `opened` because the label may arrive a moment
+# after creation; the script is idempotent, so a second run is harmless.
+
+on:
+  issues:
+    types: [opened, labeled]
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  apply:
+    # Only Matrix-sourced issues. Cheap guard — the job never starts otherwise.
+    if: contains(github.event.issue.labels.*.name, 'matrix')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install deps
+        run: npm ci --no-audit --no-fund
+
+      - name: Apply Project fields
+        env:
+          # NOT the default GITHUB_TOKEN: it cannot write user-owned Projects.
+          # Needs a token with `project` scope. Absent → the step says so
+          # plainly rather than failing with an opaque GraphQL permission error.
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          PROJECT_OWNER: carloshumbertoreyesortiz
+          PROJECT_NUMBER: '1'
+          REPO: ${{ github.repository }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::warning::PROJECT_TOKEN secret is not set — Project fields not applied."
+            echo "Create a fine-grained token with Projects read/write and add it as PROJECT_TOKEN."
+            exit 0
+          fi
+          npx tsx scripts/apply-matrix-fields.ts "${{ github.event.issue.number }}"
