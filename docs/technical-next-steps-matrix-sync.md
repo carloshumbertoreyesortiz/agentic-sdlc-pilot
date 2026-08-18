@@ -59,11 +59,11 @@ Halvor's proposal (2026-08-10), and a better answer than the periodic push the p
 
 **Open asks on the queue design (raised 2026-08-10, not yet confirmed):**
 
-1. **A unique id per queue record, carried in the payload.** Retry means **at-least-once** delivery: a request that succeeds on our side but whose response is lost *will* be resent. Without an idempotency key we create duplicate issues or duplicate comments. This is a column on a table not yet built — trivial now, a data-cleanup exercise later.
+1. ~~**A unique id per queue record, carried in the payload.**~~ **Superseded 2026-08-18 — see Step 4.** The concern is real (retry means **at-least-once** delivery: a request that succeeds but whose response is lost *will* be resent, creating duplicate issues), but an idempotency key needs a receiver to honour it and there isn't one — ServiceNow calls GitHub directly, and GitHub's API has no idempotency mechanism. Replaced by **search-before-create** keyed on `sys_id`, which is SN-side and needs nothing from GitHub.
 2. **Ordering preserved per incident.** Events for one incident must arrive in sequence (a status change must not overtake its predecessor). Ordering *across* different incidents does not matter.
 3. **Failure visibility reaching the pilot.** Halvor's reports/notifications are SN-side; if a record ends `failed` we should learn of it without asking — copy us on the notification, or include a failure summary in the daily full-scope run.
 
-- **Done when:** the queue table and outbound job exist, and one queue record is delivered to the GitHub-side receiver and marked `success`.
+- **Done when:** the queue table and outbound job exist, and one queue record results in a real GitHub issue via `api.github.com` and is marked `success`.
 
 ### Step 1c — Network / firewall opening (test-first) — owner: Halvor (orders)
 
@@ -137,10 +137,10 @@ _(Signal was floated by Halvor as something his team has used before. His team's
 
 ### Step 2 — Connectivity check — **direction reversed** — owner: Halvor initiates, Pilot receives
 
-- The pilot **cannot** run this check: since the inversion, ServiceNow is the caller. The check is Halvor's job sending **one queue record** to the GitHub-side receiver and getting a success response back.
+- The pilot **cannot** run this check: since the inversion, ServiceNow is the caller. The check is Halvor's job — one queue record, one `POST` to `api.github.com`, one issue created.
 - **Network half already proven** (Step 1c, 2026-08-14: unauthenticated `200` from the SN test environment). What remains is the authenticated call — which needs only the **test token**, not the GitHub App.
-- **What the pilot can do without either:** build and exercise the GitHub-side receiver against a **simulated payload** — issue creation, correlation write-back, dedupe on repeat delivery — so that when the path opens the receiving end is already proven.
-- **Done when:** one real queue record reaches the receiver, creates an issue, and is marked `success` in the queue table.
+- **What the pilot supplies instead of code:** the [field-mapping contract](matrix-github-field-mapping.md) — the exact JSON body to POST and the duplicate-prevention query — so Halvor is not inventing a payload shape that the issue schema then rejects.
+- **Done when:** one real queue record creates a GitHub issue in the sandbox repo and is marked `success` in the queue table.
 
 ### Step 3 — Field mapping (30-min session) — owner: Martin + Isak + Pilot
 
@@ -171,9 +171,13 @@ _(Signal was floated by Halvor as something his team has used before. His team's
 
 ### Step 4 — Build the sync — owner: split
 
-- **ServiceNow side (SN team):** the **queue table + scheduled job** (Step 1b′) that pushes incident changes to GitHub and polls GitHub for issue changes, with retry, success/error/failed states, and the daily full-scope run.
-- **GitHub side (Pilot):** a **receiver**, not a caller — accepts a queue record, creates or updates the matching issue, **dedupes on the queue-record id**, and returns the issue number + URL in the response body for correlation write-back.
+> **Correction (2026-08-18): there is no pilot-hosted "receiver".** Earlier revisions of this step described the GitHub side as a service that accepts queue records. That cannot be right — the firewall was opened to **`api.github.com`**, not to any pilot endpoint, no such endpoint exists or has been requested, and GitHub Actions cannot receive inbound HTTP. **ServiceNow calls GitHub's REST API directly.** Nothing of the pilot's sits in the request path.
+
+- **ServiceNow side (SN team):** the **queue table + scheduled job** (Step 1b′), which builds the issue payload itself and calls `POST /repos/{owner}/{repo}/issues` on `api.github.com`, then reads the **`number`** and **`html_url`** straight out of GitHub's own response for the correlation write-back. Polls GitHub for issue changes on the reverse direction. Retry, success/error/failed states, and the daily full-scope run as per Step 1b′.
+- **GitHub side (Pilot):** **a specification, not a service.** What the pilot owes is the [field-mapping contract](matrix-github-field-mapping.md) — which incident field becomes which issue field, the exact JSON body, and the duplicate-prevention query — plus the issue schema (Type, Sub Epic, labels, External References) those payloads must satisfy. The reference implementation in `src/matrix-mapping.ts` is executable documentation of that contract, not a runtime component.
 - Built behind a flag / against a test record first — **no production writes** until Step 5 passes.
+
+**Consequence for idempotency (supersedes the earlier ask).** With ServiceNow calling GitHub directly there is no receiver to honour an idempotency key, and **GitHub's API has no idempotency mechanism**. The workable pattern is **search-before-create**: query GitHub for the incident's `sys_id` and only create when nothing comes back. Exact query in the mapping contract. This self-heals the lost-response retry the key was meant to cover, and needs nothing from GitHub's side.
 
 **Future option — Kafka on Nova (noted 2026-08-04):** the SN team has discussed publishing incidents to a **Kafka topic on Nova**, but isn't there yet (resource-limited). If/when it lands, it's a cleaner **event-driven** source for the inbound direction than polling the REST endpoint. We'll build the GitHub side so the incident source is swappable — REST endpoint now, Kafka consumer later — with no rework of the mapping or the GitHub-side logic.
 

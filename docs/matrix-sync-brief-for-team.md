@@ -35,7 +35,7 @@ One item remains, but it no longer holds anything up: a secure **"GitHub App"** 
 
 | Who | What we're asking | Why it matters |
 | --- | --- | --- |
-| **Carlos** | Have the **test credential ready** for Halvor; build our receiving end; keep the **GitHub App** moving for production | So nothing waits on us when Halvor picks this back up |
+| **Carlos** | Get the **test credential** to Halvor; publish the **field-mapping contract** so he knows exactly what to send; keep the **GitHub App** moving for production | So nothing waits on us when Halvor picks this back up |
 | **Halvor** | Build the **queue + sending job**; confirm a few small design points | This is the engine that moves incidents |
 | **Isak Charrad** | Confirm the **service-desk data isn't sensitive**; decide whether our updates go to **work notes** (internal) rather than comments the reporter sees | A governance gate, and it keeps engineering chat away from customers |
 | **Ingrid** | Show us **which incidents you sync by hand today** — your choices define what the automation should pick up; later, confirm a test run matches what you'd have done | Without this, we'd be guessing at scope |
@@ -43,7 +43,7 @@ One item remains, but it no longer holds anything up: a secure **"GitHub App"** 
 
 ## Timing
 
-- **Now:** the connection is open. Halvor builds the sending side when he's free of a higher-priority item; our receiving end is being built in parallel with sample data.
+- **Now:** the connection is open. Halvor builds the sending side; in parallel we're writing down exactly which incident field becomes which part of a GitHub issue, so he isn't guessing.
 - **August:** a 30-minute field-mapping session with Martin, Isak, and Ingrid as needed.
 - **Then:** test on a few safe incidents in a sandbox, then switch on for real once the production GitHub App is approved. The manual daily task retires.
 

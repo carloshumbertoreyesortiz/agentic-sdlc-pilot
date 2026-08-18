@@ -133,7 +133,7 @@ Two integration stories — #1121 (SF TCR Case ↔ GitHub) owned by Apoorv's tea
 
 *Trigger direction (external → GitHub).* The external system fires an event when a case, incident, or ticket meeting defined criteria is created or transitions state. Salesforce uses a Business Rule + Platform Event; ServiceNow uses a Business Rule + outbound REST call. The event carries the source record identifier and enough context to construct the GitHub issue.
 
-*Sink direction (external → GitHub).* A GitHub Actions webhook receiver accepts the event, validates the payload, and creates or updates the GitHub issue using the field mapping table specific to that external system. The pilot's issue schema (fields, Types, Sub Epics, Status values) is designed to accommodate the fields both external systems emit.
+*Sink direction (external → GitHub).* A GitHub Actions webhook receiver accepts the event, validates the payload, and creates or updates the GitHub issue using the field mapping table specific to that external system. **Note the ServiceNow variant below inverts this:** where the external system sits behind a network boundary it calls GitHub's REST API directly and there is no receiver on the GitHub side at all — the field mapping is then a *contract the caller implements*, not code the receiver runs. The pilot's issue schema (fields, Types, Sub Epics, Status values) is designed to accommodate the fields both external systems emit.
 
 *Reverse direction (GitHub → external).* When the GitHub issue transitions status, receives a comment, or has fields changed (Priority, Size, Estimate, Time Used, Expected Completion Date), the source record is updated and a mirroring comment added. For Salesforce, this is a REST callout via Luis's proxy (SFB team infrastructure).
 
