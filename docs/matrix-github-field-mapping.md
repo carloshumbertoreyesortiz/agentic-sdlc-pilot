@@ -21,8 +21,8 @@ This is a **draft to react to**, not a decision already taken. Every row is open
 | `description` | Body — **Background** section | Verbatim. |
 | `priority` | **Priority** field | See §2. |
 | `state` | **Status** field | See §3. |
-| `caller_id` | **Caller** field | Required on Type = Incident per way-of-work §6. |
-| `assigned_to` | Body — Assigned (informational) | *Not* mapped to GitHub assignee — GitHub usernames and ServiceNow users are different identity spaces, and a bad guess silently misassigns work. Revisit only if a reliable mapping exists. |
+| `caller_id` | **Caller** field | Required on Type = Incident per way-of-work §6. **Display value, not `sys_id`** — see §5. |
+| `assigned_to` | Body — Assigned (informational) | **Display value.** *Not* mapped to GitHub assignee — GitHub usernames and ServiceNow users are different identity spaces, and a bad guess silently misassigns work. Revisit only if a reliable mapping exists. |
 | `opened_at` | Body — Raised (informational) | GitHub's own `created_at` records when the *issue* appeared, which is a different fact. |
 | `sys_updated_on` | Body — Source last updated | Lets the daily full-scope run detect drift without a GitHub-side store. |
 | work notes (journal) | Issue comments, prefixed `**[Matrix work note]**` | Direction and visibility rules in §4. |
@@ -128,7 +128,45 @@ This replaces the idempotency key originally proposed: GitHub's API has no idemp
 
 ### Update — `PATCH /repos/{owner}/{repo}/issues/{number}`
 
-Use the `number` from `correlation_id`. Send only changed fields.
+Use the `number` from `correlation_id`.
+
+**Send the regenerated `title` and `body` on every update — not just the changed field.** `PATCH` is partial, so sending one field is normally right; but the Project-field values (Priority, Status, Caller) live *inside* the body's metadata block, and `.github/workflows/matrix-issue-fields.yml` re-reads that block on `edited`. A state change that doesn't rewrite the body leaves the board showing creation-day values.
+
+Always regenerating is idempotent, costs one call either way, and removes the need to reason about which fields are "special".
+
+### Polling GitHub for changes — **use the core API, not search**
+
+Different rate-limit buckets, and this is the distinction that matters:
+
+| Endpoint | Bucket | Limit |
+| --- | --- | --- |
+| `/search/issues` | Search | **~30 requests/minute** |
+| `/repos/{owner}/{repo}/issues` | Core | **~5,000 requests/hour** |
+
+So poll with the core endpoint, which supports time filtering natively:
+
+```
+GET /repos/{owner}/{repo}/issues?since=2026-08-19T08:00:00Z&state=all&sort=updated&direction=asc&per_page=100
+```
+
+`since` returns everything updated at or after that timestamp — exactly the incremental read required, with none of the search budget consumed. For work notes coming back, the repo-wide comments endpoint takes the same parameter: `GET /repos/{owner}/{repo}/issues/comments?since=…`.
+
+⚠️ **`/issues` returns pull requests too.** Any item carrying a `pull_request` key is a PR, not an issue — filter them out or you will sync PRs into Matrix.
+
+### Breaking the echo loop
+
+GitHub cannot filter a listing by actor, so the loop-breaking is done on identity after the read:
+
+1. **Skip anything authored by our own integration identity.** Under the GitHub App this is the app's bot user (`…[bot]`), which is a distinct, stable, auditable identity — one of the practical reasons the App beats a PAT, where every write would appear under a human's name and be indistinguishable from a real person's edit.
+2. **Store the `updated_at` value ServiceNow last wrote per incident** and ignore reads at or below it. Belt and braces for field changes, where there is no author to inspect.
+
+Applied together, an update ServiceNow caused never comes back as an update ServiceNow must apply.
+
+### Reference fields — send display values, never `sys_id`
+
+`caller_id`, `assigned_to` and `assignment_group` are reference fields, so their raw values are `sys_id` GUIDs pointing at rows in other tables. Those are meaningless outside ServiceNow — and the **Caller** Project field is plain text, so a GUID would land on the board verbatim.
+
+**Send the display value** (`caller_id.getDisplayValue()`) for every reference field. The only `sys_id` that travels is the **incident's own**, which is the match key and lives in the metadata block, never in a visible field.
 
 ### Add a work note as a comment — `POST /repos/{owner}/{repo}/issues/{number}/comments`
 

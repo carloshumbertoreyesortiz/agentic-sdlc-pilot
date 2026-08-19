@@ -11,10 +11,18 @@ name: matrix-issue-fields
 #
 # Runs on `labeled` as well as `opened` because the label may arrive a moment
 # after creation; the script is idempotent, so a second run is harmless.
+#
+# `edited` matters just as much (added 2026-08-19): the Project-field values live
+# in the body's metadata block, so when an incident's state or priority changes
+# in ServiceNow it re-sends the regenerated body — and without this trigger the
+# board would keep showing the values from creation day.
+#
+# No echo loop: this workflow writes Project fields, never the issue body, so it
+# cannot retrigger itself.
 
 on:
   issues:
-    types: [opened, labeled]
+    types: [opened, labeled, edited]
 
 permissions:
   contents: read
