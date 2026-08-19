@@ -112,6 +112,44 @@ X-GitHub-Api-Version: 2022-11-28
 
 **Read from the response:** `number` → `correlation_id`, `html_url` → `correlation_display`.
 
+### What that `body` actually looks like
+
+The JSON above is escaped, which hides the structure. Rendered, the body is exactly this — **the separator between a field and its value is the markdown table pipe, `|`**:
+
+```markdown
+## Background
+
+When a sales agent completes a CPQ order the quote PDF fails to render and the agent sees a generic error.
+
+## Source
+
+| | |
+|---|---|
+| Matrix incident | [INC0012345](https://matrix.telenor.no/nav_to.do?uri=incident.do?sys_id=a1b2c3d4e5f6) |
+| Caller | Nina Jakobsen |
+| Assigned (Matrix) | Erik Lauvli |
+| Raised | 2026-08-18T09:14:00Z |
+| Source last updated | 2026-08-18T11:02:00Z |
+
+<!-- Matrix-Sys-Id: a1b2c3d4e5f6 -->
+<!-- matrix-fields: {"sys_id":"a1b2c3d4e5f6","number":"INC0012345","url":"https://matrix.telenor.no/...","priority":"P1","status":"Development","caller":"Nina Jakobsen"} -->
+_Synced from Matrix by the SFB integration. Do not edit the Source table by hand._
+```
+
+Each Source row is `| Label | Value |`, one per line, preceded by the two-line table header (`| | |` then `|---|---|`) that markdown requires. Rows for absent fields are **omitted entirely** rather than left blank.
+
+### ⚠️ Only one part of this has to be exact
+
+| Part | Consumed by | Precision required |
+| --- | --- | --- |
+| `<!-- matrix-fields: {…} -->` | The GitHub Actions workflow, parsed as JSON | **Exact.** A malformed block means no board fields get set. |
+| `<!-- Matrix-Sys-Id: … -->` | The search-before-create duplicate guard | **Exact.** Wrong format means duplicate issues. |
+| Everything else — headings, table, wording | Humans reading the issue | **Cosmetic.** Get it wrong and it looks untidy; nothing breaks. |
+
+So spend the care on the two HTML comments. The prose and the table can drift without consequence.
+
+**Markdown table caveat:** a cell cannot contain a raw newline or an unescaped `|`. If a caller name or short description could contain a pipe, escape it as `\|`. The **description does not have this problem** — it sits in the Background section, not a table cell, so newlines are fine there.
+
 The `sys_id` goes in an **HTML comment** so it is invisible when rendered but still searchable and machine-readable. Being in the body rather than a label means no label-length limits and no accidental deletion by a well-meaning triager.
 
 ### Search before create — the duplicate guard

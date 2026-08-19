@@ -1,11 +1,11 @@
 {
-  "run_id": "run-1787126849284",
-  "task": "docs(us075): polling endpoint, echo-loop, update semantics, display values",
+  "run_id": "run-1787140064659",
+  "task": "docs(us075): show the rendered body format; mark what must be exact",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-08-19T08:07:29.278Z",
-  "finished_at": "2026-08-19T08:07:29.284Z",
+  "started_at": "2026-08-19T11:47:44.648Z",
+  "finished_at": "2026-08-19T11:47:44.659Z",
   "prompt_hash": "sha256:bb1b3f36f59b0cc5d581d245524c44fda19855b890584e53bb79cf5117b86d8d",
   "tool_trace": [
     "Read",
