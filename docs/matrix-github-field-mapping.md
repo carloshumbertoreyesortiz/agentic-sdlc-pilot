@@ -88,6 +88,19 @@ Mapping into the 10-state SFB taxonomy (way-of-work §5, US-063). Status flows *
 
 ⚠️ **Resolved → Deployed is the weakest row here.** In ServiceNow "resolved" means the handler believes it is fixed; in the SFB taxonomy "Deployed" means the change reached production. Those are not the same claim, and Isak's closure semantics may well separate them. Flagged for the session rather than quietly assumed.
 
+### ⚠️ Two different things are both called "status"
+
+This caught the first person to use the integration, within an hour, so it is worth being explicit:
+
+| | What it is | When it changes |
+| --- | --- | --- |
+| **Issue state** — `Open` / `Closed` | A **GitHub** concept, shown in the issue header | Only at the end of life: **Closed → close the issue**, **Cancelled → close as not planned**. It does **not** move for ordinary state changes. |
+| **Status field** — Backlog … Done | The **SFB 10-state taxonomy**, a Project field shown on the board | Every state change, per the table above |
+
+An incident moving `New → In Progress` correctly produces a GitHub issue that is **still Open** with its **Status field now `Development`**. That is the system working. Looking at the issue header and seeing "Open" is not evidence the update failed — check the board column.
+
+_Observed 2026-08-20 on [#168](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/168): the update path worked on first attempt, and only the naming caused doubt._
+
 ## 4. Work notes and comments
 
 Confirmed by Halvor (2026-08-14): **comments are visible to the caller; work notes are for case handlers.**
