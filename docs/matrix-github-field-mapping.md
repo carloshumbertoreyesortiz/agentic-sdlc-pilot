@@ -51,6 +51,12 @@ Rather than push GraphQL onto the ServiceNow side for fields it does not own, th
 
 _Field names and single-select options are resolved **by name at runtime**, not hardcoded — a recreated field would otherwise break the sync silently. An unmapped value logs loudly and skips rather than failing the run._
 
+**The workflow needs a `PROJECT_TOKEN` secret, and it must be a _classic_ token.** The default `GITHUB_TOKEN` cannot write Projects at all. And during the test phase the board is a **user-owned** Project, which **fine-grained tokens cannot reach** — their Projects permission is offered only when the resource owner is an *organization*, so the option simply does not appear for a personal account.
+
+So: a **classic** token (https://github.com/settings/tokens/new) with the **`project`** scope, plus **`public_repo`** so the script can read the issue.
+
+> Telenor bans classic PATs on its **managed organisations**. This one authenticates against a *personal* account and a *personal* Project from a workflow in a *personal* repo, so it is outside that policy — and it is test-phase only. When the integration moves to `TelenorNorgeInternal` the board becomes an org Project, and the GitHub App can carry the Projects permission properly. **Revoke this token at that point**, alongside the sandbox issues token.
+
 ## 2. Priority
 
 ServiceNow priority is computed from impact × urgency and is numeric. The board's Priority options are **P0, P1, P2, P3** — verified against the live Project on 2026-08-18.
