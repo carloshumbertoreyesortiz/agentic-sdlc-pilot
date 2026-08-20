@@ -150,6 +150,36 @@ So spend the care on the two HTML comments. The prose and the table can drift wi
 
 **Markdown table caveat:** a cell cannot contain a raw newline or an unescaped `|`. If a caller name or short description could contain a pipe, escape it as `\|`. The **description does not have this problem** — it sits in the Background section, not a table cell, so newlines are fine there.
 
+### Empty and null values — omit, never substitute
+
+**Never send a placeholder string** — no `"None"`, `"N/A"`, `"-"` or `""`. When an incident is unassigned, or any field is empty:
+
+- **Body table:** leave the row out entirely. No `| Assigned (Matrix) | None |`.
+- **`matrix-fields` JSON:** leave the key out entirely. `{"sys_id":"…","number":"…"}` with no `caller` key at all.
+
+A placeholder is indistinguishable from real data. `"None"` would be written verbatim into the **Caller** field on the board, where it reads as a value rather than an absence; it makes "nobody is assigned" impossible to tell apart from "we didn't sync that field"; and any later filter for unassigned incidents would silently miss them. An omitted key is unambiguous in every one of those cases.
+
+The reference implementation already behaves this way — `buildIssuePayload` filters absent rows out, and `buildFieldsMetadata` only emits keys with a value.
+
+### Serialising the `matrix-fields` block
+
+**Inside the rendered body, write plain JSON with ordinary unescaped double quotes:**
+
+```
+<!-- matrix-fields: {"sys_id":"a1b2c3d4e5f6","number":"INC0012345","priority":"P1"} -->
+```
+
+Escaping happens **one level up**, when the body becomes a string value inside the request payload. So the wire format naturally looks like `\"sys_id\":\"…\"` — but that is the JSON serialiser's job, not something to write by hand.
+
+**Build the request as an object and serialise it once** (`JSON.stringify` on the whole payload). Hand-concatenating the request string means escaping the block manually, which is where this goes wrong.
+
+Two constraints on the block itself:
+
+- **One line**, no newlines inside the comment.
+- **Nothing after the closing `}`** before the ` -->`.
+
+Values may safely contain quotes and braces — the parser is anchored on the comment terminator rather than the first closing brace, and there are tests covering both.
+
 The `sys_id` goes in an **HTML comment** so it is invisible when rendered but still searchable and machine-readable. Being in the body rather than a label means no label-length limits and no accidental deletion by a well-meaning triager.
 
 ### Search before create — the duplicate guard

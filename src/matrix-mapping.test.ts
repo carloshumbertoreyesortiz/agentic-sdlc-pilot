@@ -171,6 +171,27 @@ describe('the Project-field metadata block', () => {
     expect(extractFields('<!-- matrix-fields: {not json} -->')).toBeNull();
   });
 
+  it('survives a closing brace inside a value', () => {
+    // Nothing stops a ServiceNow display value containing "}". Anchoring the
+    // parse on the first brace instead of the comment terminator would drop
+    // every field here, silently.
+    const { body } = buildIssuePayload({ ...incident, caller_id: 'Nina } Jakobsen' });
+    expect(extractFields(body)?.caller).toBe('Nina } Jakobsen');
+  });
+
+  it('survives quotes inside a value', () => {
+    const { body } = buildIssuePayload({ ...incident, caller_id: 'Nina "Nina" Jakobsen' });
+    expect(extractFields(body)?.caller).toBe('Nina "Nina" Jakobsen');
+  });
+
+  it('treats an unassigned incident as absent, never as the string "None"', () => {
+    const { body } = buildIssuePayload({ ...incident, caller_id: null, assigned_to: null });
+    const fields = extractFields(body);
+    expect(fields?.caller).toBeUndefined();
+    expect(body).not.toContain('None');
+    expect(body).not.toContain('| Assigned (Matrix) |');
+  });
+
   it('omits absent values rather than emitting empty strings', () => {
     const { body } = buildIssuePayload({
       sys_id: 'deadbeef',

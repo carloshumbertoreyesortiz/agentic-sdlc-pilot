@@ -1,11 +1,11 @@
 {
-  "run_id": "run-1787140064659",
-  "task": "docs(us075): show the rendered body format; mark what must be exact",
+  "run_id": "run-1787213921700",
+  "task": "docs+fix(us075): omit-not-substitute for nulls; harden matrix-fields parser",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-08-19T11:47:44.648Z",
-  "finished_at": "2026-08-19T11:47:44.659Z",
+  "started_at": "2026-08-20T08:18:41.694Z",
+  "finished_at": "2026-08-20T08:18:41.700Z",
   "prompt_hash": "sha256:bb1b3f36f59b0cc5d581d245524c44fda19855b890584e53bb79cf5117b86d8d",
   "tool_trace": [
     "Read",
