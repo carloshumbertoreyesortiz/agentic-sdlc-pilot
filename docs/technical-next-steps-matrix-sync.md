@@ -167,10 +167,17 @@ Halvor's own first attempt then found only one issue, which he had already spott
 
 The External Reference URL carries a **double slash** — `https://matrix-test.telenor.no//nav_to.do?…` — from a trailing slash on the base URL meeting a leading slash on the path. Functional, just untidy on the board.
 
-#### Next proofs to run, both still outstanding
+#### ✅ Update path — proven 2026-08-20
 
-- **Update path:** change the incident's state and re-send the regenerated body; the board Status should follow. Separate machinery from create, and untested.
-- **Duplicate guard:** re-send the same incident and confirm search-before-create prevents a second issue.
+Halvor moved `INC0069821` to In Progress and re-sent the regenerated body. The `edited` trigger fired, run `32365740038` succeeded, and the board **Status moved `Backlog` → `Development`** automatically — verified on the live Project.
+
+_Reported initially as a possible failure: the GitHub issue still showed **Open**. It was working. **Issue state** (Open/Closed) and the **Status field** are different things, and only the second tracks the lifecycle — now called out explicitly in the [mapping contract](matrix-github-field-mapping.md) §3, since the first person to use the integration hit it within an hour._
+
+#### Still outstanding
+
+- **Duplicate guard:** re-send the same incident and confirm search-before-create prevents a second issue. The only untested mechanism left, and the one standing between at-least-once delivery and duplicate issues.
+- **End-of-life states:** confirm `Closed → Status Done` and `Cancelled → close the issue as not planned`. Both untested, and both are where issue state and Status field finally interact.
+- **Work notes / comments**, once Isak confirms the semantics.
 
 ### Step 3 — Field mapping (30-min session) — owner: Martin + Isak + Pilot
 
