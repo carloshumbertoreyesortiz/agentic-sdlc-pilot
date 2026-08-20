@@ -55,7 +55,11 @@ jobs:
         run: |
           if [ -z "$GH_TOKEN" ]; then
             echo "::warning::PROJECT_TOKEN secret is not set — Project fields not applied."
-            echo "Create a fine-grained token with Projects read/write and add it as PROJECT_TOKEN."
+            echo "The board is a USER-owned Project, which fine-grained tokens cannot reach:"
+            echo "the Projects permission exists only for organization resource owners."
+            echo "Create a CLASSIC token (https://github.com/settings/tokens/new) with the"
+            echo "'project' scope (+ 'public_repo' to read the issue), then:"
+            echo "  gh secret set PROJECT_TOKEN --repo ${{ github.repository }}"
             exit 0
           fi
           npx tsx scripts/apply-matrix-fields.ts "${{ github.event.issue.number }}"
