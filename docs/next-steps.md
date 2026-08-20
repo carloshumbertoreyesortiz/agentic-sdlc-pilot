@@ -58,6 +58,12 @@ coordination and access items below.)*
 
 _Done since the last revision: **#136 / #137** merged (2026-07-08); the **status migration** to the 10-state SFB model executed with pre-migration snapshots kept as audit artifacts under [`docs/migrations/`](migrations/) (US-063 closed); **base Matrix access granted** 2026-08-04 (`RIT0469472`); the **firewall opening ordered**._
 
+> ## ✅ First end-to-end sync — 2026-08-20
+>
+> A **real Matrix incident created a GitHub issue by itself**, and the board fields were applied automatically: incident `INC0069821` → [#168](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/168), 8 of 8 Project fields set, verified on the live board. ServiceNow → `api.github.com` → issue → board, with nothing done by hand.
+>
+> This is the sandbox proving the mechanics, **not** the sync going live: it ran against the pilot's test repo, from the ServiceNow *test* instance, with a scope filter that does not exist yet. Production still needs the [cutover checklist](matrix-sync-cutover.md), and Ingrid's manual daily pass continues until it lands — key-person-risk stays at **1** until then.
+
 ## The critical path (one sentence)
 
 The single most valuable next step — **automating Ingrid's manual Matrix sync

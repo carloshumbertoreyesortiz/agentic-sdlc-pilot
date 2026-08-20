@@ -135,12 +135,42 @@ _(Signal was floated by Halvor as something his team has used before. His team's
 - **Test meanwhile:** the pilot's personal repo can be exercised with Carlos's own access, so this step doesn't block early testing.
 - **Done when:** the app is installed on the prod org/repo, ownership transferred, and the pilot can authenticate and create/update an issue there.
 
-### Step 2 — Connectivity check — **direction reversed** — owner: Halvor initiates, Pilot receives
+### Step 2 — Connectivity check — ✅ **DONE 2026-08-20**
 
-- The pilot **cannot** run this check: since the inversion, ServiceNow is the caller. The check is Halvor's job — one queue record, one `POST` to `api.github.com`, one issue created.
-- **Network half already proven** (Step 1c, 2026-08-14: unauthenticated `200` from the SN test environment). What remains is the authenticated call — which needs only the **test token**, not the GitHub App.
-- **What the pilot supplies instead of code:** the [field-mapping contract](matrix-github-field-mapping.md) — the exact JSON body to POST and the duplicate-prevention query — so Halvor is not inventing a payload shape that the issue schema then rejects.
-- **Done when:** one real queue record creates a GitHub issue in the sandbox repo and is marked `success` in the queue table.
+**The path works end to end: ServiceNow → `api.github.com` → GitHub issue → board fields applied automatically.**
+
+Evidence — Halvor's queue record `GITINC0001003` (incident `INC0069821`, sys_id `314e73f125fe031013231c4f2ab58dff`) from the SN **test** instance:
+
+| | |
+| --- | --- |
+| Issue created | [#168](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/168) |
+| Workflow run | `32364925881` — success |
+| Fields applied | **8 of 8** — Type `Incident`, Sub Epic `Matrix Defect`, External Reference Type `Matrix` / Id `INC0069821` / URL, Priority `P3`, Status `Backlog`, Caller `Halvor Mortensen` |
+| Verified | Read back off the live Project, not just from the run log |
+
+- The pilot could not run this check: since the inversion ServiceNow is the caller. What the pilot supplied instead of code was the [field-mapping contract](matrix-github-field-mapping.md), so Halvor was not inventing a payload the schema would reject.
+- **Network half** was proven separately on 2026-08-14 (Step 1c, unauthenticated `200`), which is why the only failures left to find here were application-level.
+
+#### What the pre-flight smoke test caught — and why it was worth running
+
+A synthetic incident ([#166](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/166), kept as a known-good reference) was pushed through the same path an hour before Halvor's attempt. It surfaced **three defects that would otherwise have appeared during his test, with him watching**:
+
+1. **The `matrix` and `incident` labels did not exist in the repo.** The workflow's entire trigger is `contains(labels, 'matrix')`. Created with proper colours and descriptions.
+2. **`PROJECT_TOKEN` held a fine-grained token** (99 chars) rather than a classic one (40) — a leftover from the incorrect guidance. It returned `401 Bad credentials`, which *masked* the next defect entirely.
+3. **A real bug in `scripts/apply-matrix-fields.ts`:** `gh api graphql -f` sends every variable as a string, so `$number: Int!` arrived as `"1"` and was rejected. Fixed by dispatching on JavaScript type (numbers via `-F`).
+
+**None of these were reachable by the unit tests** — they never exercise the `gh` subprocess or the live Project. The lesson for the production cutover is in [`matrix-sync-cutover.md`](matrix-sync-cutover.md): a synthetic issue pushed through the real path is the only check that finds this class of problem, and it costs ten minutes.
+
+Halvor's own first attempt then found only one issue, which he had already spotted himself: `matrix-fields` serialised as `[object Object]` before he added the `JSON.stringify`.
+
+#### Open cosmetic defect (his side, no urgency)
+
+The External Reference URL carries a **double slash** — `https://matrix-test.telenor.no//nav_to.do?…` — from a trailing slash on the base URL meeting a leading slash on the path. Functional, just untidy on the board.
+
+#### Next proofs to run, both still outstanding
+
+- **Update path:** change the incident's state and re-send the regenerated body; the board Status should follow. Separate machinery from create, and untested.
+- **Duplicate guard:** re-send the same incident and confirm search-before-create prevents a second issue.
 
 ### Step 3 — Field mapping (30-min session) — owner: Martin + Isak + Pilot
 
