@@ -170,11 +170,16 @@ export function buildFieldsMetadata(
  * and stop the workflow.
  */
 export function extractFields(body: string): MatrixFieldValues | null {
-  const match = body.match(/<!--\s*matrix-fields:\s*(\{.*?\})\s*-->/s);
+  // Bounded by the comment terminator, NOT by the first closing brace. A
+  // non-greedy `\{.*?\}` truncates the moment a *value* contains `}` — a caller
+  // named "Nina }" would yield invalid JSON and silently drop every field.
+  // Nothing forbids `}` in a ServiceNow display value, so the terminator is the
+  // only safe anchor.
+  const match = body.match(/<!--\s*matrix-fields:\s*([\s\S]*?)\s*-->/);
   if (!match) return null;
   try {
-    const parsed = JSON.parse(match[1]) as MatrixFieldValues;
-    return parsed.sys_id ? parsed : null;
+    const parsed = JSON.parse(match[1].trim()) as MatrixFieldValues;
+    return parsed?.sys_id ? parsed : null;
   } catch {
     return null;
   }
