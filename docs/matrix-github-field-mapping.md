@@ -101,6 +101,25 @@ An incident moving `New → In Progress` correctly produces a GitHub issue that 
 
 _Observed 2026-08-20 on [#168](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/168): the update path worked on first attempt, and only the naming caused doubt._
 
+### End-of-life states — the exact API values
+
+**ServiceNow closes the issue, not the pilot.** The GitHub-side workflow only ever writes Project fields; it never opens or closes anything. So `state` and `state_reason` must travel on the `PATCH` alongside the regenerated body.
+
+| ServiceNow state | `state` | `state_reason` | Status field |
+| --- | --- | --- | --- |
+| Resolved | *(unchanged — stays `open`)* | — | `Deployed` |
+| Closed | `closed` | `completed` | `Done` |
+| Cancelled | `closed` | `not_planned` | *(omit — no Status)* |
+
+```json
+PATCH /repos/{owner}/{repo}/issues/{number}
+{ "state": "closed", "state_reason": "not_planned", "title": "…", "body": "…" }
+```
+
+**Why Resolved stays open.** In the SFB taxonomy `Deployed` means *"deployed to production but not yet verified by the requestor"* (way-of-work §5) — the work is not finished, so the issue should not close. Only `Done`, which means verified, closes it. This is the same Resolved-vs-Deployed distinction flagged above, and it is the row most likely to change once Isak confirms closure semantics.
+
+**For Cancelled, omit `status` from the metadata block** rather than sending a value — consistent with the omit-not-substitute rule. (An explicit `"status": null` is also handled, but omitting is simpler.)
+
 ## 4. Work notes and comments
 
 Confirmed by Halvor (2026-08-14): **comments are visible to the caller; work notes are for case handlers.**
