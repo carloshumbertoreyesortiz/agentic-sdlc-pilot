@@ -1,11 +1,11 @@
 {
-  "run_id": "run-1787215107047",
-  "task": "docs(us075): correct PROJECT_TOKEN guidance — classic token, user-owned Projects",
+  "run_id": "run-1787215873604",
+  "task": "fix(us075): GraphQL Int variable must use -F not -f",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-08-20T08:38:27.045Z",
-  "finished_at": "2026-08-20T08:38:27.047Z",
+  "started_at": "2026-08-20T08:51:13.594Z",
+  "finished_at": "2026-08-20T08:51:13.604Z",
   "prompt_hash": "sha256:bb1b3f36f59b0cc5d581d245524c44fda19855b890584e53bb79cf5117b86d8d",
   "tool_trace": [
     "Read",

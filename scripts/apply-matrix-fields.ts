@@ -42,9 +42,22 @@ function gh(args: string[]): string {
   return execFileSync('gh', args, { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
 }
 
-function graphql<T = unknown>(query: string, vars: Record<string, string>): T {
+/**
+ * `gh api graphql` has two flags for variables and the difference is not
+ * cosmetic: `-f` sends the value as a STRING, `-F` sends it typed. A GraphQL
+ * `Int!` variable passed with `-f` fails with
+ *   Variable $number of type Int! was provided invalid value
+ *   Could not coerce value "1" to Int
+ * so numbers must go through `-F`. Dispatching on the JavaScript type keeps
+ * that correct automatically — and, importantly, keeps string values that
+ * merely *look* numeric (an all-digit sys_id, say) as strings, which is what
+ * `-F` would silently get wrong.
+ */
+function graphql<T = unknown>(query: string, vars: Record<string, string | number>): T {
   const args = ['api', 'graphql', '-f', `query=${query}`];
-  for (const [k, v] of Object.entries(vars)) args.push('-f', `${k}=${v}`);
+  for (const [k, v] of Object.entries(vars)) {
+    args.push(typeof v === 'number' ? '-F' : '-f', `${k}=${v}`);
+  }
   return JSON.parse(gh(args)) as T;
 }
 
@@ -73,7 +86,8 @@ function loadProject(): { projectId: string; fields: ProjectField[] } {
         }
       }
     }`,
-    { owner: OWNER, number: String(PROJECT_NUMBER) },
+    // PROJECT_NUMBER stays a number so it goes through `-F` — see graphql().
+    { owner: OWNER, number: PROJECT_NUMBER },
   );
   const project = data?.data?.user?.projectV2;
   if (!project) throw new Error(`Project ${PROJECT_NUMBER} not found for ${OWNER}`);
