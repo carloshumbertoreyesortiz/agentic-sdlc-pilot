@@ -17,16 +17,24 @@ Labels and the workflow must exist **before** the first production incident arri
 
 ---
 
-## 1 — Prerequisites (no cutover until all four are true)
+## 1 — Prerequisites (no cutover until all five are true)
 
-| # | Item | Owner | Verify |
-| --- | --- | --- | --- |
-| 1.1 | GitHub App created, installed on `TelenorNorgeInternal` scoped to `s06065-sfb-telenor-sfdc` only | Carlos | App appears under the org's installed apps |
-| 1.2 | App **ownership transferred** to the org and accepted by an org owner | Org owner (`#nova-github`) | Carlos shows as *Application manager* |
-| 1.3 | **`HalvorMortensen` added as an App manager** | Org owner | He can see the App's settings page |
-| 1.4 | **Isak's sensitivity gate** confirmed — the service-desk instance holds no sensitive data | Isak | Recorded in `risks.md` (`R-SERVICENOW-DEPENDENCY`) |
+**The App:** `matrix-sfb-sync` · **App ID `4671001`** · created 2026-08-21.
 
-> 1.4 is the one that can block late. It is unrelated to anything technical and has been outstanding since 2026-08-05.
+> ⚠️ **Transfer BEFORE install — the reverse does not work.** The Nova guide mandates *"Where can this GitHub App be installed?"* = **Only on this account**, and that setting restricts installation to whoever **owns** the App. While it is personally owned, the install page offers only the personal account and the organisation never appears. The org becomes installable only once it owns the App. The Nova guide lists *Install App* before *Transfer ownership*, but the two cannot be done in that order under its own required setting.
+
+| # | Item | Owner | Status | Verify |
+| --- | --- | --- | --- | --- |
+| 1.1 | App created — Issues read/write + Metadata read, webhooks off, "Only on this account" | Carlos | ✅ 2026-08-21 | App ID `4671001` |
+| 1.2 | **Transfer to `TelenorNorgeInternal` requested** | Carlos | ✅ requested 2026-08-21, `#nova-github` posted | "Transfer request sent" |
+| 1.3 | Transfer **accepted** by an org owner | Org owner (`#nova-github`) | ⏳ waiting | Owner reads `TelenorNorgeInternal`; Carlos shows as *Application manager* |
+| 1.4 | **Installed** on `s06065-sfb-telenor-sfdc` only | Carlos — **only possible after 1.3** | ⏳ blocked by 1.3 | App appears under the org's installed apps |
+| 1.5 | **`HalvorMortensen` added as an App manager** | Org owner | ⏳ requested | He can see the App's settings page and generate the private key |
+| 1.6 | **Isak's sensitivity gate** — the service-desk instance holds no sensitive data | Isak | ⏳ outstanding since 2026-08-05 | Recorded in `risks.md` (`R-SERVICENOW-DEPENDENCY`) |
+
+> **No private key has been generated, deliberately.** The first one is Halvor's to create once 1.5 lands — that is the whole point of the App-manager route, and generating one now would mean either transmitting it or deleting it later.
+>
+> **1.6 is the one that can block late.** It is unrelated to anything technical and has been outstanding since 2026-08-05.
 
 ## 2 — Prepare the production repo *before* any incident arrives
 
