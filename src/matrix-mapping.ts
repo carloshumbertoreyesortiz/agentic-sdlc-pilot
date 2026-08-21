@@ -186,8 +186,39 @@ export function extractFields(body: string): MatrixFieldValues | null {
 }
 
 /** Renders a Matrix work note as an issue comment, tagged with its origin. */
-export function buildWorkNoteComment(author: string, at: string, text: string): string {
-  return `**[Matrix work note]** — ${author}, ${at}\n\n${text}`;
+export function buildWorkNoteComment(
+  author: string,
+  at: string,
+  text: string,
+  /**
+   * The journal entry's own `sys_id`. Optional but strongly recommended: retry
+   * is at-least-once one level down too, so a comment whose response is lost
+   * gets re-posted. The issue-level search-before-create guard does NOT cover
+   * comments — it matches on the incident, which already exists by then.
+   */
+  journalId?: string,
+  /** 'comment' = caller-visible in ServiceNow; 'work note' = internal. */
+  kind: 'work note' | 'comment' = 'work note',
+): string {
+  const marker = journalId ? `\n\n<!-- ${JOURNAL_MARKER} ${journalId} -->` : '';
+  return `**[Matrix ${kind}]** — ${author}, ${at}\n\n${text}${marker}`;
+}
+
+/** Marker identifying which ServiceNow journal entry a comment came from. */
+const JOURNAL_MARKER = 'Matrix-Journal-Id:';
+
+/**
+ * Search query that must run before posting a comment, mirroring the
+ * issue-level guard. Create only when this returns nothing.
+ */
+export function duplicateCommentQuery(repo: string, journalId: string): string {
+  return `repo:${repo} in:comments "${JOURNAL_MARKER} ${journalId}"`;
+}
+
+/** Extracts the journal id from a comment body, or null. */
+export function extractJournalId(body: string): string | null {
+  const match = body.match(/<!--\s*Matrix-Journal-Id:\s*([^\s>]+)\s*-->/);
+  return match ? match[1] : null;
 }
 
 const NBSP_ROW = (label: string, value: string) => `| ${label} | ${value} |`;
