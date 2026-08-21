@@ -120,10 +120,52 @@ So: keep doing exactly what you are doing for Status, and additionally send `sta
 | Closed | `closed` | `completed` | `Done` |
 | Cancelled | `closed` | `not_planned` | *(omit — no Status)* |
 
-```json
-PATCH /repos/{owner}/{repo}/issues/{number}
-{ "state": "closed", "state_reason": "not_planned", "title": "…", "body": "…" }
+#### ⚠️ `status` is NOT a top-level payload field
+
+This is the single easiest thing to get wrong, and it fails **silently** — GitHub ignores unknown top-level fields and still returns `200`, so the call looks successful while Status never moves on the board.
+
+| Goes where | Fields |
+| --- | --- |
+| **Top level of the PATCH payload** (GitHub's own API) | `state`, `state_reason`, `title`, `body` |
+| **Inside the `matrix-fields` block, inside `body`** (ours) | `status`, `priority`, `caller`, `sys_id`, `number`, `url` |
+
+**Closed** — `status` lives in the metadata block, not beside `state`:
+
+```js
+const fields = {
+  sys_id: '314e73f1…', number: 'INC0069821', url: '…',
+  priority: 'P3',
+  status: 'Done',                       // ← HERE, inside the block
+  caller: 'Halvor Mortensen',
+};
+
+const payload = {
+  state: 'closed',                      // ← GitHub's own field
+  state_reason: 'completed',            // ← GitHub's own field
+  title: 'INC0069821 — …',
+  body: `## Background\n…\n\n<!-- Matrix-Sys-Id: 314e73f1… -->\n<!-- matrix-fields: ${JSON.stringify(fields)} -->\n_Synced from Matrix…_`,
+};
 ```
+
+**Cancelled** — identical, except the `status` key is simply absent from `fields`:
+
+```js
+const fields = {
+  sys_id: '314e73f1…', number: 'INC0069821', url: '…',
+  priority: 'P3',
+  // no status key at all
+  caller: 'Halvor Mortensen',
+};
+
+const payload = {
+  state: 'closed',
+  state_reason: 'not_planned',
+  title: 'INC0069821 — …',
+  body: `…<!-- matrix-fields: ${JSON.stringify(fields)} -->…`,
+};
+```
+
+**Do not send `labels` on a PATCH.** GitHub *replaces* the entire label set with whatever is sent, so a triager's added label would be silently wiped. Labels are set once at creation and left alone.
 
 **Why Resolved stays open.** In the SFB taxonomy `Deployed` means *"deployed to production but not yet verified by the requestor"* (way-of-work §5) — the work is not finished, so the issue should not close. Only `Done`, which means verified, closes it. This is the same Resolved-vs-Deployed distinction flagged above, and it is the row most likely to change once Isak confirms closure semantics.
 
@@ -276,6 +318,16 @@ GitHub cannot filter a listing by actor, so the loop-breaking is done on identit
 2. **Store the `updated_at` value ServiceNow last wrote per incident** and ignore reads at or below it. Belt and braces for field changes, where there is no author to inspect.
 
 Applied together, an update ServiceNow caused never comes back as an update ServiceNow must apply.
+
+### Dates — UTC, ISO 8601, with the `Z`
+
+`2026-08-21T09:14:00Z`. Never local time, never an offset like `+02:00`, never a ServiceNow-formatted `2026-08-21 09:14:00`.
+
+Three reasons, and the last one is not cosmetic:
+
+1. **GitHub's own timestamps are UTC.** `created_at` and `updated_at` come back as `…Z`, so anything displayed alongside them in local time reads as wrong by an hour or two.
+2. **Oslo has daylight saving.** A local-time value is ambiguous twice a year and silently off by an hour for half of it.
+3. **The polling and echo-loop logic compares timestamps directly.** `?since=` is interpreted as UTC, and the stored "last written `updated_at`" is compared against GitHub's UTC value. A local-time value there does not merely display oddly — it makes the comparison wrong, so updates are re-read or skipped.
 
 ### Reference fields — send display values, never `sys_id`
 
