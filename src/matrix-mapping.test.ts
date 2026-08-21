@@ -3,8 +3,10 @@ import {
   buildIssuePayload,
   buildTitle,
   buildWorkNoteComment,
+  duplicateCommentQuery,
   duplicateSearchQuery,
   extractFields,
+  extractJournalId,
   extractSysId,
   mapPriority,
   mapStatus,
@@ -245,5 +247,27 @@ describe('buildWorkNoteComment', () => {
     const c = buildWorkNoteComment('Erik Lauvli', '2026-08-18T11:02:00Z', 'Reproduced on test.');
     expect(c.startsWith('**[Matrix work note]**')).toBe(true);
     expect(c).toContain('Reproduced on test.');
+  });
+
+  it('distinguishes a caller-visible comment from an internal work note', () => {
+    const c = buildWorkNoteComment('Nina', '2026-08-18T11:02:00Z', 'Still broken', undefined, 'comment');
+    expect(c.startsWith('**[Matrix comment]**')).toBe(true);
+  });
+
+  it('carries the journal id so a retried post can be recognised', () => {
+    const c = buildWorkNoteComment('Erik', '2026-08-18T11:02:00Z', 'text', 'journal123');
+    expect(extractJournalId(c)).toBe('journal123');
+  });
+
+  it('omits the marker when no journal id is supplied', () => {
+    const c = buildWorkNoteComment('Erik', '2026-08-18T11:02:00Z', 'text');
+    expect(extractJournalId(c)).toBeNull();
+  });
+
+  it('the comment guard actually matches what the builder produced', () => {
+    const c = buildWorkNoteComment('Erik', '2026-08-18T11:02:00Z', 'text', 'journal123');
+    const q = duplicateCommentQuery('owner/repo', 'journal123');
+    const marker = q.match(/"([^"]+)"/)?.[1];
+    expect(c).toContain(marker as string);
   });
 });

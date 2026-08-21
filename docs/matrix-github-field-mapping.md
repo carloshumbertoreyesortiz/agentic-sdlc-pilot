@@ -101,6 +101,15 @@ An incident moving `New → In Progress` correctly produces a GitHub issue that 
 
 _Observed 2026-08-20 on [#168](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/168): the update path worked on first attempt, and only the naming caused doubt._
 
+### There is no second "state" field to populate
+
+Asked 2026-08-21, and worth answering precisely because the wrong answer means creating a redundant board field:
+
+- **`Status`** is a **GitHub Project field** — the SFB 10-state taxonomy. It is set from the `status` key in the `matrix-fields` block. **Sending the mapped ServiceNow state there is correct** — nothing to change.
+- **`state`** is **not a field of ours at all.** It is part of GitHub's own **issue API payload** (`open` / `closed`), sent on the `PATCH` alongside `title` and `body`. It never appears on the board and there is nothing to create for it.
+
+So: keep doing exactly what you are doing for Status, and additionally send `state` + `state_reason` on the PATCH **only** when the incident reaches Closed or Cancelled. Ordinary state changes carry neither.
+
 ### End-of-life states — the exact API values
 
 **ServiceNow closes the issue, not the pilot.** The GitHub-side workflow only ever writes Project fields; it never opens or closes anything. So `state` and `state_reason` must travel on the `PATCH` alongside the regenerated body.
@@ -276,9 +285,35 @@ Applied together, an update ServiceNow caused never comes back as an update Serv
 
 ### Add a work note as a comment — `POST /repos/{owner}/{repo}/issues/{number}/comments`
 
+⚠️ **The comments endpoint takes `body` and nothing else.** No `title`, **no `labels`**, no metadata block. Those belong to the issue, which already exists by the time a note arrives — sending them here is not merely redundant, the API rejects unknown fields silently and you would never know they were ignored.
+
 ```json
-{ "body": "**[Matrix work note]** — Erik Lauvli, 2026-08-18T11:02:00Z\n\nReproduced on the test environment; appears to be the template lookup." }
+{
+  "body": "**[Matrix work note]** — Erik Lauvli, 2026-08-18T11:02:00Z\n\nReproduced on the test environment; appears to be the template lookup.\n\n<!-- Matrix-Journal-Id: 9f8e7d6c5b4a -->"
+}
 ```
+
+The `{number}` comes from `correlation_id` on the incident.
+
+**Label the origin in the first line.** `**[Matrix work note]**` for internal notes, `**[Matrix comment]**` for caller-visible ones. This is what makes the echo-loop rule checkable: an inbound *work note* must never be pushed back out to anything caller-visible, and the prefix is how the outbound side tells them apart.
+
+#### Comment-level duplicate guard — a second, separate guard
+
+**The issue-level `sys_id` search does not protect comments.** By the time a note is posted the issue already exists, so that search always matches — it tells you nothing about whether *this note* was already added. Retry is at-least-once one level down too: a comment whose response is lost gets re-posted, and the incident ends up with the same note twice.
+
+Same pattern, one level down. Embed the **journal entry's own `sys_id`**:
+
+```
+<!-- Matrix-Journal-Id: 9f8e7d6c5b4a -->
+```
+
+and search before posting:
+
+```
+GET /search/issues?q=repo:{owner}/{repo}+in:comments+"Matrix-Journal-Id:+{journal_sys_id}"
+```
+
+The cheaper local check applies first, exactly as with issues: if the queue record already holds the GitHub comment id, the post succeeded and no search is needed.
 
 ## 6. What is still open
 
