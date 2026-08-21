@@ -127,7 +127,11 @@ _(Signal was floated by Halvor as something his team has used before. His team's
 
 **Also still available — eliminate the test transfer too:** the sandbox repo does **not** have to be the pilot's. If Halvor creates it on his own GitHub account, he generates his own token and nothing is exchanged at all; Carlos joins as a collaborator to observe and build the receiver against real payloads. Offered 2026-08-14; Halvor opted for OneDrive instead, which is fine for a credential this narrow.
 
-**Possible shortcut worth trying:** the firewall order (Step 1c) is awaiting approval from *"the owners of the TNN GitHub system."* If that is the same GHEC platform team handling this App request, **one contact holds both blockers** — raise the firewall approval in the same `#nova-github` thread.
+**Status 2026-08-21:** App **`matrix-sfb-sync`** created (App ID `4671001`) with Issues read/write + Metadata read, webhooks off, "Only on this account". **Transfer to `TelenorNorgeInternal` requested** and `#nova-github` posted. Waiting on an org owner to accept the transfer and add `HalvorMortensen` as an App manager. **No private key generated** — deliberately; the first is Halvor's once he is a manager. Detailed state in the [cutover checklist](matrix-sync-cutover.md) §1.
+
+⚠️ **Transfer must precede install.** "Only on this account" restricts installation to whoever *owns* the App, so while it is personally owned the org never appears on the install page. The Nova guide lists Install before Transfer; under its own mandated setting that order is impossible. Corrected here after hitting it.
+
+_The earlier theory that the firewall approver and the GHEC platform team were the same contact turned out to be moot — Halvor established (2026-08-13) that `api.github.com` counts as internet, so the firewall needed only source-system approval, which he holds himself. No GitHub-side approval was ever involved._
 
 - **Request:** ask in `#nova-github` for the register/approve process + the org-owner approver (draft request prepared 2026-08-05).
 - **Create the app (least-privilege):** permissions **Issues: Read & write** + **Metadata: Read** only (add Issues/Issue-comment webhook events *only* if reverse-sync is event-driven); installable setting **"Only on this account"**.
