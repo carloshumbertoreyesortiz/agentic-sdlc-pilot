@@ -27,8 +27,8 @@ Labels and the workflow must exist **before** the first production incident arri
 | --- | --- | --- | --- | --- |
 | 1.1 | App created — Issues read/write + Metadata read, webhooks off, "Only on this account" | Carlos | ✅ 2026-08-21 | App ID `4671001` |
 | 1.2 | **Transfer to `TelenorNorgeInternal` requested** | Carlos | ✅ requested 2026-08-21, `#nova-github` posted | "Transfer request sent" |
-| 1.3 | Transfer **accepted** by an org owner | Org owner (`#nova-github`) | ⏳ waiting | Owner reads `TelenorNorgeInternal`; Carlos shows as *Application manager* |
-| 1.4 | **Installed** on `s06065-sfb-telenor-sfdc` only | Carlos — **only possible after 1.3** | ⏳ blocked by 1.3 | App appears under the org's installed apps |
+| 1.3 | Transfer **accepted** by an org owner | Org owner (`#nova-github`) | ✅ 2026-08-24 (Rune) | Owner reads `TelenorNorgeInternal` |
+| 1.4 | **Installed** on `s06065-sfb-telenor-sfdc` only | 🔒 **Org owner / repo admin — not the pilot** | ⏳ requested 2026-08-24 | App appears under the org's installed apps |
 | 1.5 | **`HalvorMortensen` added as an App manager** | Org owner | ⏳ requested | He can see the App's settings page and generate the private key |
 | 1.6 | **Isak's sensitivity gate** — the service-desk instance holds no sensitive data | Isak | ⏳ outstanding since 2026-08-05 | Recorded in `risks.md` (`R-SERVICENOW-DEPENDENCY`) |
 
@@ -38,10 +38,24 @@ Labels and the workflow must exist **before** the first production incident arri
 
 ## 2 — Prepare the production repo *before* any incident arrives
 
+> ### ⚠️ Access constraint — the pilot has `write`, not `admin`
+>
+> Verified 2026-08-24: on `TelenorNorgeInternal/s06065-sfb-telenor-sfdc` the pilot holds
+> `{admin: false, maintain: false, push: true, triage: true, pull: true}` — **role `write`**.
+>
+> That is not a footnote; it decides *who* can do several items below, and it surfaced only when the repo failed to appear in the App install picker (GitHub lists only repositories you administer).
+>
+> | Needs | Items | Who |
+> | --- | --- | --- |
+> | **Admin on the repo, or an org owner** | App installation (1.4), labels (2.1) | Rune / an org owner |
+> | **Write is enough** — via a normal PR | Workflow + script (2.2, 2.3, 2.4) | Carlos, reviewed by the SFB team |
+>
+> Discovering this at cutover would have meant a stall mid-migration. Raised in `#nova-github` on 2026-08-24 alongside the install and App-manager asks.
+
 | # | Item | Note |
 | --- | --- | --- |
-| 2.1 | Create the **`matrix`** and **`incident`** labels in `s06065-sfb-telenor-sfdc` | ⚠️ **This is the one that bit the sandbox.** The workflow's entire trigger is `contains(labels, 'matrix')`. The REST API will auto-create a missing label with a random colour, so the sync *appears* to work while the label carries no meaning and no description. Create them deliberately. |
-| 2.2 | Copy **`.github/workflows/matrix-issue-fields.yml`** into the production repo | Workflows only run in the repo they live in. Without this, issues land undecorated and nothing reports an error. |
+| 2.1 | Create the **`matrix`** and **`incident`** labels in `s06065-sfb-telenor-sfdc` | 🔒 **Needs admin — not the pilot.** ⚠️ **This is the one that bit the sandbox.** The workflow's entire trigger is `contains(labels, 'matrix')`. The REST API will auto-create a missing label with a random colour, so the sync *appears* to work while the label carries no meaning and no description. Create them deliberately. |
+| 2.2 | Copy **`.github/workflows/matrix-issue-fields.yml`** into the production repo | Via PR — `write` is sufficient. Workflows only run in the repo they live in. Without this, issues land undecorated and nothing reports an error. |
 | 2.3 | Copy **`scripts/apply-matrix-fields.ts`** and its `src/matrix-mapping.ts` dependency | Or vendor the script — but keep one source of truth, or the two copies drift. |
 | 2.4 | Set `PROJECT_OWNER` / `PROJECT_NUMBER` in the workflow to the **org** Project | The sandbox values are hardcoded defaults in the script and **will silently target the wrong board**. |
 | 2.5 | Confirm the org Project carries the same field **names and single-select options** | Field IDs are resolved by name at runtime, so a renamed field or a missing option logs a skip rather than failing. Priority `P0–P3` in particular — see the correction in the mapping doc. |
