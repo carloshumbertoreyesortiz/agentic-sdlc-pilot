@@ -310,6 +310,34 @@ GET /repos/{owner}/{repo}/issues?since=2026-08-19T08:00:00Z&state=all&sort=updat
 
 ⚠️ **`/issues` returns pull requests too.** Any item carrying a `pull_request` key is a PR, not an issue — filter them out or you will sync PRs into Matrix.
 
+### What flows back from GitHub — scope of the reverse direction
+
+Asked 2026-08-25, and **not previously specified**. The contract above covers ServiceNow → GitHub in detail; this is the other direction.
+
+#### Recommendation: comments only, to begin with
+
+| Change in GitHub | Flows back to Matrix? | Why |
+| --- | --- | --- |
+| **A person comments on the issue** | ✅ **Yes** — as a work note | This is the bulk of what Ingrid copies by hand today. It is the value. |
+| **Status field moved** (e.g. Development → UAT) | ⏸️ **Not yet** — see below | Wanted eventually, but needs a direction-of-truth rule first |
+| **Priority, Caller, description edited** | ❌ **No** | ServiceNow owns the incident's own attributes. A GitHub-side edit would be overwritten by the next incoming update anyway, so pushing it back creates a fight between the two systems. |
+| **Issue closed by a person** | ⏸️ **Not yet** | Same question as Status, and higher stakes |
+
+#### Why status push-back is deferred rather than dismissed
+
+It is genuinely wanted — way-of-work §1 Flow C describes Ingrid tracking progress in GitHub and *"manually updating the incident in Matrix based on the latest information."* Automating that is the point. But two things must be settled first, and both are Step 3 decisions for Martin, Ingrid and Isak:
+
+1. **Who owns Status while an incident is in flight?** ServiceNow's state can change (the service desk resolves it) at the same time as GitHub's Status (a developer moves it along). Without one owner per field, both sides push and neither wins.
+2. **⚠️ Field changes carry no marker — the comment loop-breaker does not extend to them.** A comment declares its origin in its body (`Matrix-Journal-Id`). A Status change declares nothing: the field simply holds a different value, with no record of who set it or why. Loop prevention for field changes therefore rests **entirely** on the stored `updated_at` comparison, which is markedly weaker than the marker.
+
+Starting with comments means the strong loop-breaker covers everything that moves, and status push-back can be added deliberately once the ownership rule exists — rather than discovering the ping-pong in production.
+
+#### Filtering the fetch — client-side is correct
+
+`GET /repos/{owner}/{repo}/issues/comments?since=…` is the **core** list endpoint. It has no query syntax and therefore **no way to exclude** anything — that is a property of the Search API, which is the one capped at ~30 requests/minute.
+
+So: fetch, then **drop any comment whose body contains `<!-- Matrix-Journal-Id:`** while parsing. That is not a workaround, it is the right design — it keeps the poll on the 5,000/hour budget and the filter is a substring test.
+
 ### Breaking the echo loop
 
 GitHub cannot filter a listing by actor, so the loop-breaking is done on identity after the read:
