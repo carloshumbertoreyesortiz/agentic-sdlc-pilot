@@ -79,6 +79,7 @@ Labels and the workflow must exist **before** the first production incident arri
 | 4.2 | Verify the fields **on the board**, not from the run log | A green run only proves the script did not throw. |
 | 4.3 | Prove the **update** path — change state, re-send, confirm Status follows | Separate machinery from create. |
 | 4.4 | Prove the **duplicate guard** — re-send the same incident, confirm no second issue | Retry makes delivery at-least-once; this is the only thing standing between that and duplicate issues. |
+| 4.4a | Prove **echo-loop prevention with the App's bot identity** | ⚠️ **Untestable in the sandbox and therefore unproven.** Verified 2026-08-25: all comments on the sandbox issue — synced *and* human-written — report the same author, because the sandbox token is a personal PAT. Loop-breaking there rests entirely on the `Matrix-Journal-Id` marker. Once the App is in use a distinct `…[bot]` author exists, and that path has never been exercised. Test it explicitly rather than assuming it inherits from the sandbox. |
 | 4.5 | **Ingrid verifies** the automated result matches what she would have done by hand | Step 5 sign-off. |
 | 4.6 | Close and delete the synthetic issue | Leave the sandbox one ([#166](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/166)) as the known-good reference. |
 
