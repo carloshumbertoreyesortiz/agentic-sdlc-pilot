@@ -68,8 +68,8 @@ Labels and the workflow must exist **before** the first production incident arri
 
 | # | Item | Note |
 | --- | --- | --- |
-| 3.1 | ServiceNow switches from the sandbox token to **App authentication** — JWT → installation token | Halvor's work, deferred from the test phase. Nova docs carry a working bash example of the flow. |
-| 3.2 | Halvor generates the App **private key himself** as an App manager | It is never transmitted. Delete any other private keys on the App afterwards — an App can hold several, all valid until explicitly deleted. |
+| 3.1 | ServiceNow switches from the sandbox token to **App authentication** — JWT → installation token | 🟡 **Half proven, 2026-08-25.** JWT signing works and `GET /app` returns 200 — which validates the signature, the `iat`/`exp` window and the App ID in one call. **Still to prove:** exchanging it at `POST /app/installations/{id}/access_tokens` and using the resulting token against the repo. Failures beyond this point are about the installation, not the JWT. |
+| 3.2 | Halvor generates the App **private key himself** as an App manager | ✅ **DONE 2026-08-25** — implied by a working JWT signature, since signing requires the key. **The key was never transmitted between the parties**, which is the entire payoff of the App-manager route: the credential-channel question (Webex → OneDrive → Signal, several days of discussion) turned out not to need an answer. Delete any spare private keys on the App — it can hold several, all valid until explicitly removed. |
 | 3.3 | Replace `PROJECT_TOKEN` | The sandbox used a **classic** token with `project` scope, because fine-grained tokens cannot reach *user-owned* Projects. The production Project is **org-owned**, so this constraint disappears — the App can carry Projects permission properly, or a fine-grained token scoped to the org. |
 | 3.4 | Repoint ServiceNow's target repo to `TelenorNorgeInternal/s06065-sfb-telenor-sfdc` | Same `api.github.com` host, so **no new firewall opening is needed** (Appendix D). |
 
