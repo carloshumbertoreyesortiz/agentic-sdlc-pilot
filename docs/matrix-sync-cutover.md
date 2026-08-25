@@ -49,14 +49,16 @@ Labels and the workflow must exist **before** the first production incident arri
 >
 > | Needs | Items | Who |
 > | --- | --- | --- |
-> | **Admin on the repo** | labels (2.1) | **`s06065-sfb-owners`** — the team that owns the repo: `jerome-nerrant`, `apoorv-shukla-telenor`, `janos-lakatos`, `luis-martins-telenor`, `MartinAarsethKarlsen`. **Martin owns #1595, so this integration is his** — ask him, not `#nova-github`. |
-> | **Write is enough** — via a normal PR | Workflow + script (2.2, 2.3, 2.4) | Carlos, reviewed by the SFB team |
+> | **Admin / org owner** | App installation (1.4) | Done by Rune, 2026-08-24 |
+> | **Write is enough** | **Labels (2.1)**, workflow + script via PR (2.2–2.4) | Carlos |
+>
+> **Correction 2026-08-25:** labels were first recorded here as needing admin. That was inferred from the App install picker and was **wrong** — label management is available at `write`, and both labels were created without difficulty. Only the App installation genuinely required more than `write`. The owning team `s06065-sfb-owners` (`jerome-nerrant`, `apoorv-shukla-telenor`, `janos-lakatos`, `luis-martins-telenor`, `MartinAarsethKarlsen`) is still the right escalation for anything that does need admin — and note **Martin owns #1595**, so this integration is his.
 >
 > Discovering this at cutover would have meant a stall mid-migration. Raised in `#nova-github` on 2026-08-24 alongside the install and App-manager asks.
 
 | # | Item | Note |
 | --- | --- | --- |
-| 2.1 | Create the **`matrix`** and **`incident`** labels in `s06065-sfb-telenor-sfdc` | 🔒 **Needs admin — ask `s06065-sfb-owners`, i.e. Martin or Apoorv.** ⚠️ **This is the one that bit the sandbox.** The workflow's entire trigger is `contains(labels, 'matrix')`. The REST API will auto-create a missing label with a random colour, so the sync *appears* to work while the label carries no meaning and no description. Create them deliberately. |
+| 2.1 | Create the **`matrix`** and **`incident`** labels in `s06065-sfb-telenor-sfdc` | ✅ **DONE 2026-08-25** — `matrix` (#5319E7) and `incident` (#B60205), created with `write`, no admin needed. ⚠️ **This is the one that bit the sandbox.** The workflow's entire trigger is `contains(labels, 'matrix')`. The REST API will auto-create a missing label with a random colour, so the sync *appears* to work while the label carries no meaning and no description. Create them deliberately. |
 | 2.2 | Copy **`.github/workflows/matrix-issue-fields.yml`** into the production repo | Via PR — `write` is sufficient. Workflows only run in the repo they live in. Without this, issues land undecorated and nothing reports an error. |
 | 2.3 | Copy **`scripts/apply-matrix-fields.ts`** and its `src/matrix-mapping.ts` dependency | Or vendor the script — but keep one source of truth, or the two copies drift. |
 | 2.4 | Set `PROJECT_OWNER` / `PROJECT_NUMBER` in the workflow to the **org** Project | The sandbox values are hardcoded defaults in the script and **will silently target the wrong board**. |
