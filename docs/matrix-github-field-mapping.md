@@ -314,8 +314,13 @@ GET /repos/{owner}/{repo}/issues?since=2026-08-19T08:00:00Z&state=all&sort=updat
 
 GitHub cannot filter a listing by actor, so the loop-breaking is done on identity after the read:
 
-1. **Skip anything authored by our own integration identity.** Under the GitHub App this is the app's bot user (`…[bot]`), which is a distinct, stable, auditable identity — one of the practical reasons the App beats a PAT, where every write would appear under a human's name and be indistinguishable from a real person's edit.
-2. **Store the `updated_at` value ServiceNow last wrote per incident** and ignore reads at or below it. Belt and braces for field changes, where there is no author to inspect.
+1. **Primary — skip anything carrying a `Matrix-Journal-Id` marker.** A comment with the marker was written *by* the sync; one without it was written by a person in GitHub and is exactly what should flow back to the incident as a work note. This test works in **every** environment and does not depend on who holds the credential.
+2. **Secondary — skip anything authored by our own integration identity.** Under the GitHub App this is the app's bot user (`…[bot]`): distinct, stable, auditable.
+3. **Store the `updated_at` value ServiceNow last wrote per incident** and ignore reads at or below it. Belt and braces for field changes, where there is no author or marker to inspect.
+
+> ⚠️ **Identity alone does not work in the sandbox, and cannot be tested there.** Verified 2026-08-25 on [#168](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/168): all five comments — four synced from ServiceNow, one typed by a human in GitHub — report the **same author**, `carloshumbertoreyesortiz`, because the sandbox token is a personal PAT. The marker told them apart perfectly; the author field told them apart not at all.
+>
+> A loop-breaker built on identity would therefore appear to work in the sandbox only because nothing exercises it, and would be the *only* defence in production. Build on the marker; treat identity as reinforcement once the App's bot user exists.
 
 Applied together, an update ServiceNow caused never comes back as an update ServiceNow must apply.
 
