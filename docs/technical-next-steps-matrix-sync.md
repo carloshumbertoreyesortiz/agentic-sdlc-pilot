@@ -232,7 +232,22 @@ AND NOT flagged SSA           (hidden field on the ServiceNow side)
    | The **daily sweep** stops returning closed incidents | ⚠️ fine, provided the sweep never reads absence as *"went missing"* — it exists to catch what was never enqueued, and restricting it to active incidents is correct, not a bug |
 
    ⚠️ **Residual gap worth knowing.** If a close event fails permanently (all retries exhausted → `failed`), the issue stays open in GitHub *and* the incident is no longer active, so **the daily sweep cannot catch it either**. Nothing reconciles that case. The **failure notification is the only safety net** — which makes it more load-bearing than "nice to have after testing", where it currently sits.
-3. **Validate against Ingrid's real picks.** If any incident she syncs by hand fails this filter, the filter is wrong — or her selection contains judgement that no query can reproduce, which is itself the finding.
+3. ✅ **Validated against Ingrid, 2026-08-26 — she confirmed the filter matches her selection**, and stated there are no other incidents she picks up. **The scope filter is answered**; it was the last unresolved dependency in US-075.
+
+   **Her actual working query, from the screenshot she sent:**
+
+   ```
+   Active = true  AND  Reported on System = SFB
+   ```
+
+   ⚠️ **Two deltas between that and Halvor's proposal — neither is a contradiction, but both should be deliberate:**
+
+   | Halvor proposed | Ingrid's live filter | Decision needed |
+   | --- | --- | --- |
+   | `… OR caused by system = SFB` | **not present** | Broadens beyond her current practice. That may be *desirable* — it catches incidents she would currently miss — but it is no longer "matching what she does". Confirm the widening is wanted rather than assumed. |
+   | `AND NOT flagged SSA` | **not present** | Additive and safety-driven, not selection-driven. Keep it: it is the technical mitigation offered to Isak's sensitivity gate, and excluding nothing costs nothing. |
+
+   Neither delta blocks the build. Both are worth one sentence back to her so the widened scope is her decision, not a silent one.
 
 **The SSA exclusion may partly answer Isak's gate.** `R-SERVICENOW-DEPENDENCY` carries an outstanding sensitivity confirmation (open since 2026-08-05): whether the service-desk instance holds data too sensitive to flow to GitHub. If sensitive records are already flagged **SSA** and the filter excludes them **at source**, the question changes from *"is this instance safe?"* to *"is the SSA flag reliably applied?"* — narrower, and far easier for Isak to answer. Worth putting to him in those terms.
 
