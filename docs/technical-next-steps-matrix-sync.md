@@ -207,6 +207,26 @@ _Reported initially as a possible failure: the GitHub issue still showed **Open*
 **Defining "relevant to us" — evidence, not guesswork.** The filter (assignment group / CI / business service) decides what the integration returns forever. Two anchors:
 
 - **Scope by affected system, not by reporter.** An incident against the SFB Salesforce application matters whoever raised it — often a sales agent or customer service, not an SFB team member — while an SFB colleague's laptop ticket is out of scope. "Reported on SFB" is the wrong axis.
+#### Candidate filter — proposed by Halvor, 2026-08-26
+
+The first concrete, *queryable* proposal. A strong starting hypothesis, to be validated against Ingrid's actual selections rather than adopted on sight:
+
+```
+reported on system = SFB  AND/OR  caused by system = SFB
+AND active = true
+AND NOT flagged SSA           (hidden field on the ServiceNow side)
+```
+
+**What is right about it.** It keys on the **affected system**, not the reporter — which is the distinction that matters, since an incident against the SFB Salesforce app concerns the team whoever raised it.
+
+**Three things to settle before it is adopted:**
+
+1. **`AND` or `OR` between the two system fields?** The difference is large. `OR` is probably correct — an incident *caused by* SFB but reported against another system is still the team's to fix — but this must be a decision, not an accident of drafting.
+2. ⚠️ **`active = true` has an edge case in the reconciliation sweep.** When an incident closes it stops matching the filter, so the daily full-scope run will no longer return it. The sweep must not read that absence as *"an incident went missing"* — the close arrives through the queue as an ordinary event, and the sweep's job is to catch what was never enqueued, not to police disappearances. Worth stating explicitly, or the first week of go-live produces phantom drift alerts.
+3. **Validate against Ingrid's real picks.** If any incident she syncs by hand fails this filter, the filter is wrong — or her selection contains judgement that no query can reproduce, which is itself the finding.
+
+**The SSA exclusion may partly answer Isak's gate.** `R-SERVICENOW-DEPENDENCY` carries an outstanding sensitivity confirmation (open since 2026-08-05): whether the service-desk instance holds data too sensitive to flow to GitHub. If sensitive records are already flagged **SSA** and the filter excludes them **at source**, the question changes from *"is this instance safe?"* to *"is the SSA flag reliably applied?"* — narrower, and far easier for Isak to answer. Worth putting to him in those terms.
+
 - **Ingrid's manual selection *is* the specification.** She performs this filtering by hand daily. The route to a defensible filter is to take incidents she has recently turned into GitHub issues and identify the field values they share — now possible directly, since Step 1a granted Carlos read access to real incidents.
 - ⚠️ **Risk to surface early:** if part of her selection turns out to be judgement rather than a field value, no query can reproduce it, and the session must convert that judgement into an explicit predicate. Better discovered before the job is built than after.
 
