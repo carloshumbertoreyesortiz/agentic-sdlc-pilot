@@ -110,6 +110,27 @@ Asked 2026-08-21, and worth answering precisely because the wrong answer means c
 
 So: keep doing exactly what you are doing for Status, and additionally send `state` + `state_reason` on the PATCH **only** when the incident reaches Closed or Cancelled. Ordinary state changes carry neither.
 
+### Reopening — raised by Ingrid, 2026-08-26
+
+She flagged two transitions the contract did not cover, both real and both routine in her work:
+
+- **Resolved → Closed** — the ordinary happy path
+- **Resolved → Work in Progress** — *the reporter rejects the solution*
+
+Reference incidents she supplied for testing: **`INC0072343`** and **`INC0072144`**.
+
+| Transition | GitHub issue `state` | `state_reason` | Status field |
+| --- | --- | --- | --- |
+| Resolved → Closed | `closed` | `completed` | `Done` |
+| Resolved → Work in Progress | *(unchanged — already `open`)* | — | `Development` |
+| **Closed → reopened** | **`open`** | **`reopened`** | per the new state |
+
+**Resolved → Work in Progress needs nothing special**, and that is a consequence of an earlier decision paying off: because `Resolved` maps to `Deployed` and **deliberately leaves the issue open**, a rejected solution is just another Status change. Had `Resolved` closed the issue, every rejection would have required a reopen.
+
+⚠️ **`Closed → reopened` was genuinely missing.** The end-of-life table below only ever described *closing*. If an incident is reopened after being closed, ServiceNow must send **`state: "open"`** with **`state_reason: "reopened"`** — otherwise the issue stays closed in GitHub while the incident is live again, and the daily sweep will not catch it either (a reopened incident *is* active again, so it returns to the sweep — but the sweep detects what was never enqueued, not an issue whose state is stale).
+
+_This also vindicates the Resolved → Deployed mapping that was flagged as the weakest row: it matches the SFB taxonomy's "deployed but not yet verified by the requestor", and rejection-by-requestor is precisely the transition it anticipates. Still worth Isak's confirmation, but it now has evidence behind it._
+
 ### End-of-life states — the exact API values
 
 **ServiceNow closes the issue, not the pilot.** The GitHub-side workflow only ever writes Project fields; it never opens or closes anything. So `state` and `state_reason` must travel on the `PATCH` alongside the regenerated body.
