@@ -231,7 +231,9 @@ AND NOT flagged SSA           (hidden field on the ServiceNow side)
    | The **close event** never enqueues → issues never close | ✅ fixed at source by Halvor |
    | The **daily sweep** stops returning closed incidents | ⚠️ fine, provided the sweep never reads absence as *"went missing"* — it exists to catch what was never enqueued, and restricting it to active incidents is correct, not a bug |
 
-   ⚠️ **Residual gap worth knowing.** If a close event fails permanently (all retries exhausted → `failed`), the issue stays open in GitHub *and* the incident is no longer active, so **the daily sweep cannot catch it either**. Nothing reconciles that case. The **failure notification is the only safety net** — which makes it more load-bearing than "nice to have after testing", where it currently sits.
+   ⚠️ **Residual gap worth knowing.** If a close event fails permanently (all retries exhausted → `failed`), the issue stays open in GitHub *and* the incident is no longer active, so **the daily sweep cannot catch it either**. Nothing reconciles that case. The **failure notification is the safety net** — which makes it more load-bearing than "nice to have after testing", where it originally sat.
+
+   ✅ **Second layer added by Halvor, 2026-08-26:** a queue error/failure report on the **ServiceNow team's own dashboard**, visible to their admins. So if the notification to the pilot ever fails to fire, their side still sees the failure and can raise it. Two independent observers of the same condition, on opposite sides of the integration — which is the right shape, since a notification that silently stops working is otherwise indistinguishable from no failures at all.
 3. ✅ **Validated against Ingrid, 2026-08-26 — she confirmed the filter matches her selection**, and stated there are no other incidents she picks up. **The scope filter is answered**; it was the last unresolved dependency in US-075.
 
    **Her actual working query, from the screenshot she sent:**
