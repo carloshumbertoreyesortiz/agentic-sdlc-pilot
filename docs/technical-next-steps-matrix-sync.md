@@ -221,8 +221,17 @@ AND NOT flagged SSA           (hidden field on the ServiceNow side)
 
 **Three things to settle before it is adopted:**
 
-1. **`AND` or `OR` between the two system fields?** The difference is large. `OR` is probably correct — an incident *caused by* SFB but reported against another system is still the team's to fix — but this must be a decision, not an accident of drafting.
-2. ⚠️ **`active = true` has an edge case in the reconciliation sweep.** When an incident closes it stops matching the filter, so the daily full-scope run will no longer return it. The sweep must not read that absence as *"an incident went missing"* — the close arrives through the queue as an ordinary event, and the sweep's job is to catch what was never enqueued, not to police disappearances. Worth stating explicitly, or the first week of go-live produces phantom drift alerts.
+1. ✅ **`OR`, decided 2026-08-26.** An incident *caused by* SFB but reported against another system is still the team's to fix.
+2. ✅ **`active = true` — resolved by Halvor, 2026-08-26, and he found the sharper half of it.** A strict `active = true` on the *queue trigger* would mean the **close transition itself never enqueues** — so GitHub issues would stay open forever, which is worse than any sweep confusion. His fix: allow a queue record when the state changes to closed even though `active` is now false, with the system criteria still applying.
+
+   Two distinct concerns, both now covered:
+
+   | Concern | Status |
+   | --- | --- |
+   | The **close event** never enqueues → issues never close | ✅ fixed at source by Halvor |
+   | The **daily sweep** stops returning closed incidents | ⚠️ fine, provided the sweep never reads absence as *"went missing"* — it exists to catch what was never enqueued, and restricting it to active incidents is correct, not a bug |
+
+   ⚠️ **Residual gap worth knowing.** If a close event fails permanently (all retries exhausted → `failed`), the issue stays open in GitHub *and* the incident is no longer active, so **the daily sweep cannot catch it either**. Nothing reconciles that case. The **failure notification is the only safety net** — which makes it more load-bearing than "nice to have after testing", where it currently sits.
 3. **Validate against Ingrid's real picks.** If any incident she syncs by hand fails this filter, the filter is wrong — or her selection contains judgement that no query can reproduce, which is itself the finding.
 
 **The SSA exclusion may partly answer Isak's gate.** `R-SERVICENOW-DEPENDENCY` carries an outstanding sensitivity confirmation (open since 2026-08-05): whether the service-desk instance holds data too sensitive to flow to GitHub. If sensitive records are already flagged **SSA** and the filter excludes them **at source**, the question changes from *"is this instance safe?"* to *"is the SSA flag reliably applied?"* — narrower, and far easier for Isak to answer. Worth putting to him in those terms.
