@@ -45,7 +45,18 @@ _Retained for the record._ The plan was an SN-side **integration user** plus a *
 
 _(The earlier correction still stands and is worth keeping visible: **AIR is an end-user role for humans reporting incidents**, never the right fit for a system integration — flagged by the ServiceNow contact 2026-08-04, superseding the KB0010037/AIR line.)_
 
-**What survives from this step:** the **sensitivity gate** — some ServiceNow instances hold sensitive data, and **Isak must confirm the service-desk instance in scope is non-sensitive** before incident content flows to GitHub. The inversion does not remove this; data still leaves ServiceNow. Halvor is following up with Isak (returning from parental leave).
+**What survived from this step — the sensitivity gate — is now ✅ CLOSED.**
+
+**Approved 2026-08-28 by Isak Charrad** (Incident Manager, IT Service Desk, Customer & Network Operation Center, Telenor Norway): *"Yes – you can sync updates ('Additional Comments' / 'Work Notes') between Matrix and github."*
+
+Open since 2026-08-05, and the **last governance dependency in US-075**. What made it movable in the end was not the SSA argument — which turned out not to support the weight put on it — but **precedent**: Ingrid established that free text already flowed to Jira under the previous Matrix↔Jira integration, so this repeats accepted practice rather than proposing something new.
+
+⚠️ **Two questions his approval does not answer**, both the same question in different clothes — *what becomes of an issue already synced when the incident later leaves scope?*
+
+1. An incident **flagged SSA after syncing** — delete the GitHub issue, redact it, or leave it in place?
+2. An incident **re-attributed away from SFB** — the operational handling is proposed under the filter section above, but the governance half is his.
+
+Neither blocks go-live. Both should be settled before the first occurrence in production, and answering one probably answers the other.
 
 ### Step 1b′ — SN-side queue table + outbound job — owner: Halvor
 
