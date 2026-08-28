@@ -246,7 +246,7 @@ AND NOT flagged SSA           (hidden field on the ServiceNow side)
 
    | Halvor proposed | Ingrid's live filter | Resolution |
    | --- | --- | --- |
-   | `… OR caused by system = SFB` | not present | ✅ **Widening approved by Ingrid, 2026-08-28** — *"yes, I think it is good to also include caused-by-system."* Deliberately broader than her current manual practice: it catches incidents she would otherwise miss. |
+   | `… OR caused by system = SFB` | not present | ✅ **Widening approved by Ingrid, 2026-08-28** — *"yes, I think it is good to also include caused-by-system."* **And it changes nothing today:** she applied the widened filter to her own list and the count was *identical*, because every currently-open SFB incident carries **both** fields set to SFB. So the `OR` is future-proofing against a case that does not presently occur, at zero cost in volume. Live working set at the time: **15 open incidents** (1 Resolved, 14 Work In Progress) — useful sizing for backfill and rate limits. |
    | `AND NOT flagged SSA` | not present | ✅ **Keep — but see the correction below. It is *not* the mitigation it was taken for.** |
 
 #### ⚠️ Correction 2026-08-28 — the SSA flag is an attestation, not a classification
@@ -266,9 +266,20 @@ AND NOT flagged SSA           (hidden field on the ServiceNow side)
 - It **must not be presented to Isak as the reason the data is safe.** Doing so would offer an assurance the control cannot support.
 - **Isak's gate returns to its original, broader form**, and the honest version of the question is narrower than the instance but wider than a flag: *the sync carries `short_description`, `description` and work notes — free text a reporter may have typed anything into — for incidents about the SFB application. Is that acceptable, and if not, what control would you want?*
 
-**Open question for Halvor:** can the service desk set that field to `false` **after** creation, when they discover sensitive content? If so the flag is a real (if rarely used) control and zero results simply means it is rarely triggered. If it is only ever written at submission, it is inert. Ingrid's search cannot distinguish the two.
+**Precedent that materially reduces the concern (Ingrid, 2026-08-28):** *"I don't see any problems with copying free-text as that was a part of the previous integration between Matrix and Jira too."* So copying incident free text into an external tracker is **established practice at Telenor**, already accepted for Matrix↔Jira. The pilot is not introducing a new category of data movement; it is repeating one under a different destination. Ingrid — Change Lead — is comfortable, and is chasing Isak for the formal confirmation.
 
-**Testing the exclusion still needs doing**, and Ingrid cannot do it — the portal will not let her create a record with the box unticked. It needs someone with platform access to set the field directly on a test incident.
+#### ✅ Answered 2026-08-28 — the flag **is** mutable, so the exclusion has real value
+
+Ingrid confirmed the SSA status **can be changed after an incident is opened** (example: `INC0072574`). That resolves the open question and softens the correction above:
+
+- **At creation** the flag carries no signal — mandatory, therefore universally `true`.
+- **After creation** it is a genuine control: it becomes meaningful precisely when somebody has actually looked at the content and judged it sensitive.
+
+So the exclusion is worth keeping for the case that matters — *an incident discovered to hold sensitive data stops syncing*. What it cannot do is say anything at the moment an incident is created, which is the claim that was wrong.
+
+⚠️ **New gap this exposes: flagging is not retroactive.** If an incident syncs first and is flagged SSA afterwards, the GitHub issue **already holds the content**; the filter merely stops sending *further* updates. Nothing retracts what is already there. Whether a newly-flagged incident should trigger deletion or redaction of the GitHub issue is an open decision with a governance dimension, not only a technical one — and it belongs in front of Isak alongside the main gate.
+
+**Testing the exclusion** needs someone with platform access to flip the field on a test record; the portal will not let Ingrid create one with the box unticked. `INC0072574` is a live example that has been changed.
 
 #### ✅ Final scope filter — settled 2026-08-28
 

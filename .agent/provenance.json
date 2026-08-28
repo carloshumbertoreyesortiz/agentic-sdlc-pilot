@@ -1,11 +1,11 @@
 {
-  "run_id": "run-1787906694138",
-  "task": "docs(us075): correct the SSA-flag claim — attestation, not classification",
+  "run_id": "run-1787908858187",
+  "task": "docs(us075): SSA flag mutable, volume delta nil, Matrix-Jira precedent",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-08-28T08:44:54.132Z",
-  "finished_at": "2026-08-28T08:44:54.138Z",
+  "started_at": "2026-08-28T09:20:58.181Z",
+  "finished_at": "2026-08-28T09:20:58.187Z",
   "prompt_hash": "sha256:bb1b3f36f59b0cc5d581d245524c44fda19855b890584e53bb79cf5117b86d8d",
   "tool_trace": [
     "Read",
