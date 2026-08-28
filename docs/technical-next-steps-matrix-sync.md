@@ -283,11 +283,44 @@ So the exclusion is worth keeping for the case that matters — *an incident dis
 
 #### ✅ Final scope filter — settled 2026-08-28
 
+> **Superseded 2026-08-28 — see the revision below.** The `OR` on *Reported on System* was approved and then withdrawn the same day, after Isak explained what the two fields actually mean.
+
 ```
-( Reported on System = SFB  OR  Caused by System = SFB )
-AND Active = true            ( plus close transitions — see 2 above )
+Caused by System = SFB
+AND Active = true            ( plus exit transitions — see below )
 AND NOT flagged SSA
 ```
+
+#### Why *Caused by System* alone — Isak, 2026-08-28
+
+At creation **the two fields are always equal**. They diverge only when somebody investigates and re-attributes the cause: an incident *reported on* SFB may turn out to be *caused by* Min Bedrift, or another system linked to SFB.
+
+So *Reported on System* records where the symptom appeared and **`Caused by System` records whose problem it is**. The pilot wants the latter. Including the `OR` would have kept every mis-attributed incident in scope forever, which is precisely the case re-attribution exists to correct.
+
+This also means the earlier `OR` decision cost nothing to reverse: Ingrid's count was identical either way, because the fields only differ after someone edits one.
+
+**Isak's instruction: if `Caused by System` is changed to anything other than SFB, the sync should stop.**
+
+#### ⚠️ The general rule this exposes: every exit from scope must still emit one event
+
+*"The sync should stop"* cannot mean *"the record silently stops matching"*. If it did, the GitHub issue would be left **open, on the SFB board, in whatever status it last held — orphaned forever**, because nothing further will ever arrive to close it.
+
+This is now the **third** instance of the same pattern, and it should be handled as one rule rather than three special cases:
+
+| Transition out of scope | Status |
+| --- | --- |
+| `Active` → false (incident closes) | ✅ handled — Halvor's close-transition exception |
+| `Caused by System` → not SFB (re-attribution) | ⚠️ **new — needs the same treatment** |
+| SSA flag set after syncing | ⚠️ open governance decision (delete / redact / leave) |
+
+**The rule: the queue trigger must fire on records that *were* in scope, not only those that *are*.** Otherwise every exit is silent and leaves an orphan.
+
+**Recommended handling for re-attribution** — the same shape as the close exception, so it should be cheap: emit one final queue record that
+
+1. adds a work note to the GitHub issue explaining the re-attribution and naming the new *Caused by System*, then
+2. closes the issue with `state: "closed"`, `state_reason: "not_planned"` — accurate, since the SFB team is no longer going to act on it.
+
+**Entry into scope works the other way and is worth confirming:** an incident reported elsewhere but later attributed *to* SFB should **start** syncing. If the trigger watches field changes it fires naturally; if not, the daily full-scope run picks it up within a day. Worth knowing which, because the difference is a day of latency on work the team now owns.
 
 ⚠️ **Group the `OR` explicitly — this has a safety consequence, not just a correctness one.**
 
