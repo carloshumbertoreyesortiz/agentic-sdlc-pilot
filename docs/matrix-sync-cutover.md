@@ -70,6 +70,33 @@ Labels and the workflow must exist **before** the first production incident arri
 | 2.4 | Set `PROJECT_OWNER` / `PROJECT_NUMBER` in the workflow to the **org** Project | The sandbox values are hardcoded defaults in the script and **will silently target the wrong board**. |
 | 2.5 | Confirm the org Project carries the same field **names and single-select options** | Field IDs are resolved by name at runtime, so a renamed field or a missing option logs a skip rather than failing. Priority `P0–P3` in particular — see the correction in the mapping doc. |
 
+## 2a — The **ServiceNow** side also has a test→production cutover
+
+⚠️ **Added 2026-08-28, and previously missing entirely.** This checklist was written as though cutover meant *GitHub sandbox → GitHub production*. It is **two migrations, not one**:
+
+| | Test | Production |
+| --- | --- | --- |
+| **ServiceNow** | `matrix-test.telenor.no` — where the queue, job and business rules live today | `matrix.telenor.no` — where Ingrid works, and where every real incident is |
+| **GitHub** | `carloshumbertoreyesortiz/agentic-sdlc-pilot` | `TelenorNorgeInternal/s06065-sfb-telenor-sfdc` |
+
+Surfaced when Ingrid's test incident turned out to be in **production** Matrix while the queue runs in **test** — so it was never in scope, and closing it proved nothing.
+
+| # | Item | Owner | Note |
+| --- | --- | --- | --- |
+| 2a.1 | ⚠️ **Confirm the firewall opening covers the _production_ ServiceNow instance** | Halvor | **The one most likely to stall the cutover.** The `api.github.com` egress was ordered and verified *from the test environment* (2026-08-14, unauthenticated `200`). If the opening was scoped to that instance, production Matrix cannot reach GitHub and this is discovered at the worst moment. Verify with the same unauthenticated `GET /rate_limit` from production **before** anything else. |
+| 2a.2 | Promote the queue table, scheduled job and business rules from SN test to SN production | Halvor | Their normal deployment process |
+| 2a.3 | Re-point the production job at the **production GitHub repo** and App credentials | Halvor | Test instance keeps the sandbox token; the two should not cross |
+| 2a.4 | Decide whether SN test keeps running against the GitHub sandbox afterwards | Both | Useful for future changes, but two live syncs writing to two repos needs to be deliberate rather than accidental |
+
+### Consequence for Step 5 — Ingrid's verification
+
+Step 5 has Ingrid confirming the automated result matches what she would have done by hand. **She works in production**; the sync runs in test. So either:
+
+- her verification waits until the production sync is live — making it a **post-cutover** check rather than the pre-cutover gate it was designed as, or
+- she reviews **test-instance incidents she did not create**, which weakens the comparison, since the whole value is her judging output against her own habitual choices.
+
+Neither is wrong, but the sequencing is a decision rather than something to discover on the day. The reference incidents she supplied — `INC0072343`, `INC0072144` — are **production** records, so Halvor cannot test the Resolved→Closed and Resolved→Work-in-Progress paths against them directly either; he is generating equivalents in test.
+
 ## 3 — Change the credential model
 
 | # | Item | Note |
