@@ -247,7 +247,28 @@ AND NOT flagged SSA           (hidden field on the ServiceNow side)
    | Halvor proposed | Ingrid's live filter | Resolution |
    | --- | --- | --- |
    | `… OR caused by system = SFB` | not present | ✅ **Widening approved by Ingrid, 2026-08-28** — *"yes, I think it is good to also include caused-by-system."* Deliberately broader than her current manual practice: it catches incidents she would otherwise miss. |
-   | `AND NOT flagged SSA` | not present | ✅ **Keep.** Additive and safety-driven rather than selection-driven — the technical mitigation offered to Isak's sensitivity gate. Excluding nothing costs nothing. |
+   | `AND NOT flagged SSA` | not present | ✅ **Keep — but see the correction below. It is *not* the mitigation it was taken for.** |
+
+#### ⚠️ Correction 2026-08-28 — the SSA flag is an attestation, not a classification
+
+**This reverses an earlier claim in this document.** The SSA exclusion was recorded as a technical mitigation that would narrow Isak's sensitivity gate from *"is this instance safe?"* to *"is the SSA flag reliably applied?"*. Ingrid's investigation shows that framing does not hold.
+
+**What she found:**
+
+1. Searching `Reported on System = SFB AND User Confirmed no Personal or SSA Data = false` returns **zero incidents**.
+2. Attempting to create one revealed why: **the field is a mandatory checkbox on the Service Portal submission form** — *"No classified- or personal data is provided"*. An incident cannot be submitted without ticking it.
+
+**So the flag is a reporter's self-declaration made under a submit-blocking requirement, not a sensitivity classification applied by anyone who has assessed the content.** Its name says as much: *User Confirmed*. Everyone ticks it, because otherwise the form will not submit — which means it carries close to no signal about whether an incident actually contains personal or classified data.
+
+**Consequences:**
+
+- The exclusion **stays in the filter** — it costs nothing, and if a record ever does carry `false` it should certainly be excluded.
+- It **must not be presented to Isak as the reason the data is safe.** Doing so would offer an assurance the control cannot support.
+- **Isak's gate returns to its original, broader form**, and the honest version of the question is narrower than the instance but wider than a flag: *the sync carries `short_description`, `description` and work notes — free text a reporter may have typed anything into — for incidents about the SFB application. Is that acceptable, and if not, what control would you want?*
+
+**Open question for Halvor:** can the service desk set that field to `false` **after** creation, when they discover sensitive content? If so the flag is a real (if rarely used) control and zero results simply means it is rarely triggered. If it is only ever written at submission, it is inert. Ingrid's search cannot distinguish the two.
+
+**Testing the exclusion still needs doing**, and Ingrid cannot do it — the portal will not let her create a record with the box unticked. It needs someone with platform access to set the field directly on a test incident.
 
 #### ✅ Final scope filter — settled 2026-08-28
 

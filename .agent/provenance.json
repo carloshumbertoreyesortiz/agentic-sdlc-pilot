@@ -1,11 +1,11 @@
 {
-  "run_id": "run-1787904702514",
-  "task": "docs(us075): final scope filter settled; OR grouping safety note",
+  "run_id": "run-1787906694138",
+  "task": "docs(us075): correct the SSA-flag claim — attestation, not classification",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-08-28T08:11:42.509Z",
-  "finished_at": "2026-08-28T08:11:42.514Z",
+  "started_at": "2026-08-28T08:44:54.132Z",
+  "finished_at": "2026-08-28T08:44:54.138Z",
   "prompt_hash": "sha256:bb1b3f36f59b0cc5d581d245524c44fda19855b890584e53bb79cf5117b86d8d",
   "tool_trace": [
     "Read",
