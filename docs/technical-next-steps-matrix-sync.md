@@ -56,7 +56,21 @@ Open since 2026-08-05, and the **last governance dependency in US-075**. What ma
 1. An incident **flagged SSA after syncing** — delete the GitHub issue, redact it, or leave it in place?
 2. An incident **re-attributed away from SFB** — the operational handling is proposed under the filter section above, but the governance half is his.
 
-Neither blocks go-live. Both should be settled before the first occurrence in production, and answering one probably answers the other.
+Neither blocks go-live. Both should be settled before the first occurrence in production.
+
+#### They look identical and are not — frequency should decide the mechanism
+
+The two cases have the same *shape* — a record leaves scope after syncing — which invites treating them as one problem. They differ by orders of magnitude in how often they occur, and the right engineering response follows from that, not from the shape.
+
+| | Re-attribution (`Caused by System` changes) | SSA flagged after syncing |
+| --- | --- | --- |
+| **Frequency** | **Routine.** Isak describes it as normal practice — the fields diverge precisely *because* someone investigates and corrects the cause. | **Rare, possibly never.** Halvor's team (2026-08-28) *"don't see any reason why they would change the value on an incident submitted as non-SSA, even though they have the ability to do so."* |
+| **Stakes when it happens** | Ordinary — an issue the SFB team no longer owns | High — sensitive content sitting in GitHub |
+| **Proportionate response** | ✅ **Automate.** Emit a final work note + close `not_planned`, mirroring the close-transition exception. | ✅ **Document a manual procedure.** Building deletion machinery for an event that may never fire is cost without benefit; a written step — *notify the pilot, the issue is deleted* — is proportionate and auditable. |
+
+**Open question for Isak, and Halvor's suggestion:** does the service desk ever actually set that field to `false` after submission? If the honest answer is *"in principle we can, in practice we don't"*, then the manual procedure is plainly right and no code is warranted.
+
+_Note the asymmetry cuts the other way for correctness: rarity makes automation less worthwhile, but it also means the manual procedure will be executed by someone who has never done it before. It needs to be written down somewhere findable, not just agreed in a thread._
 
 ### Step 1b′ — SN-side queue table + outbound job — owner: Halvor
 
