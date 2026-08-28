@@ -244,12 +244,30 @@ AND NOT flagged SSA           (hidden field on the ServiceNow side)
 
    ⚠️ **Two deltas between that and Halvor's proposal — neither is a contradiction, but both should be deliberate:**
 
-   | Halvor proposed | Ingrid's live filter | Decision needed |
+   | Halvor proposed | Ingrid's live filter | Resolution |
    | --- | --- | --- |
-   | `… OR caused by system = SFB` | **not present** | Broadens beyond her current practice. That may be *desirable* — it catches incidents she would currently miss — but it is no longer "matching what she does". Confirm the widening is wanted rather than assumed. |
-   | `AND NOT flagged SSA` | **not present** | Additive and safety-driven, not selection-driven. Keep it: it is the technical mitigation offered to Isak's sensitivity gate, and excluding nothing costs nothing. |
+   | `… OR caused by system = SFB` | not present | ✅ **Widening approved by Ingrid, 2026-08-28** — *"yes, I think it is good to also include caused-by-system."* Deliberately broader than her current manual practice: it catches incidents she would otherwise miss. |
+   | `AND NOT flagged SSA` | not present | ✅ **Keep.** Additive and safety-driven rather than selection-driven — the technical mitigation offered to Isak's sensitivity gate. Excluding nothing costs nothing. |
 
-   Neither delta blocks the build. Both are worth one sentence back to her so the widened scope is her decision, not a silent one.
+#### ✅ Final scope filter — settled 2026-08-28
+
+```
+( Reported on System = SFB  OR  Caused by System = SFB )
+AND Active = true            ( plus close transitions — see 2 above )
+AND NOT flagged SSA
+```
+
+⚠️ **Group the `OR` explicitly — this has a safety consequence, not just a correctness one.**
+
+ServiceNow encoded queries express `AND` as `^` and `OR` as `^OR`, and the grouping is easy to get wrong. If the query is built so it parses as
+
+```
+Reported = SFB  OR  ( Caused = SFB AND Active = true AND NOT SSA )
+```
+
+then **every incident reported on SFB is synced regardless of the SSA flag** — the sensitivity exclusion is silently bypassed for one whole branch. That is precisely the exclusion being offered to Isak as the mitigation for his gate, so a precedence slip would quietly invalidate the assurance it underwrites.
+
+The two system conditions must be bracketed together, with `Active` and the SSA exclusion applying to **both** branches. Worth verifying against a real incident that is reported-on SFB *and* SSA-flagged: it must **not** appear in the result set.
 
 **The SSA exclusion may partly answer Isak's gate.** `R-SERVICENOW-DEPENDENCY` carries an outstanding sensitivity confirmation (open since 2026-08-05): whether the service-desk instance holds data too sensitive to flow to GitHub. If sensitive records are already flagged **SSA** and the filter excludes them **at source**, the question changes from *"is this instance safe?"* to *"is the SSA flag reliably applied?"* — narrower, and far easier for Isak to answer. Worth putting to him in those terms.
 
