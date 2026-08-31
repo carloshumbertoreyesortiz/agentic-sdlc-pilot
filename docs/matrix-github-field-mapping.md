@@ -381,14 +381,43 @@ So the answer to *"System Admin, or a dedicated user?"* is **a dedicated user �
 
 The visibility benefit he mentions is real but secondary: a reader seeing *"GitHub Sync"* as the author immediately knows where the note came from.
 
-**Open question for Halvor:** how is the ServiceNow-side echo prevented today? If the job already skips notes it created, the mechanism is presumably identity in some form — worth making it explicit and durable rather than incidental.
+#### ✅ How it is actually prevented — Halvor, 2026-08-31
+
+**Primary: the work note is inserted _without triggering business rules_.** The rule that enqueues outbound records never fires, so the duplicate event is never created at all. Stronger than filtering — nothing exists to be filtered.
+
+**Secondary (planned, with the dedicated user): exclude outbound queue records arising from updates made by that account.** Targeted rather than blanket.
+
+**Also in place:** an inbound validity check — a work note referencing a GitHub issue id with no matching incident is set to `ignore` in the queue rather than failing.
+
+⚠️ **One caveat on suppressing business rules: it is a blunt instrument.** It does not suppress *the sync's* rule, it suppresses **every** rule on that insert. So anything else the platform would normally do when a work note is added — SLA clocks, notifications, audit or metric updates, downstream integrations — silently does not happen for GitHub-originated notes, and nothing reports that it did not.
+
+That may be entirely fine; it depends what else lives on that table, which is knowledge their team has and the pilot does not. Worth an explicit check rather than an assumption.
+
+**Note the two mechanisms differ in kind, and the targeted one is arguably the better primary:**
+
+| | Business-rule suppression | Dedicated-user exclusion |
+| --- | --- | --- |
+| **Scope** | Blocks *all* rules on the insert | Blocks only the sync's enqueue path |
+| **Certainty** | Absolute — the event cannot occur | Depends on the exclusion being correct |
+| **Side effects** | Anything else keyed on work-note inserts stops firing, invisibly | None |
+
+Once the dedicated user exists, it is worth asking whether the blanket suppression is still needed, or whether the targeted exclusion alone leaves the platform behaving normally in every other respect.
 
 ### Formatting the inbound work note
 
 From the live example (2026-08-31), two refinements:
 
-1. **Label the embedded metadata as GitHub's.** The ServiceNow record already displays its own author and timestamp, so a bare `Author:` and `Date:` inside the note produces two of each with no indication which is which. `GitHub author:` and `Written in GitHub:` remove the ambiguity at no cost.
-2. ⚠️ **State the timezone.** The example shows `2026-08-25 07:19:28` with no marker. GitHub's `created_at` is **UTC**; a reader in Oslo will assume local time and be one or two hours out depending on the season. Append `UTC` — the same discipline already agreed for the outbound direction, applied on the way back.
+Halvor confirmed (2026-08-31) that the two timestamps are genuinely different facts in **different timezones**:
+
+| Where | What it is | Timezone |
+| --- | --- | --- |
+| Record header | When the work note was created **in ServiceNow** | The reading user's local timezone |
+| Inside the note | GitHub's `created_at` — when it was written **in GitHub** | **UTC** |
+
+Both are worth keeping — they answer different questions, and the gap between them is the sync latency. But unlabelled they are actively misleading, since two timestamps differing by two hours look like an error rather than two timezones.
+
+1. **Label the embedded metadata as GitHub's** — `GitHub author:` and `Written in GitHub:` rather than bare `Author:` / `Date:`.
+2. ⚠️ **Mark the UTC explicitly** — `2026-08-25 07:19:28 UTC`. Without it a reader in Oslo assumes local time and is one or two hours out depending on the season, and has no way to tell that the header timestamp above it is on a different basis.
 
 ### Breaking the echo loop
 
