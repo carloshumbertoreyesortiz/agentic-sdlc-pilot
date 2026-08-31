@@ -359,6 +359,37 @@ Starting with comments means the strong loop-breaker covers everything that move
 
 So: fetch, then **drop any comment whose body contains `<!-- Matrix-Journal-Id:`** while parsing. That is not a workaround, it is the right design — it keeps the poll on the 5,000/hour budget and the filter is a substring test.
 
+### ⚠️ The echo loop has **two** directions — only one was specified
+
+Everything above breaks the loop in the **GitHub → ServiceNow** direction: skip comments carrying a `Matrix-Journal-Id` marker. That leaves the mirror case unaddressed, and it was surfaced by Halvor's question about which user the sync should write as (2026-08-31).
+
+**The mirror case.** When a GitHub comment is pushed into Matrix it becomes a **work note** — an ordinary journal entry, indistinguishable from any other. The outbound job sends work notes *to* GitHub. So without something to stop it, that note is picked up on the next poll and pushed straight back, duplicating the comment it came from.
+
+**The GitHub-side marker cannot help here.** It lives in the GitHub comment body; the ServiceNow journal entry has no such marker and no field to carry one.
+
+#### Identity is the right loop-breaker on this side — the opposite of the GitHub side
+
+| | GitHub → ServiceNow | ServiceNow → GitHub |
+| --- | --- | --- |
+| **Loop-breaker** | The `Matrix-Journal-Id` **marker** | The **author identity** of the journal entry |
+| **Why not the other** | Identity is unusable in the sandbox — sync writes and human writes share one account | No marker exists to attach; the journal entry is plain text |
+
+So the answer to *"System Admin, or a dedicated user?"* is **a dedicated user — and not for visibility.** It is what makes the filter possible at all:
+
+- **A dedicated integration user** gives an exact, unambiguous rule: *skip journal entries authored by this account.* Nothing else writes as it.
+- **`System Admin` is over-broad.** Other legitimate administrative activity is authored as System Admin too, so filtering on it would silently suppress genuine work notes that *should* reach GitHub — a much worse failure than a duplicate, because nothing visibly goes wrong.
+
+The visibility benefit he mentions is real but secondary: a reader seeing *"GitHub Sync"* as the author immediately knows where the note came from.
+
+**Open question for Halvor:** how is the ServiceNow-side echo prevented today? If the job already skips notes it created, the mechanism is presumably identity in some form — worth making it explicit and durable rather than incidental.
+
+### Formatting the inbound work note
+
+From the live example (2026-08-31), two refinements:
+
+1. **Label the embedded metadata as GitHub's.** The ServiceNow record already displays its own author and timestamp, so a bare `Author:` and `Date:` inside the note produces two of each with no indication which is which. `GitHub author:` and `Written in GitHub:` remove the ambiguity at no cost.
+2. ⚠️ **State the timezone.** The example shows `2026-08-25 07:19:28` with no marker. GitHub's `created_at` is **UTC**; a reader in Oslo will assume local time and be one or two hours out depending on the season. Append `UTC` — the same discipline already agreed for the outbound direction, applied on the way back.
+
 ### Breaking the echo loop
 
 GitHub cannot filter a listing by actor, so the loop-breaking is done on identity after the read:
