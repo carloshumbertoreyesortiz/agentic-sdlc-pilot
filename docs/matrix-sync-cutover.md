@@ -68,7 +68,7 @@ Labels and the workflow must exist **before** the first production incident arri
 | 2.2 | Copy **`.github/workflows/matrix-issue-fields.yml`** into the production repo | Via PR — `write` is sufficient. Workflows only run in the repo they live in. Without this, issues land undecorated and nothing reports an error. |
 | 2.3 | Copy **`scripts/apply-matrix-fields.ts`** and its `src/matrix-mapping.ts` dependency | Or vendor the script — but keep one source of truth, or the two copies drift. |
 | 2.4 | Set `PROJECT_OWNER` / `PROJECT_NUMBER` in the workflow to the **org** Project | The sandbox values are hardcoded defaults in the script and **will silently target the wrong board**. |
-| 2.5 | Confirm the org Project carries the same field **names and single-select options** | Field IDs are resolved by name at runtime, so a renamed field or a missing option logs a skip rather than failing. Priority `P0–P3` in particular — see the correction in the mapping doc. |
+| 2.5 | 🔴 **The production board does NOT carry the same fields — checked 2026-08-31** | **See §2b below.** Roughly half the fields the workflow writes do not exist there, and because unmatched fields *log and skip* rather than fail, the result would be a **quietly half-populated board** rather than an error. |
 
 ## 2a — The **ServiceNow** side also has a test→production cutover
 
@@ -107,6 +107,46 @@ Step 5 has Ingrid confirming the automated result matches what she would have do
 - she reviews **test-instance incidents she did not create**, which weakens the comparison, since the whole value is her judging output against her own habitual choices.
 
 Neither is wrong, but the sequencing is a decision rather than something to discover on the day. The reference incidents she supplied — `INC0072343`, `INC0072144` — are **production** records, so Halvor cannot test the Resolved→Closed and Resolved→Work-in-Progress paths against them directly either; he is generating equivalents in test.
+
+## 2b — ⚠️ The production board has a different schema
+
+**Checked 2026-08-31 against the live org Projects.** The pilot's board and the SFB team's board are not the same shape, and the difference was never verified until now.
+
+**First: which board?** Nobody has actually said. Four candidates exist on `TelenorNorgeInternal`; **#408 "SFB"** is almost certainly it — its Status options are the full 10-state model the pilot adopted, which no other candidate has. **This needs confirming with Martin or Ingrid before anything is configured**, because `PROJECT_NUMBER` pointing at the wrong board would decorate someone else's work.
+
+_(For contrast: #532 "SfB Mobile CPQ Tasks", where #1121 is tracked, has a 7-state Status and a **text** Priority — the workflow would fit it very badly.)_
+
+### What matches on #408 — the two that matter most
+
+| Field | Production board | Verdict |
+| --- | --- | --- |
+| **Status** | `Draft, Backlog, Analysis, Ready for Development, Development, User Acceptance Test, Ready for Deployment, Blocked!, Pending Requestor, Deployed, Done` | ✅ **Exact match** — every value the state mapping emits exists, including `Development` and `Pending Requestor` |
+| **Priority** | `P0, P1, P2, P3` | ✅ **Exact match** — and a vindication of the 2026-08-18 correction, which changed the mapping from an assumed P1–P4 to P0–P3 |
+
+### What does not match
+
+| Field | Production board | Consequence |
+| --- | --- | --- |
+| **Sub Epic** | Exists, but the options are **real SFB delivery phases** — `CPQ for Broadband`, `PowerDocs`, `Minor improvements and bug fixes`, `Clean-Up`, … | 🔴 **`Matrix Defect` is not among them.** The fixed value the pilot writes would be skipped. **Decision needed:** add `Matrix Defect`, or map Matrix incidents onto an existing phase? |
+| **Type** | **Absent as a Project field** | Likely handled by GitHub's **native org-level Issue Types**, which the pilot could not use on a personal account. Needs a different API call, or dropping. |
+| **Caller** | **Absent** | Add it, or accept that the caller appears only in the issue body — which it already does. |
+| **External Reference Type / Id / URL** | **Absent** — but the board has a single **`External ref. / URL`** field, plus **`SFB Case Number`** | Analogous mechanism, different shape. The three-field mapping collapses to one; needs re-mapping rather than adding fields. |
+
+### Why this would have been nasty
+
+`scripts/apply-matrix-fields.ts` resolves fields **by name at runtime** and, on a miss, **logs and skips** rather than failing — deliberate, so one bad value cannot stop the rest. In the sandbox that is the right behaviour. In production it means the first synced incident would land with **Status and Priority set and everything else silently blank**, the run reporting success throughout.
+
+### What is needed, and from whom
+
+| Question | Owner |
+| --- | --- |
+| Which Project is the target — is it #408? | Martin / Ingrid |
+| Add `Matrix Defect` to Sub Epic, or map onto an existing phase? | Martin — it changes *their* board |
+| Is `Type` native Issue Types on the org? | Any org member with board access |
+| Add `Caller`, or drop it? | Martin / Ingrid |
+| Map to `External ref. / URL` (single field) instead of three | Pilot, once confirmed |
+
+**Nothing here blocks Halvor.** It is entirely GitHub-side, and it is the pilot's to resolve — but it needs the board owners, because three of the five questions change a board the SFB team uses daily.
 
 ## 3 — Change the credential model
 
