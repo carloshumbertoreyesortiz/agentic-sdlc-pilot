@@ -83,7 +83,14 @@ Surfaced when Ingrid's test incident turned out to be in **production** Matrix w
 
 | # | Item | Owner | Note |
 | --- | --- | --- | --- |
-| 2a.1 | ⚠️ **Confirm the firewall opening covers the _production_ ServiceNow instance** | Halvor | **The one most likely to stall the cutover.** The `api.github.com` egress was ordered and verified *from the test environment* (2026-08-14, unauthenticated `200`). If the opening was scoped to that instance, production Matrix cannot reach GitHub and this is discovered at the worst moment. Verify with the same unauthenticated `GET /rate_limit` from production **before** anything else. |
+| 2a.1 | ⚠️ **Confirm the firewall opening covers the _production_ ServiceNow instance** | Halvor | **Status 2026-08-31: assured, not verified.** The network team told Halvor the openings from test are identical to production. That is probably right — and it is still an assumption standing where a two-minute measurement could stand instead. The `api.github.com` egress was only ever *proved* from test (2026-08-14, unauthenticated `200`). **This remains the item most likely to stall the cutover.** |
+
+> **Why not simply take the assurance.** The check needs **no deployment, no credentials and no queue** — an unauthenticated `GET https://api.github.com/rate_limit` from the production instance, via a scratch REST Message or background script, returns `200` if the path is open. It is the identical trick that de-risked the test environment on 2026-08-14, one environment across.
+>
+> The asymmetry is the whole argument: **if it works, five minutes are gone. If it does not, a firewall order stands between the team and cutover** — and the last one took three days from order to live *with* an existing precedent to point at. Discovering that on cutover day stalls the entire migration; discovering it now costs nothing, because the order can be raised in parallel while everything else proceeds.
+>
+> **If the answer is uncertain rather than clearly yes, order the opening pre-emptively.** A redundant firewall order costs a ticket. A missing one costs the cutover window.
+
 | 2a.2 | Promote the queue table, scheduled job and business rules from SN test to SN production | Halvor | Their normal deployment process |
 | 2a.3 | Re-point the production job at the **production GitHub repo** and App credentials | Halvor | Test instance keeps the sandbox token; the two should not cross |
 | 2a.4 | Decide whether SN test keeps running against the GitHub sandbox afterwards | Both | Useful for future changes, but two live syncs writing to two repos needs to be deliberate rather than accidental |
