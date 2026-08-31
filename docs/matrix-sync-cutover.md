@@ -83,13 +83,17 @@ Surfaced when Ingrid's test incident turned out to be in **production** Matrix w
 
 | # | Item | Owner | Note |
 | --- | --- | --- | --- |
-| 2a.1 | ⚠️ **Confirm the firewall opening covers the _production_ ServiceNow instance** | Halvor | **Status 2026-08-31: assured, not verified.** The network team told Halvor the openings from test are identical to production. That is probably right — and it is still an assumption standing where a two-minute measurement could stand instead. The `api.github.com` egress was only ever *proved* from test (2026-08-14, unauthenticated `200`). **This remains the item most likely to stall the cutover.** |
+| 2a.1 | 🔴 **Production firewall opening — CONFIRMED MISSING** | Halvor | **2026-08-31: `HTTP 0` from production**, against `200` from test on 08-14. The network team had assured Halvor the openings were identical; **they are not**. Caught five minutes after the check was suggested, and weeks before cutover rather than on the day. **A new firewall order is required for the production instance** — the previous one took three days from order to live. Raise it now and it runs in parallel; everything else can proceed. |
 
 > **Why not simply take the assurance.** The check needs **no deployment, no credentials and no queue** — an unauthenticated `GET https://api.github.com/rate_limit` from the production instance, via a scratch REST Message or background script, returns `200` if the path is open. It is the identical trick that de-risked the test environment on 2026-08-14, one environment across.
 >
 > The asymmetry is the whole argument: **if it works, five minutes are gone. If it does not, a firewall order stands between the team and cutover** — and the last one took three days from order to live *with* an existing precedent to point at. Discovering that on cutover day stalls the entire migration; discovering it now costs nothing, because the order can be raised in parallel while everything else proceeds.
 >
-> **If the answer is uncertain rather than clearly yes, order the opening pre-emptively.** A redundant firewall order costs a ticket. A missing one costs the cutover window.
+> **Outcome: the assurance was wrong.** Recorded because the reasoning generalises — *"the network team says the environments are identical"* is a statement about intent, and firewall rules are a matter of configuration. They usually agree. This time they did not, and the entire cost of finding out was one unauthenticated GET.
+>
+> ⚠️ **An authenticated call will not behave differently, and it is worth not spending time on it.** `HTTP 0` means no HTTP response at all — the connection never completed. Authentication happens *after* a connection is established, so credentials cannot change the result. Open path + wrong credentials produces **`401`**; blocked path produces **`0`**. That distinction is exactly what the unauthenticated probe buys, and reading a second `0` as a credential problem would send the diagnosis in the wrong direction entirely.
+>
+> **Worth asking the network team *why* the two differ**, not just to get it fixed: if test and production were believed identical and are not, the discrepancy may extend to something else this integration has only ever proven in test.
 
 | 2a.2 | Promote the queue table, scheduled job and business rules from SN test to SN production | Halvor | Their normal deployment process |
 | 2a.3 | Re-point the production job at the **production GitHub repo** and App credentials | Halvor | Test instance keeps the sandbox token; the two should not cross |
