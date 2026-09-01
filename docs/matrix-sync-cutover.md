@@ -112,7 +112,18 @@ Neither is wrong, but the sequencing is a decision rather than something to disc
 
 **Checked 2026-08-31 against the live org Projects.** The pilot's board and the SFB team's board are not the same shape, and the difference was never verified until now.
 
-**First: which board?** Nobody has actually said. Four candidates exist on `TelenorNorgeInternal`; **#408 "SFB"** is almost certainly it — its Status options are the full 10-state model the pilot adopted, which no other candidate has. **This needs confirming with Martin or Ingrid before anything is configured**, because `PROJECT_NUMBER` pointing at the wrong board would decorate someone else's work.
+**✅ Confirmed by Ingrid, 2026-09-01: the target is #408 "SFB"** — as inferred from its Status options being the only ones matching the pilot's 10-state model.
+
+**She also added a requirement that was not in the contract: synced issues must be _sub-issues of an epic_ — currently [#826](https://github.com/TelenorNorgeInternal/s06065-sfb-telenor-sfdc/issues/826).**
+
+And resolved two of the open schema questions by removing them:
+
+| Question | Ingrid's answer |
+| --- | --- |
+| Add `Matrix Defect` to Sub Epic? | **Not needed** — leave Sub Epic unset |
+| Add a `Caller` field? | Can be added, but unnecessary — the caller already appears in the issue body's Source table |
+
+So the production field set narrows to **Status + Priority** (both exact matches) **plus the parent-epic link**. Considerably less board change than feared.
 
 _(For contrast: #532 "SfB Mobile CPQ Tasks", where #1121 is tracked, has a 7-state Status and a **text** Priority — the workflow would fit it very badly.)_
 
@@ -131,6 +142,37 @@ _(For contrast: #532 "SfB Mobile CPQ Tasks", where #1121 is tracked, has a 7-sta
 | **Type** | **Absent as a Project field** | Likely handled by GitHub's **native org-level Issue Types**, which the pilot could not use on a personal account. Needs a different API call, or dropping. |
 | **Caller** | **Absent** | Add it, or accept that the caller appears only in the issue body — which it already does. |
 | **External Reference Type / Id / URL** | **Absent** — but the board has a single **`External ref. / URL`** field, plus **`SFB Case Number`** | Analogous mechanism, different shape. The three-field mapping collapses to one; needs re-mapping rather than adding fields. |
+
+### ⚠️ The 100-sub-issue limit — Ingrid raised it, and automation makes it sharper
+
+GitHub caps an issue at **100 sub-issues**. The team already works around this by starting a **new epic each year**, and Ingrid asked whether that needs solving differently now.
+
+It does get sharper: she has been selecting incidents *by hand*, so the epic filled at the rate of her judgement. The sync adds **every** in-scope incident automatically. With ~15 open at any time and the whole SFB flow now landing, a shared annual epic could fill mid-year — and it is shared with everything else the team parents to it.
+
+**Recommendation: a dedicated Matrix epic, one per year** — *"Matrix Incidents 2026"* — rather than parenting into the team's general epic.
+
+- Isolates the sync's consumption so it cannot exhaust the epic budget of unrelated work
+- Makes the limit predictable: 100 incidents per year is a measurable rate, not a surprise
+- Rollover is a single config change, matching the annual pattern they already run
+
+**Whichever epic is used, the parent id must be configuration, not a constant** — it changes at least annually by design.
+
+⚠️ **And exceeding the limit must degrade, not fail.** When the parent is full, the sub-issue call errors. The issue itself has already been created by then, so the correct behaviour is to **log loudly and leave it unparented** — never to fail the run, which would strand a real incident outside GitHub entirely. Same principle as the field-level skips.
+
+### 🔴 New dependency: the App cannot write Project fields
+
+Surfaced while planning the production workflow. The GitHub App is scoped to **Issues: read & write + Metadata: read** — deliberately least-privilege. **Projects is not among its permissions**, so it cannot set Status or Priority on the org board.
+
+The sandbox solved this with a classic PAT (`PROJECT_TOKEN`), which worked because the board was *user-owned*. The production board is **org-owned**, so that route is unavailable.
+
+Two options, both needing an org owner again:
+
+| Option | Cost |
+| --- | --- |
+| **Add `Projects: read & write` to the App** | An org owner must approve the permission change; installations must accept it. Cleanest end state — one credential for everything. |
+| **A fine-grained token with org Projects write** | Needs the org to permit fine-grained tokens and to approve the grant. A second credential to manage and rotate. |
+
+**Usefully, this splits the work.** Sub-issue parenting is part of the **Issues** API, which the App *does* have — so **hierarchy can be delivered before the Project fields**, without waiting on any new permission.
 
 ### Why this would have been nasty
 
