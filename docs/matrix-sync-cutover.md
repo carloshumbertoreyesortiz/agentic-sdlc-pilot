@@ -149,13 +149,31 @@ GitHub caps an issue at **100 sub-issues**. The team already works around this b
 
 It does get sharper: she has been selecting incidents *by hand*, so the epic filled at the rate of her judgement. The sync adds **every** in-scope incident automatically. With ~15 open at any time and the whole SFB flow now landing, a shared annual epic could fill mid-year — and it is shared with everything else the team parents to it.
 
-**Recommendation: a dedicated Matrix epic, one per year** — *"Matrix Incidents 2026"* — rather than parenting into the team's general epic.
+**✅ Already the case — Ingrid, 2026-09-01.** The epic *is* dedicated to Matrix and does roll annually: **[#826](https://github.com/TelenorNorgeInternal/s06065-sfb-telenor-sfdc/issues/826) `✨Incidents from Matrix '26`**, becoming `'27` next year. The recommendation turned out to describe what she already runs.
+
+**Verified state 2026-09-01: 30 of 100 sub-issues used.** Seventy slots left, and automation has just begun consuming them — 30 accumulated over roughly eight months of *manual* selection, so the rate is about to change. Not urgent; worth watching rather than worrying about.
+
+_(Last year's epic **#2665 `✨Incidents from Matrix '25`** is still open, which matters for name-based lookup — see below.)_
 
 - Isolates the sync's consumption so it cannot exhaust the epic budget of unrelated work
 - Makes the limit predictable: 100 incidents per year is a measurable rate, not a surprise
 - Rollover is a single config change, matching the annual pattern they already run
 
-**Whichever epic is used, the parent id must be configuration, not a constant** — it changes at least annually by design.
+#### Resolving the epic: prefer name lookup over a configured number
+
+The parent changes every January by design, so a hardcoded id is wrong. But *configuration* is only marginally better, and the failure modes differ in an important way:
+
+| Approach | What happens each January |
+| --- | --- |
+| **Configured issue number** | Somebody must remember to change it. If they do not, incidents keep parenting to **last year's** epic — which *works*, silently, filling the wrong epic and misfiling a year of incidents until someone notices. **Fails quietly.** |
+| **Name lookup** — find the open issue whose title contains `Incidents from Matrix '<YY>` for the current year | If this year's epic exists, it is found automatically and nothing needs changing. If it does not exist yet, the lookup returns nothing, the issue is created **unparented**, and an alert fires. **Fails loudly.** |
+
+Name lookup wins on the failure mode, not on elegance. A quiet mis-parenting discovered in November is far worse than a noisy "epic not found" on 2 January.
+
+**Two details it must handle:**
+
+- The title carries a **`✨` prefix** — match on the substring `Incidents from Matrix '<YY>`, not on equality.
+- **Previous years' epics stay open** (`'25` is still open alongside `'26`), so the search must be pinned to the current year rather than taking the first match.
 
 ⚠️ **And exceeding the limit must degrade, not fail.** When the parent is full, the sub-issue call errors. The issue itself has already been created by then, so the correct behaviour is to **log loudly and leave it unparented** — never to fail the run, which would strand a real incident outside GitHub entirely. Same principle as the field-level skips.
 
