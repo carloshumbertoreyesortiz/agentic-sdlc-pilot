@@ -403,6 +403,32 @@ That may be entirely fine; it depends what else lives on that table, which is kn
 
 Once the dedicated user exists, it is worth asking whether the blanket suppression is still needed, or whether the targeted exclusion alone leaves the platform behaving normally in every other respect.
 
+### Flagging new information on the GitHub side — Ingrid, 2026-09-01
+
+**Requirement:** when a note arrives from Matrix, make it visible **from the filter view** that an issue has new information, without opening each one. She asked for a label or an assignee notification — explicitly on the **GitHub** side; the Matrix side already handles this via its *attention needed* field.
+
+**Assignee notification is probably already solved.** GitHub auto-subscribes assignees, and they receive notifications for new comments regardless of who authored them. Worth *checking* before building anything — this may need nothing at all.
+
+**The label is the part that adds real value**, because it is what makes a filtered board view work.
+
+**Implementation:** a workflow on `issue_comment: [created]` that adds the label when the comment body carries the `Matrix-Journal-Id` marker. That marker already exists for loop-breaking, so no new plumbing — the same signal that tells the sync *"we wrote this"* tells the board *"this came from Matrix"*.
+
+**We can distinguish the two kinds for free**, since the origin prefix is already in the comment:
+
+| Comment prefix | Meaning | Possible label |
+| --- | --- | --- |
+| `**[Matrix comment]**` | Caller-visible — usually the reporter responding | `updated-by-caller` (her wording) |
+| `**[Matrix work note]**` | Internal — a handler's note | `updated-from-matrix` |
+
+Her phrasing, *"Updated by Caller"*, suggests she may specifically care about the **reporter** responding, which is a different signal from a handler's internal note. Worth asking whether she wants one label or two — we have the data either way.
+
+⚠️ **A label that is only ever added is useless within a month** — everything ends up carrying it. It needs a clearing rule, and the options are:
+
+- **Manual** — she removes it as she processes each issue. Simplest, and she is the consumer.
+- **Automatic on reply** — remove when a comment *without* the marker appears, i.e. someone on the GitHub side has responded. Neat, but it clears the flag when the team replies rather than when she has read it, which may not be what she wants.
+
+Recommend starting **manual**, since the wrong automatic rule is worse than none: a flag that clears itself early is indistinguishable from one that never fired.
+
 ### Formatting the inbound work note
 
 From the live example (2026-08-31), two refinements:

@@ -151,7 +151,23 @@ It does get sharper: she has been selecting incidents *by hand*, so the epic fil
 
 **✅ Already the case — Ingrid, 2026-09-01.** The epic *is* dedicated to Matrix and does roll annually: **[#826](https://github.com/TelenorNorgeInternal/s06065-sfb-telenor-sfdc/issues/826) `✨Incidents from Matrix '26`**, becoming `'27` next year. The recommendation turned out to describe what she already runs.
 
-**Verified state 2026-09-01: 30 of 100 sub-issues used.** Seventy slots left, and automation has just begun consuming them — 30 accumulated over roughly eight months of *manual* selection, so the rate is about to change. Not urgent; worth watching rather than worrying about.
+**Verified state 2026-09-01: 79 of 100 sub-issues used — 63 closed, 16 open. Twenty-one slots left.**
+
+> ⚠️ **Correction.** This was first recorded here as *30 of 100*. That figure came from an unpaginated API call returning only the first page — a silent truncation, and exactly the kind the pilot has flagged elsewhere in others' systems. Ingrid caught it from the issue header. **The real number is 79**, which changes the conclusion from *"worth watching"* to *"needs a decision fairly soon"*.
+
+**Closing a sub-issue does not free its slot** — the cap counts links, not open items. So 63 finished incidents are occupying 63 of the 79 used slots.
+
+**Three ways forward, for Ingrid to choose:**
+
+| Option | Effect | Cost |
+| --- | --- | --- |
+| **Unlink closed sub-issues** | Frees 63 slots immediately, and becomes routine housekeeping | Loses the historical grouping — closed incidents are no longer visibly children of the year's epic |
+| **Overflow epic within the year** — e.g. a second `'26` | Preserves history | Breaks the one-epic-per-year naming, and the lookup must then choose the epic *with capacity* rather than the one matching the year |
+| **Accept the ceiling** and let overflow arrive unparented | No work | Twenty-one incidents away, and unparented issues then need manual tidying |
+
+Ingrid's own framing is the reason this now matters: she has been picking *everything* with Reported on / Caused by system = SFB, so **automation does not change what qualifies — it changes only who does the work.** The count will therefore rise at much the same rate she was already generating, but without her hand on it, and 21 slots is not many months.
+
+Her instinct is right that the alert on failure-to-attach is the safety net; the point of choosing now is not to need it.
 
 _(Last year's epic **#2665 `✨Incidents from Matrix '25`** is still open, which matters for name-based lookup — see below.)_
 
