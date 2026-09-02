@@ -413,21 +413,43 @@ Once the dedicated user exists, it is worth asking whether the blanket suppressi
 
 **Implementation:** a workflow on `issue_comment: [created]` that adds the label when the comment body carries the `Matrix-Journal-Id` marker. That marker already exists for loop-breaking, so no new plumbing — the same signal that tells the sync *"we wrote this"* tells the board *"this came from Matrix"*.
 
-**We can distinguish the two kinds for free**, since the origin prefix is already in the comment:
+**✅ Decided by Ingrid, 2026-09-02: label _caller comments only_.**
 
-| Comment prefix | Meaning | Possible label |
-| --- | --- | --- |
-| `**[Matrix comment]**` | Caller-visible — usually the reporter responding | `updated-by-caller` (her wording) |
-| `**[Matrix work note]**` | Internal — a handler's note | `updated-from-matrix` |
+| Comment prefix | Label? |
+| --- | --- |
+| `**[Matrix comment]**` — the caller responding | ✅ **yes** |
+| `**[Matrix work note]**` — internal | ❌ no |
 
-Her phrasing, *"Updated by Caller"*, suggests she may specifically care about the **reporter** responding, which is a different signal from a handler's internal note. Worth asking whether she wants one label or two — we have the data either way.
+Her reasoning is a useful fact about how this will actually be used: **work notes will overwhelmingly travel GitHub → Matrix, not the other way**, because the people working these incidents *"have access to GitHub only"*. So inbound traffic from Matrix is predominantly the caller. A single label for caller replies is therefore the whole requirement, not a simplification of it.
 
-⚠️ **A label that is only ever added is useless within a month** — everything ends up carrying it. It needs a clearing rule, and the options are:
+**Clearing: automatic, when the team replies** — *"if we can clear it automatically when we send a note from GitHub to Matrix that would be great, one less manual task. The label should not be cleared before it is answered."*
 
-- **Manual** — she removes it as she processes each issue. Simplest, and she is the consumer.
-- **Automatic on reply** — remove when a comment *without* the marker appears, i.e. someone on the GitHub side has responded. Neat, but it clears the flag when the team replies rather than when she has read it, which may not be what she wants.
+Implemented as: **remove the label when a comment _without_ the `Matrix-Journal-Id` marker is created** — i.e. a human wrote a reply in GitHub. That fires at write time in the workflow, needs nothing from ServiceNow, and is a couple of polling minutes ahead of the note actually reaching Matrix.
 
-Recommend starting **manual**, since the wrong automatic rule is worse than none: a flag that clears itself early is indistinguishable from one that never fired.
+#### ⚠️ But "answered" does not currently mean the caller hears anything
+
+Worth surfacing before this is built, because it undercuts the intent rather than the mechanism.
+
+The agreed direction is **outbound → work notes only** (Isak, and the visibility rule in §4): everything the team writes in GitHub becomes an *internal* Matrix note. **Work notes are not visible to the caller.**
+
+So under the current design:
+
+1. The caller comments in Matrix → issue gets labelled ✅
+2. A developer replies in GitHub → label clears ✅
+3. **The caller never sees that reply** — it landed as an internal work note ❌
+
+The label would then read *"answered"* when what actually happened is *"the team responded internally"*. For Ingrid that may be exactly right — she is the one who relays to callers today, and the label tells her the team has given her something to relay. But it is a different meaning from the plain reading of "answered", and it should be her choice rather than an accident of the outbound rule.
+
+**Two ways to resolve it, hers to pick:**
+
+| | Effect |
+| --- | --- |
+| **Keep as-is** — label means *"the team has responded, ready to relay"* | Matches today's process, where she relays manually. No change to the outbound rule or to Isak's decision. |
+| **Allow outbound comments** for replies intended for the caller | Closes the loop properly, but reopens the caller-visibility question Isak signed off, and needs a way to mark which GitHub comments are for the caller |
+
+_Note this is not a defect introduced by the label — it is a pre-existing property of the outbound rule that the label makes visible._
+
+_(A label only ever added would be useless within a month — everything ends up carrying it. The automatic clearing rule above is what keeps it meaningful.)_
 
 ### Formatting the inbound work note
 
