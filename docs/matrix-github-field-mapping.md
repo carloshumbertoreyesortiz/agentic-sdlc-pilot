@@ -197,7 +197,7 @@ const payload = {
 Confirmed by Halvor (2026-08-14): **comments are visible to the caller; work notes are for case handlers.**
 
 - **Inbound (Matrix → GitHub): both**, each labelled with its origin so they can never be confused. A caller's comment is frequently the detail that explains the defect, so dropping it degrades triage.
-- **Outbound (GitHub → Matrix): work notes only.** Automated engineering progress is internal and must not surface to the caller. Halvor concurs: _"if it's strictly internal it should be work notes."_
+- **Outbound (GitHub → Matrix): caller-visible comments by default, work notes on request.** _(Revised 2026-09-02 — see "Outbound visibility" below. Previously work-notes-only.)_
 - **Hard requirement:** an inbound work note must never be echoed back into anything caller-visible. The origin prefix is what makes this checkable.
 
 **Pending Isak's confirmation** — he owns note-handling and closure semantics.
@@ -402,6 +402,47 @@ That may be entirely fine; it depends what else lives on that table, which is kn
 | **Side effects** | Anything else keyed on work-note inserts stops firing, invisibly | None |
 
 Once the dedicated user exists, it is worth asking whether the blanket suppression is still needed, or whether the targeted exclusion alone leaves the platform behaving normally in every other respect.
+
+### Outbound visibility — revised 2026-09-02
+
+**Work-notes-only is replaced by: caller-visible by default, internal on request.**
+
+**Ingrid:** *"I think all comments from the team could be seen by the caller. If internal discussions are needed, they mostly happen in meetings and then any update is structured as a caller-friendly note."*
+
+#### This does not reopen anything with Isak
+
+Worth stating plainly, because it looks like it should. His approval reads: *"you can sync updates (**'Additional Comments' / 'Work Notes'**) between Matrix and github"* — **he named both**. Caller-visible comments were inside his sign-off from the start.
+
+The work-notes-only restriction was a **pilot recommendation**, not a governance constraint, and Halvor's agreement was explicitly conditional — *"**if** it's strictly internal it should be work notes."* That condition simply does not hold: per Ingrid, team comments are already written to be caller-readable, because internal discussion happens in meetings.
+
+#### The default flips
+
+| | Old | New |
+| --- | --- | --- |
+| Default for a GitHub comment | Work note (internal) | **Additional Comment (caller-visible)** |
+| Opt-out | — | Prefix with **`[internal]`** → work note |
+
+Default-open is right *here specifically* because the team's comments are already written for a caller audience. It would be the wrong default on a team that debates in the issue thread.
+
+⚠️ **Named honestly: default-open fails towards disclosure.** Forgetting the prefix sends an internal comment to the caller, and there is no recall. The mitigations are conventional rather than technical:
+
+- The convention must be visible **where comments are written** — worth a line in the issue body the sync generates, so it sits in front of anyone about to reply.
+- `[internal]` should be the **only** marker, matched case-insensitively at the start. Multiple synonyms guarantee someone misremembers which one works.
+
+#### It also makes the caller-reply label semantically correct
+
+The clearing rule was going to be *"clear when the team replies"* — which under work-notes-only would have cleared while the caller was still unanswered. Now it is accurate, but only for caller-visible replies:
+
+| Outbound comment | Caller sees it? | Clears the label? |
+| --- | --- | --- |
+| Ordinary reply | ✅ yes | ✅ yes |
+| `[internal]` prefixed | ❌ no | ❌ **no** — the caller is still waiting |
+
+The two decisions interlock: the label now means what it says.
+
+#### ServiceNow side
+
+Writes target the incident's **`comments`** (Additional Comments) field rather than `work_notes`, chosen per record from the prefix. Business-rule suppression and the dedicated-user loop-breaking are unaffected.
 
 ### Flagging new information on the GitHub side — Ingrid, 2026-09-01
 
