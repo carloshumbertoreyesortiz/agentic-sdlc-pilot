@@ -162,12 +162,14 @@ It does get sharper: she has been selecting incidents *by hand*, so the epic fil
 | Option | Effect | Cost |
 | --- | --- | --- |
 | **Unlink closed sub-issues** | Frees 63 slots immediately, and becomes routine housekeeping | Loses the historical grouping — closed incidents are no longer visibly children of the year's epic |
-| **Overflow epic within the year** — e.g. a second `'26` | Preserves history | Breaks the one-epic-per-year naming, and the lookup must then choose the epic *with capacity* rather than the one matching the year |
+| **Quarterly epics for closed incidents** — Ingrid's suggestion, 2026-09-02, mirroring how she already files change requests | Preserves history *and* frees slots: closed incidents are re-parented to a quarterly epic, leaving the annual one for live work | Re-parenting is a step someone has to take; suits a periodic tidy rather than per-incident |
 | **Accept the ceiling** and let overflow arrive unparented | No work | Twenty-one incidents away, and unparented issues then need manual tidying |
 
 Ingrid's own framing is the reason this now matters: she has been picking *everything* with Reported on / Caused by system = SFB, so **automation does not change what qualifies — it changes only who does the work.** The count will therefore rise at much the same rate she was already generating, but without her hand on it, and 21 slots is not many months.
 
-Her instinct is right that the alert on failure-to-attach is the safety net; the point of choosing now is not to need it.
+**Decision 2026-09-02: wait and see.** Ingrid would rather let it fill than pre-solve it, with the failure-to-attach alert as the safety net — reasonable, given the alert exists and the consequence of hitting the cap is an unparented issue rather than a lost incident.
+
+If it does fill, her preferred answer is the quarterly-epic pattern she already runs for change requests. Worth noting the lookup must then handle *"the current year's epic, unless full"* — so the name-based resolution should be written to tolerate a second epic from the start, even though it will not need one yet.
 
 _(Last year's epic **#2665 `✨Incidents from Matrix '25`** is still open, which matters for name-based lookup — see below.)_
 
