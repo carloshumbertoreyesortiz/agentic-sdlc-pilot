@@ -428,6 +428,10 @@ Default-open is right *here specifically* because the team's comments are alread
 
 - The convention must be visible **where comments are written** — worth a line in the issue body the sync generates, so it sits in front of anyone about to reply.
 - `[internal]` should be the **only** marker, matched case-insensitively at the start. Multiple synonyms guarantee someone misremembers which one works.
+- ⚠️ **The square brackets are not decoration.** Matching the bare word `internal` would route *"Internal testing showed the template lookup fails…"* to a work note — a caller reply that silently never reaches the caller. That failure is in the safe direction for disclosure but is exactly the problem this change exists to fix, and it would be invisible: the author sees their comment posted and assumes it went across.
+- **Strip the marker before writing to Matrix.** `[internal] Checked the logs` should land as *"Checked the logs"* — the prefix is an instruction to the sync, not part of the note.
+
+**Confirmed with Halvor 2026-09-02** (*"work_notes for everything that starts with internal and comments for everything else"* — correct, with the bracket precision above) and approved by Ingrid.
 
 #### It also makes the caller-reply label semantically correct
 
