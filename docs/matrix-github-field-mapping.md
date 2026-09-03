@@ -292,11 +292,15 @@ Values may safely contain quotes and braces — the parser is anchored on the co
 
 The `sys_id` goes in an **HTML comment** so it is invisible when rendered but still searchable and machine-readable. Being in the body rather than a label means no label-length limits and no accidental deletion by a well-meaning triager.
 
-### 🔴 Two live defects in the duplicate guard — found 2026-09-03
+### Duplicate guard — two scares, both historical (2026-09-03)
 
-#### 1. The search URL must be percent-encoded
+> **⚠️ Corrected same day.** Both items below were recorded as *live production defects*. Neither is. The failure notification was a screenshot Halvor had kept **from early testing in the test environment**, not a production event; and his production `PATCH` bodies do contain the marker. The requirements below remain correct as *requirements* — the diagnosis of them as active faults was wrong.
+>
+> **The pattern is worth noting, since it is the second time.** Both conclusions came from a **two-point comparison** treated as proof: one probe of the production firewall, and one pair of issues here. Two data points establish a difference; they do not establish its cause. The right response to each was *"let us confirm that"* rather than a status change — the same standard already argued for elsewhere in this project, applied to others' evidence but not to my own.
 
-The first production failure notification carried:
+#### 1. The search URL must be percent-encoded — a real requirement
+
+A failure notification (from **test-environment work**, not production) carried:
 
 ```
 Invalid uri 'https://api.github.com/search/issues?q=repo:carloshumbertoreyesortiz/agentic-sdlc-pilot
@@ -313,20 +317,13 @@ https://api.github.com/search/issues?q=repo%3Acarloshumbertoreyesortiz%2Fagentic
 
 _Also note that error targets the **sandbox** repo while issues are now created in **production** — worth confirming the production job's search path matches its create path. A guard searching the wrong repo finds nothing and permits duplicates._
 
-#### 2. ⚠️ The update path drops the `Matrix-Sys-Id` marker — the guard's anchor disappears on first update
+#### 2. The marker on update — **not** a defect
 
-Verified by inspection:
+The scare: [#168](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/168) (sandbox, created 08-20 with the marker, updated since) no longer carries it, while freshly-created [#3092](https://github.com/TelenorNorgeInternal/s06065-sfb-telenor-sfdc/issues/3092) does. The inference — *`POST` emits it, `PATCH` drops it* — was wrong.
 
-| Issue | State | `Matrix-Sys-Id` present? |
-| --- | --- | --- |
-| [#3092](https://github.com/TelenorNorgeInternal/s06065-sfb-telenor-sfdc/issues/3092) — freshly created, no updates yet | production | ✅ yes |
-| [#168](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/168) — created 08-20 **with** the marker, updated since | sandbox | ❌ **gone** |
+Halvor supplied the three actual production `PATCH` bodies for #3092. **All three contain `<!-- Matrix-Sys-Id: … -->`.** The marker is absent from #168 because it was written by an **earlier revision of his code** during the test phase, not because the update path removes it.
 
-So **`POST` emits the marker and `PATCH` does not.** The body is regenerated on every update (as agreed), and the regenerated version omits that line.
-
-**Consequence:** an incident is protected against duplication only until its first update. After that it is invisible to search-before-create, and a lost response on a later retry creates a second issue. Create works, the guard silently disarms, and the duplicate appears weeks later with nothing in the logs.
-
-**This is also why the guard appeared verified.** The mechanism was tested and the mechanism is fine — the *marker* is what went missing, one layer down.
+**What the comparison actually showed** was that #168's body predates the current format — a fact about when it was written, not about which verb wrote it. A third data point (any *production* issue that has been updated) would have settled it immediately, and #3092 itself is now that point: it has been updated three times and still carries the marker.
 
 #### HTML comments **are** indexed — the design is sound
 
