@@ -247,6 +247,20 @@ Two options, both needing an org owner again:
 | 4.5 | **Ingrid verifies** the automated result matches what she would have done by hand | Step 5 sign-off. |
 | 4.6 | Close and delete the synthetic issue | Leave the sandbox one ([#166](https://github.com/carloshumbertoreyesortiz/agentic-sdlc-pilot/issues/166)) as the known-good reference. |
 
+## 4a — ⚠️ Sequencing: brief the team *before* caller-visible comments go live
+
+The outbound default flips to **caller-visible** (`[internal]` opts out). The safety of that rests entirely on a convention people know about — there is no technical guard.
+
+**The team has not been briefed yet.** Ingrid, 2026-09-03: the main issue handler is on sick leave until Monday; she will brief the other tomorrow.
+
+So do not ship the change into that window. Until the team knows, a developer writing an ordinary comment on a synced issue has no reason to suspect it reaches the customer — and that is precisely the failure the `[internal]` convention exists to prevent, occurring at the one time nobody can be expected to avoid it.
+
+**Order:** brief the team → then enable caller-visible outbound. Until then, outbound stays **work notes only**, which is the current behaviour and is safe by default.
+
+It costs nothing: Halvor has not shipped the change yet, and incident volume is low (one in the first two days). The alternative — shipping first — buys a few days of a feature nobody is using and risks the one outcome Isak's gate was about.
+
+_Note this is a live-system risk, not a test one. It appeared only because the sync went live before the process change around it was communicated — worth remembering as a general shape: **the technical cutover and the human cutover are separate events, and the human one gates the features that depend on people knowing.**_
+
 ## 5 — Clean up the test-phase scaffolding
 
 Both credentials below were deliberately scoped and time-boxed. Leaving them alive after cutover recreates the single-person dependency US-075 exists to remove — they are bound to Carlos's account, and Rune's warning applies: **eviction of the owning user invalidates them**.
