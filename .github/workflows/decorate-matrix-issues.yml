@@ -1,0 +1,64 @@
+name: decorate-matrix-issues
+
+# US-075 INTERIM. Sets board fields, issue type and the epic link on
+# Matrix-sourced issues in the SFB production repo.
+#
+# Why it runs from THIS repo rather than the production one: a workflow there
+# would need an Actions secret (repo admin — the pilot has write), and the
+# GitHub App cannot write Project fields (scoped to Issues + Metadata; adding
+# Projects needs an org owner). Both routes wait on someone else, while the SFB
+# team currently cannot see Status or Priority on incoming incidents at all.
+#
+# DELETE THIS once the App gains Projects permission and the workflow moves into
+# the production repo as an event-driven job. See docs/matrix-sync-cutover.md.
+#
+# Polling, not events — this repo cannot receive the other repo's issue events.
+# Every 10 minutes: ServiceNow polls at 2, so worst case an incident is
+# undecorated for ~12 minutes.
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'List what would change without writing'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: decorate-matrix-issues
+  cancel-in-progress: false
+
+jobs:
+  decorate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+
+      - name: Decorate
+        env:
+          # Classic PAT: `repo` (the target is PRIVATE, so public_repo is not
+          # enough) + `project` (org-owned board; fine-grained tokens cannot
+          # reach Projects for an org without an org-approved grant).
+          GH_TOKEN: ${{ secrets.SFB_PROD_TOKEN }}
+          TARGET_REPO: TelenorNorgeInternal/s06065-sfb-telenor-sfdc
+          PROJECT_OWNER: TelenorNorgeInternal
+          PROJECT_NUMBER: '408'
+          EPIC_PREFIX: Incidents from Matrix
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::warning::SFB_PROD_TOKEN is not set — nothing decorated."
+            echo "Create a CLASSIC token (https://github.com/settings/tokens/new) with"
+            echo "scopes 'repo' and 'project', then:"
+            echo "  gh secret set SFB_PROD_TOKEN --repo ${{ github.repository }}"
+            exit 0
+          fi
+          npx tsx scripts/decorate-matrix-issues.ts ${{ inputs.dry_run && '--dry-run' || '' }}
