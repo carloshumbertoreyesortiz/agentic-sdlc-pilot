@@ -42,9 +42,48 @@ Her test shows the deferred behaviour is **expected by the person using it**, wh
 
 _Note the asymmetry that makes this harder than it looks: comments carry an origin marker, so the loop is breakable. **Field changes carry nothing** — a Status change records no evidence of who set it — so loop prevention there rests entirely on comparing timestamps._
 
-## 7 — Error Type was never in the contract
+### ✅ Resolved 2026-09-04 — the ownership question was never contested
 
-`Error Type = Functional Error` has not been mapped because it was never mentioned. Two steps: Halvor adds it to the payload, then the pilot decides where it lands. There is **no obvious home** on the production board — the natural candidates were dropped as unnecessary — so it may belong in the issue body, or as a label, or need a new field. Ingrid's call.
+The deferral rested on *"who owns Status while an incident is in flight?"*, assuming the service desk and the developers might both change it. Ingrid's answer removes the premise:
+
+> *"Developers working in GitHub do not have access to manually close incidents in Matrix, which creates a dependency on Martin or me… In practice, I have never experienced the Service Desk being actively involved in handling SFB incidents."*
+
+So there is **no contention to arbitrate**. The people doing the work are in GitHub; the service desk is not involved beyond Isak's periodic reminders to tidy the backlog. **GitHub is the source of truth for the state of an SFB incident**, and the theoretical ping-pong the deferral guarded against does not occur.
+
+### ⚠️ And this is not a nice-to-have — the story's own KPI depends on it
+
+US-075 exists to move **key-person-risk from 1 to 0**. It currently does not:
+
+| | Before the sync | Now | After closure push-back |
+| --- | --- | --- | --- |
+| Creating the GitHub issue | Ingrid, by hand | ✅ automatic | ✅ automatic |
+| Keeping notes in step | Ingrid, by hand | ✅ automatic | ✅ automatic |
+| **Closing the Matrix incident** | Ingrid or Martin, by hand | ❌ **still Ingrid or Martin** | ✅ automatic |
+
+The sync has removed the creation toil and left the closure toil. Ingrid still has a manual task on every incident — a smaller one, but the dependency is intact, and **the KPI cannot honestly be reported as 0 until closure flows back.**
+
+### Recommendation: closure only, not full status mirroring
+
+Start narrow, because closure alone solves the stated pain and carries almost no risk:
+
+- **It is the actual complaint** — the manual dependency is specifically about closing
+- **It is terminal.** Once closed there is nothing left to ping-pong; full status mirroring is where loops live
+- **It is low-frequency**, so a mistake is visible and correctable rather than a flood
+
+Full state mirroring can follow if wanted, once closure has run for a while.
+
+**Open question for Halvor, which decides the target state:** does Matrix **auto-close Resolved incidents after a period**? Many ServiceNow instances do.
+
+- If **yes** → set **Resolved** on issue closure. The caller still gets their confirmation window, and the incident closes itself. The manual dependency disappears entirely.
+- If **no** → setting Resolved merely *moves* the manual step rather than removing it, and we should set **Closed** directly.
+
+_Mapping: issue closed as `completed` → resolved/closed; closed as `not_planned` → Cancelled._
+
+## 7 — Error Type: ✅ decided — the issue body
+
+Ingrid, 2026-09-04: *"included directly in the GitHub issue description/body… developers get the context without referring back to Matrix."*
+
+The right answer, and the cheapest: it joins the other Background fields Halvor already emits, needs no board field, no schema change and no decision from anyone else. Halvor's side only.
 
 ## What this test was worth
 
