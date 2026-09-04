@@ -77,7 +77,33 @@ Full state mirroring can follow if wanted, once closure has run for a while.
 - If **yes** → set **Resolved** on issue closure. The caller still gets their confirmation window, and the incident closes itself. The manual dependency disappears entirely.
 - If **no** → setting Resolved merely *moves* the manual step rather than removing it, and we should set **Closed** directly.
 
-_Mapping: issue closed as `completed` → resolved/closed; closed as `not_planned` → Cancelled._
+### ✅ Full closure design — Ingrid, 2026-09-04
+
+| Step | Behaviour |
+| --- | --- |
+| Developer closes the GitHub issue | Matrix incident → **Resolved** (not Closed) — preserves the caller's approval step |
+| Caller **accepts** | Note added to the GitHub issue recording acceptance |
+| Caller **rejects** | Note added, **and the GitHub issue is reopened** for further work |
+| Caller does neither | Matrix auto-closes Resolved → Closed after *n* days — **unverified**, see below |
+
+**Most of this already exists in the contract.** Worth noting so nobody rebuilds it:
+
+- **Accept** → the incident moves Resolved → Closed, which already maps to Status `Done` + closing the issue. The explicit note is an addition; the state flow is specified.
+- **Reject** → Resolved → Work in Progress, which is the `Closed → reopened` case added on 2026-08-28: `state: "open"` with `state_reason: "reopened"`.
+
+### ⚠️ One edge case that would undo the developer's action
+
+The sequence *GitHub closes → Matrix sets Resolved → Matrix pushes state back to GitHub* has a trap. `Resolved` maps to **"issue state unchanged"**, and the mapping table records that as *"stays open"* — wording written when the issue was always already open.
+
+Read literally as *"ensure the issue is open"*, ServiceNow would send `state: "open"` and **reopen the issue the developer closed moments earlier**, on the next two-minute poll. The developer closes it; it reopens itself; nobody understands why.
+
+**Precisely: for `Resolved`, send _no_ `state` field at all** — not `state: "open"`. Only `Closed`, `Cancelled` and the reopen-after-reject cases carry a state value. The distinction is between *"leave it as it is"* and *"make it open"*, which is invisible in the phrase "stays open" and consequential.
+
+### Verifying the auto-close — Ingrid's test
+
+Whether Matrix already closes Resolved incidents after *n* days is the one unknown, and she has proposed an empirical check rather than asking anyone: **watch `INC0069636`**, resolved 2026-08-24 and not user-accepted. If the automation works it should close on its own.
+
+Better than asking, since what matters is whether it *does* happen, not whether it is *configured* to. _(If it does not fire, closure push-back sets `Resolved` and leaves the manual step in place — so this test decides whether the key-person dependency actually reaches zero.)_
 
 ## 7 — Error Type: ✅ decided — the issue body
 

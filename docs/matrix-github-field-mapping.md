@@ -140,7 +140,7 @@ _This also vindicates the Resolved → Deployed mapping that was flagged as the 
 
 | ServiceNow state | `state` | `state_reason` | Status field |
 | --- | --- | --- | --- |
-| Resolved | *(unchanged — stays `open`)* | — | `Deployed` |
+| Resolved | ⚠️ **send no `state` field at all** | — | `Deployed` |
 | Closed | `closed` | `completed` | `Done` |
 | Cancelled | `closed` | `not_planned` | *(omit — no Status)* |
 
@@ -191,7 +191,9 @@ const payload = {
 
 **Do not send `labels` on a PATCH.** GitHub *replaces* the entire label set with whatever is sent, so a triager's added label would be silently wiped. Labels are set once at creation and left alone.
 
-**Why Resolved stays open.** In the SFB taxonomy `Deployed` means *"deployed to production but not yet verified by the requestor"* (way-of-work §5) — the work is not finished, so the issue should not close. Only `Done`, which means verified, closes it. This is the same Resolved-vs-Deployed distinction flagged above, and it is the row most likely to change once Isak confirms closure semantics.
+> ⚠️ **"Send no `state` field" is not the same as `state: "open"`.** Once closure push-back exists, a developer closing the issue sets the incident to Resolved — and if ServiceNow then pushed `state: "open"` back, it would **reopen the issue the developer just closed**, on the next two-minute poll. Omitting the field leaves the issue however the human left it; sending `open` overrides them.
+
+**Why Resolved does not close the issue.** In the SFB taxonomy `Deployed` means *"deployed to production but not yet verified by the requestor"* (way-of-work §5) — the work is not finished, so the issue should not close. Only `Done`, which means verified, closes it. This is the same Resolved-vs-Deployed distinction flagged above, and it is the row most likely to change once Isak confirms closure semantics.
 
 **For Cancelled, omit `status` from the metadata block** rather than sending a value — consistent with the omit-not-substitute rule. (An explicit `"status": null` is also handled, but omitting is simpler.)
 
