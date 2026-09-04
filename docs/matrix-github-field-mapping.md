@@ -26,12 +26,15 @@ This is a **draft to react to**, not a decision already taken. Every row is open
 | `opened_at` | Body — Raised (informational) | GitHub's own `created_at` records when the *issue* appeared, which is a different fact. |
 | `sys_updated_on` | Body — Source last updated | Lets the daily full-scope run detect drift without a GitHub-side store. |
 | work notes (journal) | Issue comments, prefixed `**[Matrix work note]**` | Direction and visibility rules in §4. |
-| — | **Type = Incident** | Fixed for every record from this flow. **Set GitHub-side** — see §1a. |
-| — | **Sub Epic = Matrix Defect** | Fixed. Pilot-side addition for US-075 output (way-of-work §6). **Set GitHub-side.** |
+| — | **Type = Bug** | ⚠️ **Revised 2026-09-04 (Ingrid).** Was `Incident`. On the production org this is **GitHub's native issue type**, not a Project field — it appears in the issue header, not as a board column, and is set with the `updateIssue` GraphQL mutation using the org's `Bug` type id. Verified on [#3092](https://github.com/TelenorNorgeInternal/s06065-sfb-telenor-sfdc/issues/3092). |
+| — | ~~Sub Epic~~ | **Dropped 2026-09-02** — Ingrid: not needed on the production board, whose Sub Epic options are real delivery phases. |
+| — | **External ref. / URL** = the `INC…` number | **Added 2026-09-04 (Ingrid).** A single text field on the production board, replacing the pilot's three External Reference fields. Verified on #3092. _Open: the field name mentions URL — confirm whether the number or the deep link is wanted, for consistency with how SFB cases use it._ |
+| — | **Parent: the year's Matrix epic** | Sub-issue link, e.g. [#826](https://github.com/TelenorNorgeInternal/s06065-sfb-telenor-sfdc/issues/826) `✨Incidents from Matrix '26`. Uses the Issues API. |
 | — | Label `matrix` | Makes the whole flow filterable in one query — and triggers the field-setting workflow. |
 | — | External References record | `Reference Type = Matrix`, `Reference Id = INC…`, `Reference URL` = deep link. Mechanism established by #1121, adopted verbatim. **Set GitHub-side.** |
 | ← `correlation_id` | GitHub issue **number** | Written back by ServiceNow from GitHub's response. |
 | ← `correlation_display` | GitHub issue **URL** | As above. |
+| ← **Vendor Reference ID** | GitHub issue **number** | **Added 2026-09-04 (Ingrid).** A human-facing field, distinct from `correlation_id` which the sync uses for matching. **Keep both** — writing only to Vendor Reference ID would remove the sync's own join key. |
 
 **Open — needs Martin:** `category` / `subcategory` / `assignment_group` are not mapped yet because their value lists aren't known on the pilot side. If any of them should drive Sub Epic or a label, that's a mapping-session decision.
 
