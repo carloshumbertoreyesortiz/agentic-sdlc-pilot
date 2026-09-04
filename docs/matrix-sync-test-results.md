@@ -103,7 +103,45 @@ Read literally as *"ensure the issue is open"*, ServiceNow would send `state: "o
 
 Whether Matrix already closes Resolved incidents after *n* days is the one unknown, and she has proposed an empirical check rather than asking anyone: **watch `INC0069636`**, resolved 2026-08-24 and not user-accepted. If the automation works it should close on its own.
 
-Better than asking, since what matters is whether it *does* happen, not whether it is *configured* to. _(If it does not fire, closure push-back sets `Resolved` and leaves the manual step in place — so this test decides whether the key-person dependency actually reaches zero.)_
+Better than asking, since what matters is whether it *does* happen, not whether it is *configured* to.
+
+#### 🔴 Result: it has not fired — and the record suggests why
+
+`INC0069636`, inspected 2026-09-04: **still `Resolved`**, eleven days after being resolved on 2026-08-24. Most ServiceNow auto-close windows are three to seven days.
+
+The Closure Information tab points at a probable cause:
+
+| Field | Value |
+| --- | --- |
+| Priority | **2 – High (B)** |
+| Banner on the form | *"Please fill out technical closure documentation when the incident is resolved. **Applies to priority A-B incidents.**"* |
+| Technical closure documentation | **empty** — the template, unfilled |
+| Documentation received | ☐ unchecked |
+| User accepted solution | ☐ unchecked |
+| Close manually | ☐ **unchecked** |
+
+**`Close manually` being unchecked implies automation is expected to close it.** It has not. The most likely explanation is the one the form states itself: this is a **priority-B** incident whose **technical closure documentation is blank**, and auto-close is probably gated on that being complete.
+
+#### ⚠️ If that is the gate, it breaks closure push-back for exactly the incidents that matter
+
+Developers working in GitHub cannot fill in the technical closure documentation — they have no Matrix access. So:
+
+- **Priority C/D incidents** — closing the GitHub issue sets Resolved, auto-close fires, done.
+- **Priority A/B incidents** — closing the GitHub issue sets Resolved, and it **stops there**, waiting for documentation nobody in GitHub can provide.
+
+The automation would work for the routine cases and stall on the serious ones. That is the wrong way round, and it would look like intermittent flakiness rather than a rule.
+
+**Worth verifying before building:** is auto-close actually gated on that documentation, or is the job simply not running? The two look identical from outside and need different fixes.
+
+**If it is the documentation gate**, one option worth considering: the template is structured (*actual start, actual end, cause, actions taken, caused by a change, problem required, case handler*) and a developer closing an issue could reasonably supply most of it. A closing-comment template in GitHub could populate it — turning a blocker into a place where the sync adds value rather than merely relaying.
+
+### Field details confirmed from the record
+
+| Field | Observation |
+| --- | --- |
+| **Vendor Reference ID** | Already populated as **`#2003`** on this incident — so the field is in live use, and the format carries the `#`. Useful for Halvor. |
+| **Error type** | `Functional Error` — a proper form field, confirming it can simply be read and emitted. |
+| **Subject to the Security Act** | A **Yes/No** field, here `No`. ⚠️ **This is not the field Ingrid searched earlier** (`User Confirmed no Personal or SSA Data`). One is a *classification*, the other a *self-attestation* — and the classification is the stronger control. **Confirm which one the filter actually excludes on.** |
 
 ## 7 — Error Type: ✅ decided — the issue body
 
