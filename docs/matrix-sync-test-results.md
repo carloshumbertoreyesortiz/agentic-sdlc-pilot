@@ -34,6 +34,10 @@ This was flagged when the mechanism was chosen (2026-08-31): *"it does not suppr
 
 ⚠️ **And check what else went quiet.** The notification is the symptom that happened to be *visible*. SLA clocks, audit entries and any other rule on that table have been equally suppressed on every GitHub-originated note, with nothing reporting it.
 
+**✅ Confirmed 2026-09-04, and there was indeed more.** Halvor: *"that makes sense that it's suppressed when we update it without triggers… this affects the **'attention needed'** field as well if I remember correctly."*
+
+That field is what flags an incident to its assignee and triggers their notification — the mechanism Ingrid described as *"working as-is"* on the Matrix side. It has not been working for GitHub-originated notes. **Two casualties found from one blunt instrument, and the second only surfaced because someone went looking after the first.** Whatever else sits on that table is still unaudited.
+
 ## 12 — closure is deferred scope, not a broken feature
 
 Closing the GitHub issue does not update the Matrix incident, because **that direction was never built.** Status push-back was deliberately parked on 2026-08-25 pending a decision on **who owns Status while an incident is in flight** — without one owner per field, both sides push and neither wins. Comments-only was the agreed starting scope.
@@ -131,7 +135,23 @@ Developers working in GitHub cannot fill in the technical closure documentation 
 
 The automation would work for the routine cases and stall on the serious ones. That is the wrong way round, and it would look like intermittent flakiness rather than a rule.
 
-**Worth verifying before building:** is auto-close actually gated on that documentation, or is the job simply not running? The two look identical from outside and need different fixes.
+#### ⚠️ Corrected 2026-09-04 — it is neither. There is no time-based auto-close for incidents at all
+
+Halvor checked: *"it seems like incidents only move from resolved to closed after the caller has accepted the solution. Which surprises me as we auto close other 'task' types if there's not been any action after x amount of days."*
+
+So the closure-documentation hypothesis above was **wrong**. The gate is not the empty documentation; **there is simply no time-based auto-close on the incident table**, unlike other task types. `INC0069636` has sat in `Resolved` for eleven days because nothing was ever going to close it.
+
+_(Third time a plausible cause has been proposed from indirect evidence and turned out wrong. The pattern is consistent: a form field that *looks* like it explains the behaviour is not the same as checking what the behaviour actually is. Halvor spent two minutes looking and settled it.)_
+
+#### This is a pre-existing gap the sync merely makes visible
+
+Worth framing carefully for the conversation with Isak, because it changes what is being asked for:
+
+- If the caller never responds, an incident stays in `Resolved` **indefinitely**
+- Which is presumably why **Isak sends periodic reminders to clean up the backlog** — the manual sweep exists to compensate for the missing automation
+- The sync did not create this. It inherits it, and would make it visible at scale
+
+So the ask is not *"change incident behaviour to accommodate our integration"* — which invites a reasonable no — but *"incidents that callers never answer never close, you already chase them by hand, should that be automated?"* The integration is the occasion for the question, not its justification.
 
 **If it is the documentation gate**, one option worth considering: the template is structured (*actual start, actual end, cause, actions taken, caused by a change, problem required, case handler*) and a developer closing an issue could reasonably supply most of it. A closing-comment template in GitHub could populate it — turning a blocker into a place where the sync adds value rather than merely relaying.
 
