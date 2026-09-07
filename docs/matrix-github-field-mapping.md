@@ -267,10 +267,13 @@ So spend the care on the two HTML comments. The prose and the table can drift wi
 
 ### Empty and null values — omit, never substitute
 
-**Never send a placeholder string** — no `"None"`, `"N/A"`, `"-"` or `""`. When an incident is unassigned, or any field is empty:
+**The rule applies to every field, everywhere, without needing to be re-decided per field.** Never send a placeholder — no `"None"`, `"N/A"`, `"-"` or `""`. When any value is empty:
 
-- **Body table:** leave the row out entirely. No `| Assigned (Matrix) | None |`.
-- **`matrix-fields` JSON:** leave the key out entirely. `{"sys_id":"…","number":"…"}` with no `caller` key at all.
+| Where it would appear | What to do |
+| --- | --- |
+| **Body table row** | Leave the row out. No `\| Assigned (Matrix) \| None \|`. |
+| **Body prose line** (e.g. `Error type:`) | Leave the whole line out — **not** a label with nothing after it. A bare `Error type:` reads as *data that failed to load*, which is worse than an absent line: it invites someone to go looking for a fault that isn't there. |
+| **`matrix-fields` JSON** | Leave the key out. `{"sys_id":"…","number":"…"}` with no `caller` key at all. |
 
 A placeholder is indistinguishable from real data. `"None"` would be written verbatim into the **Caller** field on the board, where it reads as a value rather than an absence; it makes "nobody is assigned" impossible to tell apart from "we didn't sync that field"; and any later filter for unassigned incidents would silently miss them. An omitted key is unambiguous in every one of those cases.
 
