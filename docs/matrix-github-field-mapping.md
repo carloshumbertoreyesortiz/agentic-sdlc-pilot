@@ -134,6 +134,47 @@ Reference incidents she supplied for testing: **`INC0072343`** and **`INC0072144
 
 _This also vindicates the Resolved → Deployed mapping that was flagged as the weakest row: it matches the SFB taxonomy's "deployed but not yet verified by the requestor", and rejection-by-requestor is precisely the transition it anticipates. Still worth Isak's confirmation, but it now has evidence behind it._
 
+### Closing requires content — the closure-documentation contract
+
+**Confirmed 2026-09-07 (Halvor's colleague).** Matrix will not let an incident close without content, and the requirement scales with priority:
+
+| Requirement | Applies to |
+| --- | --- |
+| **Close notes** | **Every** incident |
+| **Technical closure documentation** (structured template) | Priority **A and B** only |
+
+**Usefully, the GitHub side can already tell which is which.** A and B map to **`P0` and `P1`** in the existing priority mapping, and Priority is on the board — so the workflow knows whether the long form is required without asking Matrix.
+
+#### Halvor's proposal: collect it in GitHub and send it over
+
+*"having that info mandatory on the GitHub side and sent over should work."* Agreed — and it converts a blocker into the one place the sync clearly improves on the status quo, since chasing closure documentation is currently manual.
+
+**Mechanism — a marked closing comment**, mirroring `[internal]`:
+
+```
+[closure]
+Actual start: 2026-09-01 09:00 UTC
+Actual end: 2026-09-04 14:30 UTC
+Cause: template lookup failed when no contract reference was attached
+Actions: fall back to the default template
+Caused by a change or release: no
+Problem required: no
+Case handler: <name>
+```
+
+For `P2`/`P3`, a `[closure]` comment with free text suffices — it becomes the close notes.
+
+#### ⚠️ "Mandatory" cannot mean *blocked* — GitHub has no such gate
+
+GitHub cannot prevent an issue being closed. So the honest design is **detect and prompt**, not enforce:
+
+1. Issue closed with a valid `[closure]` comment → incident resolves. Normal path.
+2. Issue closed **without** one → the workflow posts a comment carrying the template and stating plainly that **the Matrix incident has not been resolved yet**. The developer fills it in; the sync then resolves.
+
+**Do not reopen the issue automatically.** That overrides a deliberate human action and reads as the tooling fighting the user. Leaving it closed with a visible note respects the intent while making the divergence obvious — and the divergence is temporary by construction, because the note says exactly what to do.
+
+_The failure this avoids is the quiet one: an issue closed, an incident left open, and nobody aware the two have parted company until Isak's next backlog sweep._
+
 ### End-of-life states — the exact API values
 
 **ServiceNow closes the issue, not the pilot.** The GitHub-side workflow only ever writes Project fields; it never opens or closes anything. So `state` and `state_reason` must travel on the `PATCH` alongside the regenerated body.

@@ -141,7 +141,21 @@ Halvor checked: *"it seems like incidents only move from resolved to closed afte
 
 So the closure-documentation hypothesis above was **wrong**. The gate is not the empty documentation; **there is simply no time-based auto-close on the incident table**, unlike other task types. `INC0069636` has sat in `Resolved` for eleven days because nothing was ever going to close it.
 
-_(Third time a plausible cause has been proposed from indirect evidence and turned out wrong. The pattern is consistent: a form field that *looks* like it explains the behaviour is not the same as checking what the behaviour actually is. Halvor spent two minutes looking and settled it.)_
+#### …and corrected again 2026-09-07 — both constraints are real, and I conflated them
+
+Halvor's colleague confirms the documentation requirement **does** exist: *"you need the technical closure documentation for priority A and B incidents as you mentioned above. Additionally on any type of incidents we need close notes added to close it."*
+
+So there are **two independent constraints**, and the retraction above was too broad:
+
+| Constraint | Applies to | Real? |
+| --- | --- | --- |
+| Technical closure documentation required | Priority **A and B** incidents | ✅ yes — the original hypothesis was right |
+| Close notes required | **All** incidents | ✅ yes — not previously known |
+| Time-based auto-close from Resolved | — | ❌ **does not exist** — Halvor's finding stands |
+
+They are not in conflict. The documentation governs whether an incident *can be resolved or closed*; the absent auto-close governs whether it *ever leaves Resolved on its own*. `INC0069636` sat for eleven days because of the second, not the first — which is what made the first look wrong.
+
+_The lesson is narrower than "the hypothesis was wrong": it was **right about the rule and wrong about the instance**. Retracting the whole claim when only its application to one record failed threw away a correct finding — which then had to be rediscovered by someone else three days later._
 
 #### This is a pre-existing gap the sync merely makes visible
 
