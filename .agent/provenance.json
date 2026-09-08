@@ -1,11 +1,11 @@
 {
-  "run_id": "run-1788884213101",
-  "task": "docs(us075): credential inventory and expiry dates",
+  "run_id": "run-1788884918492",
+  "task": "fix(us075): SFB_PROD_TOKEN must be fine-grained, not classic",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-09-08T16:16:53.095Z",
-  "finished_at": "2026-09-08T16:16:53.101Z",
+  "started_at": "2026-09-08T16:28:38.491Z",
+  "finished_at": "2026-09-08T16:28:38.492Z",
   "prompt_hash": "sha256:bb1b3f36f59b0cc5d581d245524c44fda19855b890584e53bb79cf5117b86d8d",
   "tool_trace": [
     "Read",

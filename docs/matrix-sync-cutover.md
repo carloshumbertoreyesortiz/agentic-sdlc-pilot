@@ -270,7 +270,7 @@ Four credentials now exist with different owners, scopes and expiry dates, and n
 | **`PROJECT_TOKEN`** (classic) | Board fields on the **sandbox** project | `project`, `public_repo` | ~2026-11-18 | Sandbox board decoration. Test-phase only. |
 | **Halvor's sandbox token** (fine-grained) | ServiceNow → **sandbox** repo | one repo, Issues R/W | **~2026-09-25** | ⚠️ **The sync itself, from ServiceNow.** Would look like the integration failing. |
 | **`agentic-sdlc-pilot agent`** (fine-grained) | Unknown — created 2026-06-17, early pilot work | pilot repo: code, issues, PRs, **workflows** R/W | **2026-09-15** | ✅ Nothing identified. Not referenced by either workflow or by local `gh` (which uses OAuth). **Decision 2026-09-08: let it lapse.** Broad and unused is worse than absent, and a narrower replacement takes two minutes if something surfaces. |
-| **`SFB_PROD_TOKEN`** (classic) | Production decorator — board fields, closure prompts, caller label | `repo`, `project` | — | **Does not exist yet.** Until created, none of the GitHub-side automation runs on a schedule. |
+| **`SFB_PROD_TOKEN`** (**fine-grained**) | Production decorator — board fields, closure prompts, caller label | owner `TelenorNorgeInternal`; Issues R/W, Metadata R, org Projects R/W | — | ⚠️ **A classic token was tried 2026-09-08 and rejected:** *"TelenorNorgeInternal forbids access via a personal access token (classic)."* The sandbox needed classic because user-owned Projects cannot be reached otherwise; that does **not** carry across to the org. Fine-grained tokens against an org may additionally need org approval. |
 
 ### The one to watch
 
