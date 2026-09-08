@@ -192,6 +192,32 @@ Case handler: <name>
 
 `Close notes:` is always present. `Technical documentation:` appears only for A/B.
 
+#### ✅ The `[closure]` comment **is** the close signal — one path, not two (Halvor, 2026-09-08)
+
+His proposal, and it is a real simplification: since a `[closure]` comment is required on every close anyway, **treat receiving it as the instruction to resolve the incident**. ServiceNow then polls **only** the comments endpoint and never needs the issues endpoint at all.
+
+**Why it is better, not merely simpler:**
+
+- **One `since` cursor instead of two.** Two independent pollers means two failure modes, two timestamps that can drift apart, and one that can silently stop advancing.
+- **It dissolves a race rather than handling it.** The earlier design had the close event and the closure comment arriving in either order across a two-minute poll, needing correlation. With one signal there is nothing to correlate.
+- **The comment already carries everything** — the state transition is implicit in it.
+
+#### What the simplification would lose, and where to recover it
+
+Watching only comments means an issue **closed with no `[closure]` comment produces no signal at all** — so no prompt either. The developer closes it, nothing happens, the incident stays open, and nobody is told. That is precisely the silent divergence the prompt existed to prevent.
+
+**Recovered by moving the detection to the side that gets the event for nothing.** GitHub knows the instant an issue is closed — natively, no polling. So the prompt belongs in the GitHub workflow, not in ServiceNow's poller:
+
+| Trigger | Side | Action |
+| --- | --- | --- |
+| Issue closed **with** a `[closure]` comment | ServiceNow, from the comment | Resolve the incident, populate the fields |
+| Issue closed **without** one | **GitHub workflow**, on `issues: closed` | Post the template, state that the incident is not yet resolved |
+| `[closure]` comment on a **still-open** issue | **GitHub workflow**, on `issue_comment` | Close the issue — writing closure documentation is an unambiguous statement of intent |
+
+The third row matters: it makes the comment genuinely sufficient. A developer who writes the closure comment need not also remember to close the issue, and one who closes out of habit gets prompted. **Whichever half they do, the other follows.**
+
+**Net effect: ServiceNow polls one endpoint and handles one event type. Everything conditional happens in GitHub, where the events are free.**
+
 #### ⚠️ The `[closure]` comment must populate fields — it must NOT be relayed as a note
 
 It is **structured input for the closure fields**, not a message. Relaying it like an ordinary comment would show the caller a block reading *"Actual start… Case handler…"*, which is meaningless to them and looks like a system malfunction.
