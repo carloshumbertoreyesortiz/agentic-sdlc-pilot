@@ -163,8 +163,36 @@ export function plannedFields(v: MatrixFieldValues): Record<string, string> {
   return out;
 }
 
+/**
+ * True when the failure is the credential being rejected outright, rather than
+ * anything about the work.
+ *
+ * Distinguished so a *known, pending* permission gap degrades to a warning
+ * instead of a red run every ten minutes. A workflow that fails on a schedule
+ * for a reason nobody can act on this week trains people to ignore it — and it
+ * is the same workflow that must be believed when it reports something real.
+ * Genuine faults still fail loudly; only this one case is downgraded.
+ */
+function isAuthRejection(err: unknown): boolean {
+  const text = String((err as { stderr?: string; message?: string })?.stderr ?? (err as Error)?.message ?? err);
+  return /forbids access|FORBIDDEN|Bad credentials|Resource not accessible/i.test(text);
+}
+
 function main(): void {
-  const { projectId, fields } = loadProject();
+  let project: { projectId: string; fields: Field[] };
+  try {
+    project = loadProject();
+  } catch (err) {
+    if (isAuthRejection(err)) {
+      console.log('::warning::SFB_PROD_TOKEN was rejected by GitHub — nothing decorated.');
+      console.log('The org accepts neither classic PATs nor (apparently) fine-grained ones,');
+      console.log('so this needs Projects: read & write on the matrix-sfb-sync App.');
+      console.log('Pending that, run the script locally with credentials that work.');
+      return;
+    }
+    throw err;
+  }
+  const { projectId, fields } = project;
   const year = Number(process.env.EPIC_YEAR ?? new Date().getFullYear());
   const epic = findEpic(year);
   if (!epic) {

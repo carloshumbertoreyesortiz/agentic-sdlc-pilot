@@ -1,11 +1,11 @@
 {
-  "run_id": "run-1788884918492",
-  "task": "fix(us075): SFB_PROD_TOKEN must be fine-grained, not classic",
+  "run_id": "run-1788892957136",
+  "task": "fix(us075): degrade to a warning when the token is rejected",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-09-08T16:28:38.491Z",
-  "finished_at": "2026-09-08T16:28:38.492Z",
+  "started_at": "2026-09-08T18:42:37.130Z",
+  "finished_at": "2026-09-08T18:42:37.136Z",
   "prompt_hash": "sha256:bb1b3f36f59b0cc5d581d245524c44fda19855b890584e53bb79cf5117b86d8d",
   "tool_trace": [
     "Read",
