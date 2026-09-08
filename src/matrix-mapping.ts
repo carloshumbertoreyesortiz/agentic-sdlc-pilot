@@ -266,3 +266,49 @@ export function buildIssuePayload(
     labels: ['matrix', 'incident'],
   };
 }
+
+/** Marks a comment as carrying closure information. Case-insensitive, at the start. */
+export const CLOSURE_TAG = '[closure]';
+
+/** Marks a comment as internal — becomes a Matrix work note rather than a comment. */
+export const INTERNAL_TAG = '[internal]';
+
+/**
+ * Identifies the prompt this tooling posts when an issue is closed without
+ * closure information. Present so the prompt is posted ONCE rather than on
+ * every polling cycle — a reminder repeated every ten minutes is nagging, and
+ * people mute nagging.
+ */
+export const PROMPT_MARKER = '<!-- matrix-closure-prompt -->';
+
+/** True when a comment carries closure information. */
+export function isClosureComment(body: string): boolean {
+  return body.trimStart().toLowerCase().startsWith(CLOSURE_TAG);
+}
+
+/** True when a comment is marked internal. */
+export function isInternalComment(body: string): boolean {
+  return body.trimStart().toLowerCase().startsWith(INTERNAL_TAG);
+}
+
+/** True when a comment came FROM Matrix (it carries the journal marker). */
+export function isFromMatrix(body: string): boolean {
+  return extractJournalId(body) !== null;
+}
+
+/** True when a Matrix-sourced comment is a caller comment rather than a work note. */
+export function isCallerComment(body: string): boolean {
+  return isFromMatrix(body) && /^\s*\*\*\[Matrix comment\]\*\*/.test(body);
+}
+
+/**
+ * True when a comment is a human reply written in GitHub — i.e. not from Matrix,
+ * not our own prompt, and not marked internal.
+ *
+ * `[internal]` is excluded deliberately: it becomes a Matrix WORK NOTE, which the
+ * caller cannot see. Treating it as a reply would clear the "caller is waiting"
+ * label while the caller is still, in fact, waiting.
+ */
+export function isHumanReply(body: string): boolean {
+  return !isFromMatrix(body) && !body.includes(PROMPT_MARKER) && !isInternalComment(body);
+}

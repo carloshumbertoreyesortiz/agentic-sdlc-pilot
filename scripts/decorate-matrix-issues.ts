@@ -1,6 +1,13 @@
 import { execFileSync } from 'node:child_process';
 import process from 'node:process';
-import { extractFields, type MatrixFieldValues } from '../src/matrix-mapping.js';
+import {
+  extractFields,
+  isCallerComment,
+  isClosureComment,
+  isHumanReply,
+  PROMPT_MARKER,
+  type MatrixFieldValues,
+} from '../src/matrix-mapping.js';
 
 /**
  * US-075: decorates Matrix-sourced issues in the SFB production repo.
@@ -38,6 +45,38 @@ const DRY = process.argv.includes('--dry-run');
 
 /** Fixed for every Flow C issue. `Type` is a native org issue type, not a field. */
 const ISSUE_TYPE = 'Bug';
+
+/** Flags an issue whose caller has replied and not yet been answered. */
+const CALLER_LABEL = 'updated-by-caller';
+
+/**
+ * Posted when an issue is closed without closure information.
+ *
+ * ServiceNow only watches the comments endpoint, so a close with no `[closure]`
+ * comment produces NO signal on its side at all — the incident would silently
+ * stay open. GitHub knows about the close for free, so the detection belongs
+ * here. Carries PROMPT_MARKER so it is posted once rather than every cycle.
+ */
+const PROMPT_BODY = `${PROMPT_MARKER}
+⚠️ **This issue was closed, but the Matrix incident has _not_ been resolved.**
+
+Closing an incident needs closure information. Add a comment starting with \`[closure]\` and the incident will resolve automatically — no need to reopen this issue.
+
+\`\`\`
+[closure]
+Close notes: <what was done, written for the person who reported it — they see this>
+
+Technical documentation:   <-- P0/P1 only
+Actual start:
+Actual end:
+Cause:
+Actions:
+Caused by a change or release:
+Problem required:
+Case handler:
+\`\`\`
+
+_Close notes are required on every incident. The technical documentation is required for P0 and P1 only._`;
 
 function gh(args: string[]): string {
   return execFileSync('gh', args, { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
@@ -133,12 +172,17 @@ function main(): void {
   }
   const bugTypeId = issueTypeId(ISSUE_TYPE);
 
+  // `--state all`: closed issues still need the closure check, and their board
+  // fields are still worth keeping correct.
   const issues = JSON.parse(
-    gh(['issue', 'list', '-R', TARGET, '--label', 'matrix', '--state', 'open',
-        '--limit', '200', '--json', 'number,id,body,title']),
-  ) as { number: number; id: string; body: string; title: string }[];
+    gh(['issue', 'list', '-R', TARGET, '--label', 'matrix', '--state', 'all',
+        '--limit', '200', '--json', 'number,id,body,title,state,closedAt']),
+  ) as {
+    number: number; id: string; body: string; title: string;
+    state: string; closedAt?: string | null;
+  }[];
 
-  console.log(`${issues.length} open matrix issue(s) in ${TARGET}`);
+  console.log(`${issues.length} matrix issue(s) in ${TARGET}`);
 
   for (const issue of issues) {
     const values = extractFields(issue.body ?? '');
@@ -148,7 +192,12 @@ function main(): void {
       continue;
     }
     console.log(`#${issue.number} (${values.number}):`);
-    if (DRY) { console.log('  [dry run]'); continue; }
+
+    // Comment handling first, and it runs in dry-run too: a dry run that skips
+    // the analysis reports nothing useful. Writes inside are guarded.
+    handleComments(issue, DRY);
+
+    if (DRY) { console.log('  [dry run — board fields not evaluated]'); continue; }
 
     // Add to the board. Idempotent — returns the existing item if present.
     const item = graphql<{ data: { addProjectV2ItemById: { item: { id: string } } } }>(
@@ -204,6 +253,82 @@ function main(): void {
         console.log(`  · parent link unchanged (already linked, or epic full)`);
       }
     }
+  }
+}
+
+interface Comment { id: number; body: string; created_at: string }
+
+/**
+ * Only prompt about issues closed within this window.
+ *
+ * Without it, the first run reaches back through history and comments on every
+ * matrix issue ever closed — including ones closed before closure information
+ * was a concept, and ones already resolved by hand. A tool whose debut is a
+ * burst of reproachful comments on finished work does not get trusted again.
+ *
+ * 24h against a 10-minute poll leaves an enormous margin for outages, so
+ * nothing live is missed.
+ */
+const PROMPT_WINDOW_HOURS = Number(process.env.PROMPT_WINDOW_HOURS ?? 24);
+
+/**
+ * The three comment-driven behaviours, all of which exist because ServiceNow
+ * watches only the comments endpoint and therefore cannot see any of this.
+ *
+ *  1. closed + no `[closure]`  → post the prompt (once)
+ *  2. open + has `[closure]`   → close the issue; writing closure information is
+ *                                an unambiguous statement of intent, so the
+ *                                developer need not also remember to close
+ *  3. caller replied last      → label; cleared when a human replies in GitHub
+ */
+function handleComments(
+  issue: { number: number; state: string; closedAt?: string | null },
+  dry: boolean,
+): void {
+  const comments = JSON.parse(
+    gh(['api', '--paginate', `repos/${TARGET}/issues/${issue.number}/comments`,
+        '--jq', '[.[] | {id, body, created_at}]']),
+  ) as Comment[];
+
+  const hasClosure = comments.some((c) => isClosureComment(c.body));
+  const hasPrompt = comments.some((c) => c.body.includes(PROMPT_MARKER));
+  const closed = issue.state.toUpperCase() === 'CLOSED';
+
+  if (closed && !hasClosure && !hasPrompt) {
+    const closedAt = issue.closedAt ? Date.parse(issue.closedAt) : 0;
+    const cutoff = Date.now() - PROMPT_WINDOW_HOURS * 3600_000;
+    if (closedAt >= cutoff) {
+      console.log('  → closed without closure info: posting prompt');
+      if (!dry) gh(['issue', 'comment', String(issue.number), '-R', TARGET, '--body', PROMPT_BODY]);
+    } else {
+      console.log(`  · closed without closure info, but >${PROMPT_WINDOW_HOURS}h ago — not prompting`);
+    }
+  }
+
+  if (!closed && hasClosure) {
+    console.log('  → closure info present on an open issue: closing');
+    if (!dry) gh(['issue', 'close', String(issue.number), '-R', TARGET, '--reason', 'completed']);
+  }
+
+  // Compare the LAST caller comment against the LAST human reply. Counting is
+  // not enough: a caller who replies twice after being answered still needs the
+  // flag, and a reply after two caller comments clears it.
+  const lastCaller = [...comments].reverse().find((c) => isCallerComment(c.body));
+  const lastReply = [...comments].reverse().find((c) => isHumanReply(c.body));
+  const waiting = !!lastCaller && (!lastReply || lastCaller.created_at > lastReply.created_at);
+
+  const labels = JSON.parse(
+    gh(['issue', 'view', String(issue.number), '-R', TARGET, '--json', 'labels',
+        '--jq', '[.labels[].name]']),
+  ) as string[];
+  const labelled = labels.includes(CALLER_LABEL);
+
+  if (waiting && !labelled) {
+    console.log(`  → caller is waiting: adding ${CALLER_LABEL}`);
+    if (!dry) gh(['issue', 'edit', String(issue.number), '-R', TARGET, '--add-label', CALLER_LABEL]);
+  } else if (!waiting && labelled) {
+    console.log(`  → answered: removing ${CALLER_LABEL}`);
+    if (!dry) gh(['issue', 'edit', String(issue.number), '-R', TARGET, '--remove-label', CALLER_LABEL]);
   }
 }
 
