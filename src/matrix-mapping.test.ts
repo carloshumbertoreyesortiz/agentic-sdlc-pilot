@@ -7,6 +7,10 @@ import {
   duplicateSearchQuery,
   extractFields,
   extractJournalId,
+  isCallerComment,
+  isClosureComment,
+  isHumanReply,
+  PROMPT_MARKER,
   extractSysId,
   mapPriority,
   mapStatus,
@@ -269,5 +273,39 @@ describe('buildWorkNoteComment', () => {
     const q = duplicateCommentQuery('owner/repo', 'journal123');
     const marker = q.match(/"([^"]+)"/)?.[1];
     expect(c).toContain(marker as string);
+  });
+});
+
+describe('comment classification (closure prompts + caller label)', () => {
+  const fromMatrixCaller = '**[Matrix comment]** — Roy, 2026-09-08T09:00:00Z\n\nStill broken\n\n<!-- Matrix-Journal-Id: j1 -->';
+  const fromMatrixNote = '**[Matrix work note]** — Erik, 2026-09-08T09:00:00Z\n\nLooking\n\n<!-- Matrix-Journal-Id: j2 -->';
+
+  it('recognises a closure comment, case-insensitively and past leading space', () => {
+    expect(isClosureComment('[closure]\nClose notes: done')).toBe(true);
+    expect(isClosureComment('  [CLOSURE] Close notes: done')).toBe(true);
+    expect(isClosureComment('Nearly [closure] but not at the start')).toBe(false);
+  });
+
+  it('treats only caller comments as caller comments, not work notes', () => {
+    expect(isCallerComment(fromMatrixCaller)).toBe(true);
+    expect(isCallerComment(fromMatrixNote)).toBe(false);
+  });
+
+  it('counts an ordinary GitHub comment as a human reply', () => {
+    expect(isHumanReply('Looked into it, fix on the way')).toBe(true);
+  });
+
+  it('does NOT count an [internal] comment as answering the caller', () => {
+    // It becomes a Matrix work note, which the caller cannot see — clearing the
+    // flag on it would mark the caller answered while they are still waiting.
+    expect(isHumanReply('[internal] not sure this is ours')).toBe(false);
+  });
+
+  it('does NOT count a Matrix-sourced comment as a human reply', () => {
+    expect(isHumanReply(fromMatrixCaller)).toBe(false);
+  });
+
+  it('does NOT count our own prompt as a human reply', () => {
+    expect(isHumanReply(`${PROMPT_MARKER}\nThis issue was closed but...`)).toBe(false);
   });
 });
