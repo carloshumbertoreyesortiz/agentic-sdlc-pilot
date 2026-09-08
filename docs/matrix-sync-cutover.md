@@ -261,6 +261,25 @@ It costs nothing: Halvor has not shipped the change yet, and incident volume is 
 
 _Note this is a live-system risk, not a test one. It appeared only because the sync went live before the process change around it was communicated — worth remembering as a general shape: **the technical cutover and the human cutover are separate events, and the human one gates the features that depend on people knowing.**_
 
+## 4b — Credential inventory
+
+Four credentials now exist with different owners, scopes and expiry dates, and nothing recorded what breaks when each lapses. Written down because **an expiring personal token is the person-dependency in another form** — it fails silently, at a date nobody is watching, and presents as the integration breaking rather than as a credential ending.
+
+| Credential | Purpose | Scope | Expires | What breaks |
+| --- | --- | --- | --- | --- |
+| **`PROJECT_TOKEN`** (classic) | Board fields on the **sandbox** project | `project`, `public_repo` | ~2026-11-18 | Sandbox board decoration. Test-phase only. |
+| **Halvor's sandbox token** (fine-grained) | ServiceNow → **sandbox** repo | one repo, Issues R/W | **~2026-09-25** | ⚠️ **The sync itself, from ServiceNow.** Would look like the integration failing. |
+| **`agentic-sdlc-pilot agent`** (fine-grained) | Unknown — created 2026-06-17, early pilot work | pilot repo: code, issues, PRs, **workflows** R/W | **2026-09-15** | ✅ Nothing identified. Not referenced by either workflow or by local `gh` (which uses OAuth). **Decision 2026-09-08: let it lapse.** Broad and unused is worse than absent, and a narrower replacement takes two minutes if something surfaces. |
+| **`SFB_PROD_TOKEN`** (classic) | Production decorator — board fields, closure prompts, caller label | `repo`, `project` | — | **Does not exist yet.** Until created, none of the GitHub-side automation runs on a schedule. |
+
+### The one to watch
+
+**Halvor's token expires around 25 September.** That is the credential ServiceNow authenticates with, so its lapse stops incidents reaching GitHub entirely — and it would present as *"the sync has broken"* rather than *"a token expired"*, with the cause a fortnight in the past by the time anyone traces it.
+
+It is also test-phase scaffolding: the production path uses the **GitHub App**, whose installation tokens renew themselves. So the right fix is not to reissue it but to **finish the move to the App**, which retires the expiry problem rather than resetting its clock.
+
+_Every fine-grained and classic token here is bound to one person's account. Rune's warning applies to all of them: eviction of the owning user invalidates the token. The App is the only credential in this design that survives its creator._
+
 ## 5 — Clean up the test-phase scaffolding
 
 Both credentials below were deliberately scoped and time-boxed. Leaving them alive after cutover recreates the single-person dependency US-075 exists to remove — they are bound to Carlos's account, and Rune's warning applies: **eviction of the owning user invalidates them**.
