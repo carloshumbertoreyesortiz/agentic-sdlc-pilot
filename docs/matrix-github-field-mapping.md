@@ -163,7 +163,44 @@ Problem required: no
 Case handler: <name>
 ```
 
-For `P2`/`P3`, a `[closure]` comment with free text suffices — it becomes the close notes.
+#### One comment, always — not one per requirement
+
+Halvor asked whether A/B closures produce **two** comments (documentation + close notes) plus a state update. **No — one `[closure]` comment in every case**, whose *content* is richer for A/B:
+
+| Priority | What arrives |
+| --- | --- |
+| **A / B** (`P0`/`P1`) | **one** `[closure]` comment (close notes **+** technical documentation) **+ one state update** |
+| **C / D** (`P2`/`P3`) | **one** `[closure]` comment (close notes only) **+ one state update** |
+
+One comment is better than two in both directions: the developer writes a single thing at the moment of closing, and the receiving side never has to **pair** two comments with each other or with the close — there is no window in which one has arrived and the other has not.
+
+**Labelled sections, so parsing is unambiguous rather than positional:**
+
+```
+[closure]
+Close notes: Access is provided to the mentioned profiles. Please try to Add Deviation.
+
+Technical documentation:
+Actual start: 2026-09-01 09:00 UTC
+Actual end: 2026-09-04 14:30 UTC
+Cause: template lookup failed when no contract reference was attached
+Actions: fall back to the default template
+Caused by a change or release: no
+Problem required: no
+Case handler: <name>
+```
+
+`Close notes:` is always present. `Technical documentation:` appears only for A/B.
+
+#### ⚠️ The `[closure]` comment must populate fields — it must NOT be relayed as a note
+
+It is **structured input for the closure fields**, not a message. Relaying it like an ordinary comment would show the caller a block reading *"Actual start… Case handler…"*, which is meaningless to them and looks like a system malfunction.
+
+- `Close notes:` → the incident's **close notes** field
+- `Technical documentation:` → the **technical closure documentation** field
+- The comment itself → **not** copied into comments or work notes
+
+_Note the close-notes field is labelled **"Visible to requester on resolve"** on the incident form — so that half genuinely does reach the caller, just through the proper channel. Worth telling developers, since it means close notes should be written for the reporter rather than for colleagues._
 
 #### ⚠️ "Mandatory" cannot mean *blocked* — GitHub has no such gate
 
