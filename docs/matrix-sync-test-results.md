@@ -151,21 +151,35 @@ So there are **two independent constraints**, and the retraction above was too b
 | --- | --- | --- |
 | Technical closure documentation required | Priority **A and B** incidents | ✅ yes — the original hypothesis was right |
 | Close notes required | **All** incidents | ✅ yes — not previously known |
-| Time-based auto-close from Resolved | — | ❌ **does not exist** — Halvor's finding stands |
+| **7-day auto-close from Resolved** | All incidents | ✅ **exists — conditional on the required fields being complete** (Halvor, 2026-09-07) |
 
-They are not in conflict. The documentation governs whether an incident *can be resolved or closed*; the absent auto-close governs whether it *ever leaves Resolved on its own*. `INC0069636` sat for eleven days because of the second, not the first — which is what made the first look wrong.
+#### Final position 2026-09-08 — the original hypothesis was right
+
+Halvor: *"The 7 day closing already exists, it just exists with conditions. So it will auto close today if the incident have all the required fields filled out and requester doesn't reject the solution."*
+
+So there **is** a 7-day auto-close, and it **is** gated on the required fields. `INC0069636` has sat in `Resolved` since 24 August precisely because its technical closure documentation is blank — which is what was proposed on 09-04, withdrawn the same day, partially restored on 09-07, and only now settled.
+
+**Three reversals on one question.** The withdrawal was the mistake: it was made on the strength of a quick check that turned out to be incomplete, and treated as more authoritative than the evidence already in hand. The record on the form — a blank mandatory field on a priority-B incident that had not closed — was correct all along and was discarded because someone said something that seemed to supersede it.
+
+_Worth keeping the shape of this: **new testimony does not automatically outrank existing evidence.** When the two disagree the right move is to reconcile them, not to overwrite one with the other — and here they were never actually in conflict, since a conditional auto-close explains both the rule and the instance._
 
 _The lesson is narrower than "the hypothesis was wrong": it was **right about the rule and wrong about the instance**. Retracting the whole claim when only its application to one record failed threw away a correct finding — which then had to be rediscovered by someone else three days later._
 
-#### This is a pre-existing gap the sync merely makes visible
+#### ✅ And this removes the hardest remaining question entirely
 
-Worth framing carefully for the conversation with Isak, because it changes what is being asked for:
+The plan had been to ask Isak whether the SFB team could change incident auto-close behaviour, or to build a scoped job for SFB incidents only. **Neither is needed.**
 
-- If the caller never responds, an incident stays in `Resolved` **indefinitely**
-- Which is presumably why **Isak sends periodic reminders to clean up the backlog** — the manual sweep exists to compensate for the missing automation
-- The sync did not create this. It inherits it, and would make it visible at scale
+The mechanism already exists and already does what is wanted. Closure push-back does not have to change how Matrix behaves — it only has to **supply what Matrix already requires**:
 
-So the ask is not *"change incident behaviour to accommodate our integration"* — which invites a reasonable no — but *"incidents that callers never answer never close, you already chase them by hand, should that be automated?"* The integration is the occasion for the question, not its justification.
+| Step | Owner |
+| --- | --- |
+| Developer closes the issue with a `[closure]` comment | Developer, in GitHub |
+| Incident set to `Resolved`, close notes and (for A/B) technical documentation populated | The sync |
+| Incident closes 7 days later unless the caller rejects | **Matrix, already, today** |
+
+**No change to global incident behaviour. No scoped job. No permission to seek.** The conversation with Isak shrinks from *"may we change how incidents close"* to nothing at all.
+
+And key-person-risk genuinely reaches **0** on this path: nobody touches Matrix by hand at any point.
 
 **If it is the documentation gate**, one option worth considering: the template is structured (*actual start, actual end, cause, actions taken, caused by a change, problem required, case handler*) and a developer closing an issue could reasonably supply most of it. A closing-comment template in GitHub could populate it — turning a blocker into a place where the sync adds value rather than merely relaying.
 

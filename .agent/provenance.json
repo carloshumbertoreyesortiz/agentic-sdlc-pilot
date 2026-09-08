@@ -1,11 +1,11 @@
 {
-  "run_id": "run-1788812356009",
-  "task": "docs(us075): error_type must be a visible body row, not metadata",
+  "run_id": "run-1788848908985",
+  "task": "docs(us075): the 7-day auto-close exists and is conditional",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-09-07T20:19:16.003Z",
-  "finished_at": "2026-09-07T20:19:16.009Z",
+  "started_at": "2026-09-08T06:28:28.979Z",
+  "finished_at": "2026-09-08T06:28:28.985Z",
   "prompt_hash": "sha256:bb1b3f36f59b0cc5d581d245524c44fda19855b890584e53bb79cf5117b86d8d",
   "tool_trace": [
     "Read",
