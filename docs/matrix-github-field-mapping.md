@@ -245,9 +245,25 @@ _The failure this avoids is the quiet one: an issue closed, an incident left ope
 
 | ServiceNow state | `state` | `state_reason` | Status field |
 | --- | --- | --- | --- |
+| **Any active state** — New, Work In Progress, On Hold, caller rejection | **`open`** | **`reopened`** | per the state |
 | Resolved | ⚠️ **send no `state` field at all** | — | `Deployed` |
 | Closed | `closed` | `completed` | `Done` |
 | Cancelled | `closed` | `not_planned` | *(omit — no Status)* |
+
+#### There are only two issue states — the complete answer
+
+Asked 2026-09-09 after a rejection reopened the incident in Matrix while the GitHub issue stayed closed.
+
+**GitHub issues have exactly two states: `open` and `closed`.** There is no third. `state_reason` qualifies them: `completed`, `not_planned`, `reopened`, or null.
+
+So the rule is simpler than it looks: **send `state: "open"` with `state_reason: "reopened"` for every transition into an active state.** Sending `open` for an issue that is *already* open is a harmless no-op, so there is no need to check the current state first — which removes a read and a race.
+
+Only two cases deviate:
+
+- **Resolved** omits `state` entirely, so a developer's close is not undone. This is the one place where "leave it alone" and "make it open" differ, and getting it wrong reopens the issue two minutes after they closed it.
+- **Closed / Cancelled** close it.
+
+_This was the gap behind the failed rejection test: the status went into the body, but a Status field cannot reopen an issue — only `state` can._
 
 #### ⚠️ `status` is NOT a top-level payload field
 
@@ -597,6 +613,25 @@ The two decisions interlock: the label now means what it says.
 #### ServiceNow side
 
 Writes target the incident's **`comments`** (Additional Comments) field rather than `work_notes`, chosen per record from the prefix. Business-rule suppression and the dedicated-user loop-breaking are unaffected.
+
+### ⚠️ `Updated by Caller` as a Status — a trade-off worth naming
+
+Added to the board 2026-09-09 and now sent whenever the caller adds a note, replacing whatever Status the item held.
+
+**It works, and for a rejection it is arguably right** — after a caller rejects a solution the work genuinely returns to an untriaged state, so `Updated by Caller` describes it fairly.
+
+⚠️ **But applied to _every_ caller note it is lossy.** Status is the workflow position; `Updated by Caller` is an event. A caller commenting on something in `Analysis` or `User Acceptance Test` overwrites that stage, and nothing records what it was. Whoever picks the issue up next cannot tell where the work had reached, and must reconstruct it or ask.
+
+**The `updated-by-caller` _label_ already carries this signal without the loss** — it is additive, appears in list views exactly as Ingrid asked, and clears automatically when someone replies. The two mechanisms now overlap.
+
+**Suggested split, rather than choosing one:**
+
+| Event | Signal |
+| --- | --- |
+| Caller **rejects a solution** | Status → `Updated by Caller` — the work really has returned to triage |
+| Caller adds an **ordinary note** | **Label only** — flag it without discarding the stage |
+
+Their board, their call. But worth deciding deliberately rather than discovering in a month that nobody can tell what stage anything was at before the caller commented.
 
 ### Flagging new information on the GitHub side — Ingrid, 2026-09-01
 
