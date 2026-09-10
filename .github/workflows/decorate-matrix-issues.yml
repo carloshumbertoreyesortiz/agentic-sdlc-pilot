@@ -36,6 +36,12 @@ concurrency:
 jobs:
   decorate:
     runs-on: ubuntu-latest
+    # `secrets` is NOT available in a step-level `if:` — GitHub rejects the whole
+    # workflow file with "Unrecognized named-value: 'secrets'". It IS allowed in
+    # `env:`, so the presence check is hoisted here and the step tests the env
+    # var instead.
+    env:
+      APP_AUTH: ${{ secrets.SFB_APP_PRIVATE_KEY != '' && 'yes' || 'no' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -55,7 +61,7 @@ jobs:
       # (Nova GHEC guide, Appendix C).
       - name: Mint an installation token
         id: app-token
-        if: ${{ secrets.SFB_APP_PRIVATE_KEY != '' }}
+        if: env.APP_AUTH == 'yes'
         uses: actions/create-github-app-token@v1
         with:
           app-id: ${{ secrets.SFB_APP_ID }}
