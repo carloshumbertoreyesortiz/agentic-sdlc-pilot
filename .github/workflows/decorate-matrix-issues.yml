@@ -67,7 +67,12 @@ jobs:
           app-id: ${{ secrets.SFB_APP_ID }}
           private-key: ${{ secrets.SFB_APP_PRIVATE_KEY }}
           owner: TelenorNorgeInternal
-          repositories: s06065-sfb-telenor-sfdc
+          # No `repositories:` on purpose. Restricting the token to one repo
+          # makes it repository-scoped, and an ORG-owned Project is not a
+          # repository resource — the token then cannot see Project 408 at all
+          # ("Could not resolve to a ProjectV2 with the number 408", 2026-09-10).
+          # The App is installed on a single repo regardless, so this widens
+          # nothing in practice.
 
       - name: Decorate
         env:
