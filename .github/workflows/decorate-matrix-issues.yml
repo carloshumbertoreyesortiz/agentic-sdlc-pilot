@@ -43,28 +43,41 @@ jobs:
           node-version: 22
       - run: npm ci --no-audit --no-fund
 
+      # Mint a short-lived installation token from the App rather than using a
+      # personal token. Rationale, and why this replaces SFB_PROD_TOKEN:
+      #   * the org rejects classic PATs outright
+      #   * a PAT of any kind is bound to one person — Rune's warning applies:
+      #     eviction of the owning user invalidates it, which is precisely the
+      #     single-person dependency US-075 exists to remove
+      #   * installation tokens renew themselves, so nothing expires on a date
+      #     nobody is watching
+      # `actions/create-github-app-token` is whitelisted on Telenor-managed orgs
+      # (Nova GHEC guide, Appendix C).
+      - name: Mint an installation token
+        id: app-token
+        if: ${{ secrets.SFB_APP_PRIVATE_KEY != '' }}
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.SFB_APP_ID }}
+          private-key: ${{ secrets.SFB_APP_PRIVATE_KEY }}
+          owner: TelenorNorgeInternal
+          repositories: s06065-sfb-telenor-sfdc
+
       - name: Decorate
         env:
-          # ⚠️ MUST be a FINE-GRAINED token, not a classic one. Verified
-          # 2026-09-08: TelenorNorgeInternal rejects classic PATs outright —
-          # "forbids access via a personal access token (classic)". The sandbox
-          # needed a classic token because user-owned Projects cannot be reached
-          # any other way; that requirement does NOT carry across to the org.
-          #
-          # Resource owner: TelenorNorgeInternal. Repository: s06065-sfb-telenor-sfdc.
-          # Permissions: Issues R/W, Metadata R, and organisation Projects R/W.
-          GH_TOKEN: ${{ secrets.SFB_PROD_TOKEN }}
+          # App token when available; the PAT remains a fallback only so the job
+          # keeps working during the changeover. Delete SFB_PROD_TOKEN once the
+          # App path is confirmed — see docs/matrix-sync-cutover.md §5.
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.SFB_PROD_TOKEN }}
           TARGET_REPO: TelenorNorgeInternal/s06065-sfb-telenor-sfdc
           PROJECT_OWNER: TelenorNorgeInternal
           PROJECT_NUMBER: '408'
           EPIC_PREFIX: Incidents from Matrix
         run: |
           if [ -z "$GH_TOKEN" ]; then
-            echo "::warning::SFB_PROD_TOKEN is not set — nothing decorated."
-            echo "Create a FINE-GRAINED token (https://github.com/settings/personal-access-tokens/new)"
-            echo "with resource owner TelenorNorgeInternal — classic tokens are rejected by the org."
-            echo "Permissions: Issues read/write, Metadata read, org Projects read/write. Then:"
-            echo "  gh secret set SFB_PROD_TOKEN --repo ${{ github.repository }}"
+            echo "::warning::No credential available — nothing decorated."
+            echo "Preferred: set SFB_APP_ID and SFB_APP_PRIVATE_KEY (generate a"
+            echo "private key on the matrix-sfb-sync App as an App manager)."
             exit 0
           fi
           npx tsx scripts/decorate-matrix-issues.ts ${{ inputs.dry_run && '--dry-run' || '' }}
