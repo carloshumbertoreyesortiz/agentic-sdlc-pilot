@@ -146,13 +146,36 @@ function findEpic(year: number): { number: number; id: string } | null {
   return rows.find((r) => r.title.includes(needle)) ?? null;
 }
 
+/**
+ * The org's `Bug` issue-type id, used when the App cannot read the type list.
+ *
+ * Reading `organization.issueTypes` needs the **Organization → Issue Types**
+ * permission, which the App does not have and which would mean another approval
+ * round with the platform team for a single lookup. *Setting* the type only
+ * needs Issues: write, which the App does have — so the id is supplied directly
+ * and the read is skipped.
+ *
+ * Captured 2026-09-04 from the live org. Org issue types are stable, but a
+ * hardcoded id can still rot, so the lookup is attempted first and this is only
+ * the fallback — and which path was taken is logged either way.
+ */
+const BUG_TYPE_ID = process.env.BUG_TYPE_ID ?? 'IT_kwDOB6pan84BIpiw';
+
 function issueTypeId(name: string): string | null {
-  const d = graphql<{ data?: { organization?: { issueTypes: { nodes: { id: string; name: string }[] } } } }>(
-    `query($owner: String!) { organization(login: $owner) {
-      issueTypes(first: 30) { nodes { id name } } } }`,
-    { owner: OWNER },
-  );
-  return d?.data?.organization?.issueTypes.nodes.find((t) => t.name === name)?.id ?? null;
+  try {
+    const d = graphql<{ data?: { organization?: { issueTypes: { nodes: { id: string; name: string }[] } } } }>(
+      `query($owner: String!) { organization(login: $owner) {
+        issueTypes(first: 30) { nodes { id name } } } }`,
+      { owner: OWNER },
+    );
+    const found = d?.data?.organization?.issueTypes?.nodes?.find((t) => t.name === name)?.id;
+    if (found) return found;
+  } catch {
+    // Expected: the App lacks Organization → Issue Types. Not worth an approval
+    // round for a lookup whose answer is a constant.
+  }
+  console.log(`  · issue-type list unreadable — using the configured ${name} id`);
+  return BUG_TYPE_ID;
 }
 
 /** {field name → value} for one incident. Only fields the board actually has. */
