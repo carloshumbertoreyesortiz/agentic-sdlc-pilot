@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import process from 'node:process';
+import { renderDashboard, type DashIssue } from '../src/sync-dashboard.js';
 import {
   extractFields,
   isCallerComment,
@@ -238,6 +239,7 @@ function main(): void {
   }[];
 
   console.log(`${issues.length} matrix issue(s) in ${TARGET}`);
+  const dash: DashIssue[] = [];
 
   for (const issue of issues) {
     const values = extractFields(issue.body ?? '');
@@ -250,7 +252,7 @@ function main(): void {
 
     // Comment handling first, and it runs in dry-run too: a dry run that skips
     // the analysis reports nothing useful. Writes inside are guarded.
-    handleComments(issue, DRY);
+    const facts = handleComments(issue, DRY);
 
     if (DRY) { console.log('  [dry run — board fields not evaluated]'); continue; }
 
@@ -299,6 +301,19 @@ function main(): void {
       console.log(`  ✓ Type = ${ISSUE_TYPE}`);
     }
 
+    dash.push({
+      number: issue.number,
+      title: issue.title,
+      state: issue.state,
+      labels: facts.labels,
+      updatedAt: issue.updatedAt,
+      status: values.status ?? null,
+      priority: values.priority ?? null,
+      onBoard: true,
+      parented: true,
+      hasClosure: facts.hasClosure,
+    });
+
     if (epic) {
       try {
         // Numeric id, not the node id — and -F, since the API rejects a string.
@@ -318,6 +333,8 @@ function main(): void {
       }
     }
   }
+
+  publishDashboard(dash, epic?.number ?? null, DRY);
 }
 
 interface Comment { id: number; body: string; created_at: string }
@@ -353,6 +370,9 @@ const PROMPT_WINDOW_HOURS = Number(process.env.PROMPT_WINDOW_HOURS ?? 24);
  */
 const STATUS_WINDOW_MINUTES = Number(process.env.STATUS_WINDOW_MINUTES ?? 20);
 
+/** Title of the self-updating status issue. Found by title, so nothing to configure. */
+const DASHBOARD_TITLE = 'Matrix ↔ GitHub sync — live status';
+
 /**
  * The three comment-driven behaviours, all of which exist because ServiceNow
  * watches only the comments endpoint and therefore cannot see any of this.
@@ -366,7 +386,7 @@ const STATUS_WINDOW_MINUTES = Number(process.env.STATUS_WINDOW_MINUTES ?? 20);
 function handleComments(
   issue: { number: number; state: string; closedAt?: string | null },
   dry: boolean,
-): void {
+): { labels: string[]; hasClosure: boolean } {
   const comments = JSON.parse(
     gh(['api', '--paginate', `repos/${TARGET}/issues/${issue.number}/comments`,
         '--jq', '[.[] | {id, body, created_at}]']),
@@ -411,6 +431,57 @@ function handleComments(
   } else if (!waiting && labelled) {
     console.log(`  → answered: removing ${CALLER_LABEL}`);
     if (!dry) gh(['issue', 'edit', String(issue.number), '-R', TARGET, '--remove-label', CALLER_LABEL]);
+  }
+
+  // Report the state the dashboard should show, not the state on disk: the
+  // label edits above have just changed it, and a dashboard a cycle behind
+  // reads as a bug.
+  const effective = waiting
+    ? [...new Set([...labels, CALLER_LABEL])]
+    : labels.filter((l) => l !== CALLER_LABEL);
+  return { labels: effective, hasClosure };
+}
+
+/**
+ * Writes the operational view into a self-updating issue in the private repo.
+ *
+ * Found by title rather than a configured number, so there is nothing to set up
+ * and nothing to go stale. Created on first run.
+ */
+function publishDashboard(dash: DashIssue[], epicNumber: number | null, dry: boolean): void {
+  const generatedAt = gh(['api', '/', '--jq', '"now"', '-i'])
+    .split('\n')
+    .find((l) => l.toLowerCase().startsWith('date:'))
+    ?.slice(5)
+    .trim() ?? 'unknown';
+
+  let epic = null;
+  if (epicNumber) {
+    const subs = JSON.parse(
+      gh(['api', '--paginate', `repos/${TARGET}/issues/${epicNumber}/sub_issues`, '--jq', '[.[].number]']),
+    ) as number[];
+    const title = JSON.parse(gh(['issue', 'view', String(epicNumber), '-R', TARGET, '--json', 'title'])).title;
+    epic = { number: epicNumber, title, used: subs.length, limit: 100 };
+  }
+
+  const body = renderDashboard({ issues: dash, epic, generatedAt, lastRun: null });
+
+  const found = JSON.parse(
+    gh(['issue', 'list', '-R', TARGET, '--state', 'open', '--limit', '50',
+        '--search', `"${DASHBOARD_TITLE}" in:title`, '--json', 'number,title']),
+  ) as { number: number; title: string }[];
+  const existing = found.find((f) => f.title === DASHBOARD_TITLE);
+
+  if (dry) {
+    console.log(`\n[dry run] dashboard would ${existing ? `update #${existing.number}` : 'be created'} (${body.length} chars)`);
+    return;
+  }
+  if (existing) {
+    gh(['issue', 'edit', String(existing.number), '-R', TARGET, '--body', body]);
+    console.log(`\ndashboard updated: #${existing.number}`);
+  } else {
+    const url = gh(['issue', 'create', '-R', TARGET, '--title', DASHBOARD_TITLE, '--body', body]).trim();
+    console.log(`\ndashboard created: ${url}`);
   }
 }
 

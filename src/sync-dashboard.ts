@@ -1,0 +1,153 @@
+// US-075: the operational view of the Matrix ↔ GitHub sync, for Ingrid.
+//
+// WHY AN ISSUE RATHER THAN A PAGE. The pilot's Pages site is PUBLIC and the SFB
+// repo is private: publishing incident numbers and titles there would leak
+// customer-reported detail out of Telenor. A self-updating issue inside the
+// private repo is visible to exactly the right people, needs no new
+// infrastructure or credential, and appears where the team already works.
+//
+// Pure functions — the rendering is tested; the I/O lives in the script.
+
+export interface DashIssue {
+  number: number;
+  title: string;
+  state: string;
+  labels: string[];
+  updatedAt?: string | null;
+  /** Null when the issue carries no matrix-fields metadata. */
+  status?: string | null;
+  priority?: string | null;
+  onBoard: boolean;
+  parented: boolean;
+  hasClosure: boolean;
+}
+
+export interface DashInput {
+  issues: DashIssue[];
+  epic?: { number: number; title: string; used: number; limit: number } | null;
+  generatedAt: string;
+  lastRun?: { conclusion: string; at: string } | null;
+}
+
+const CALLER_LABEL = 'updated-by-caller';
+
+/** Issues the caller has replied to and nobody has answered. */
+export function awaitingReply(issues: DashIssue[]): DashIssue[] {
+  return issues.filter((i) => i.labels.includes(CALLER_LABEL));
+}
+
+/** Closed, but no closure information — the incident is still open in Matrix. */
+export function closedWithoutClosure(issues: DashIssue[]): DashIssue[] {
+  return issues.filter((i) => i.state.toUpperCase() === 'CLOSED' && !i.hasClosure);
+}
+
+/** Anything the automation has not finished decorating. */
+export function undecorated(issues: DashIssue[]): DashIssue[] {
+  return issues.filter((i) => !i.onBoard || !i.parented);
+}
+
+function link(i: DashIssue): string {
+  return `[#${i.number}](../../issues/${i.number}) ${i.title}`;
+}
+
+function section(title: string, rows: string[], emptyNote: string): string {
+  if (rows.length === 0) return `### ${title}\n\n_${emptyNote}_\n`;
+  return `### ${title}\n\n${rows.map((r) => `- ${r}`).join('\n')}\n`;
+}
+
+/**
+ * Renders the dashboard body.
+ *
+ * Ordered by what someone would act on, not by what is easy to count: the two
+ * lists that need a human come first, health second, volume last. A dashboard
+ * that opens with totals trains people to skim past the part that matters.
+ */
+export function renderDashboard(d: DashInput): string {
+  const open = d.issues.filter((i) => i.state.toUpperCase() === 'OPEN');
+  const waiting = awaitingReply(d.issues);
+  const noClosure = closedWithoutClosure(d.issues);
+  const missing = undecorated(d.issues);
+
+  const parts: string[] = [
+    '<!-- matrix-sync-dashboard -->',
+    '# Matrix ↔ GitHub sync — live status',
+    '',
+    `_Updated automatically. Last refresh: **${d.generatedAt}**_`,
+    '',
+    '## Needs someone',
+    '',
+    section(
+      `⚠️ Caller has replied and is waiting (${waiting.length})`,
+      waiting.map(link),
+      'Nobody is waiting on a reply.',
+    ),
+    '',
+    section(
+      `⚠️ Closed without closure information (${noClosure.length})`,
+      noClosure.map((i) => `${link(i)} — the Matrix incident is **still open**`),
+      'Every closed issue carried its closure information.',
+    ),
+    '',
+    '## Health',
+    '',
+    section(
+      `Not fully set up (${missing.length})`,
+      missing.map((i) => `${link(i)}${!i.onBoard ? ' — not on the board' : ''}${!i.parented ? ' — no epic link' : ''}`),
+      'Everything is on the board and linked to the epic.',
+    ),
+    '',
+  ];
+
+  if (d.epic) {
+    const pct = Math.round((d.epic.used / d.epic.limit) * 100);
+    const warn = d.epic.used >= d.epic.limit - 10 ? ' ⚠️ **nearly full**' : '';
+    parts.push(
+      `**Epic capacity** — [#${d.epic.number}](../../issues/${d.epic.number}) ${d.epic.title}: **${d.epic.used} of ${d.epic.limit}** (${pct}%)${warn}`,
+      '',
+      d.epic.used >= d.epic.limit - 10
+        ? '_GitHub caps an issue at 100 sub-issues, and closed ones still count. When it fills, new incidents arrive unparented and are listed above._'
+        : '',
+      '',
+    );
+  }
+
+  if (d.lastRun) {
+    const ok = d.lastRun.conclusion === 'success';
+    parts.push(
+      `**Last automation run** — ${ok ? '✅' : '🔴'} ${d.lastRun.conclusion} at ${d.lastRun.at}`,
+      '',
+      ok ? '' : '_The sync itself is unaffected; this is the GitHub-side tidy-up. Incidents still arrive._',
+      '',
+    );
+  }
+
+  parts.push(
+    '## Volume',
+    '',
+    `| | |`,
+    `|---|---|`,
+    `| Open | **${open.length}** |`,
+    `| Closed | **${d.issues.length - open.length}** |`,
+    `| Total synced | **${d.issues.length}** |`,
+    '',
+    '### Open incidents',
+    '',
+  );
+
+  if (open.length === 0) {
+    parts.push('_None open._');
+  } else {
+    parts.push('| Issue | Priority | Status |', '|---|---|---|');
+    for (const i of open) {
+      parts.push(`| ${link(i)} | ${i.priority ?? '—'} | ${i.status ?? '—'} |`);
+    }
+  }
+
+  parts.push(
+    '',
+    '---',
+    '_Generated by `decorate-matrix-issues`. Do not edit — this body is rewritten on every run._',
+  );
+
+  return parts.filter((p) => p !== undefined).join('\n');
+}
