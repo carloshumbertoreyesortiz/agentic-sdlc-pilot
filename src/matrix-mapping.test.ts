@@ -16,7 +16,8 @@ import {
   mapStatus,
   type MatrixIncident,
 } from './matrix-mapping.js';
-import { plannedFields } from '../scripts/apply-matrix-fields.js';
+import { plannedFields as legacyPlannedFields } from '../scripts/apply-matrix-fields.js';
+import { plannedFields } from '../scripts/decorate-matrix-issues.js';
 
 const incident: MatrixIncident = {
   sys_id: 'a1b2c3d4e5f6',
@@ -210,9 +211,9 @@ describe('the Project-field metadata block', () => {
   });
 });
 
-describe('plannedFields', () => {
+describe('plannedFields (sandbox script)', () => {
   it('always sets the three fixed Flow C values', () => {
-    const planned = plannedFields({ sys_id: 'x', number: 'INC1', url: 'https://m/x' });
+    const planned = legacyPlannedFields({ sys_id: 'x', number: 'INC1', url: 'https://m/x' });
     expect(planned).toMatchObject({
       Type: 'Incident',
       'Sub Epic': 'Matrix Defect',
@@ -221,7 +222,7 @@ describe('plannedFields', () => {
   });
 
   it('carries the External Reference across so the issue links back', () => {
-    const planned = plannedFields({ sys_id: 'x', number: 'INC0012345', url: 'https://m/x' });
+    const planned = legacyPlannedFields({ sys_id: 'x', number: 'INC0012345', url: 'https://m/x' });
     expect(planned['External Reference Id']).toBe('INC0012345');
     expect(planned['External Reference URL']).toBe('https://m/x');
   });
@@ -233,7 +234,7 @@ describe('plannedFields', () => {
       'Business Analyst', 'External Reference Type', 'SFB Case Number',
       'External Reference Id', 'External Reference URL', 'Caller', 'Alternate Contact',
     ];
-    const planned = plannedFields({
+    const planned = legacyPlannedFields({
       sys_id: 'x', number: 'INC1', url: 'https://m/x',
       priority: 'P1', status: 'Backlog', caller: 'Nina Jakobsen',
     });
@@ -241,7 +242,7 @@ describe('plannedFields', () => {
   });
 
   it('skips Status entirely for a cancelled incident (null, not a value)', () => {
-    const planned = plannedFields({ sys_id: 'x', number: 'INC1', url: 'u', status: null });
+    const planned = legacyPlannedFields({ sys_id: 'x', number: 'INC1', url: 'u', status: null });
     expect(planned.Status).toBeUndefined();
   });
 });
@@ -307,5 +308,26 @@ describe('comment classification (closure prompts + caller label)', () => {
 
   it('does NOT count our own prompt as a human reply', () => {
     expect(isHumanReply(`${PROMPT_MARKER}\nThis issue was closed but...`)).toBe(false);
+  });
+});
+
+describe('plannedFields — Status ownership', () => {
+  const v = { sys_id: 'x', number: 'INC1', url: 'u', priority: 'P1', status: 'Development' };
+
+  it('applies Status when Matrix has just changed the issue', () => {
+    expect(plannedFields(v, true).Status).toBe('Development');
+  });
+
+  it('leaves Status alone when the issue has been quiet', () => {
+    // A handler moved the card. Project-field edits do not touch the issue's
+    // updatedAt, so a quiet issue with a differing Status means a human did it —
+    // and re-applying would undo their move within ten minutes.
+    expect(plannedFields(v, false).Status).toBeUndefined();
+  });
+
+  it('still applies everything else regardless', () => {
+    const out = plannedFields(v, false);
+    expect(out.Priority).toBe('P1');
+    expect(out['External ref. / URL']).toBe('INC1');
   });
 });
