@@ -156,10 +156,14 @@ function issueTypeId(name: string): string | null {
 }
 
 /** {field name → value} for one incident. Only fields the board actually has. */
-export function plannedFields(v: MatrixFieldValues): Record<string, string> {
+export function plannedFields(
+  v: MatrixFieldValues,
+  /** False when a Status difference should be treated as a human's board move. */
+  applyStatus = true,
+): Record<string, string> {
   const out: Record<string, string> = { 'External ref. / URL': v.number };
   if (v.priority) out.Priority = v.priority;
-  if (v.status) out.Status = v.status;
+  if (v.status && applyStatus) out.Status = v.status;
   return out;
 }
 
@@ -204,10 +208,10 @@ function main(): void {
   // fields are still worth keeping correct.
   const issues = JSON.parse(
     gh(['issue', 'list', '-R', TARGET, '--label', 'matrix', '--state', 'all',
-        '--limit', '200', '--json', 'number,id,body,title,state,closedAt']),
+        '--limit', '200', '--json', 'number,id,body,title,state,closedAt,updatedAt']),
   ) as {
     number: number; id: string; body: string; title: string;
-    state: string; closedAt?: string | null;
+    state: string; closedAt?: string | null; updatedAt?: string | null;
   }[];
 
   console.log(`${issues.length} matrix issue(s) in ${TARGET}`);
@@ -233,7 +237,16 @@ function main(): void {
       { p: projectId, c: issue.id },
     ).data.addProjectV2ItemById.item.id;
 
-    for (const [name, value] of Object.entries(plannedFields(values))) {
+    // Only let Matrix drive Status when the issue itself was just updated —
+    // otherwise a handler's board move is silently undone. See
+    // STATUS_WINDOW_MINUTES.
+    const issueChangedAt = issue.updatedAt ? Date.parse(issue.updatedAt) : 0;
+    const statusIsFresh = issueChangedAt >= Date.now() - STATUS_WINDOW_MINUTES * 60_000;
+    if (!statusIsFresh && values.status) {
+      console.log(`  · Status left as set on the board (issue quiet for >${STATUS_WINDOW_MINUTES}m)`);
+    }
+
+    for (const [name, value] of Object.entries(plannedFields(values, statusIsFresh))) {
       const field = fields.find((f) => f.name === name);
       if (!field) { console.error(`  ! no field "${name}" on the board — skipping`); continue; }
       if (field.options) {
@@ -298,6 +311,24 @@ interface Comment { id: number; body: string; created_at: string }
  * nothing live is missed.
  */
 const PROMPT_WINDOW_HOURS = Number(process.env.PROMPT_WINDOW_HOURS ?? 24);
+
+/**
+ * How recently the ISSUE must have changed for a Status difference to be
+ * treated as coming from Matrix.
+ *
+ * Without this the decorator re-applies the Matrix status on every cycle, so a
+ * handler dragging a card from Development to User Acceptance Test sees it snap
+ * back within ten minutes, with nothing explaining why. That is the opposite of
+ * the agreed model, where GitHub owns where the work has got to.
+ *
+ * The discriminator is that **Project field edits do not touch the issue's
+ * `updatedAt`, while body updates from Matrix do.** So:
+ *   - issue changed recently + Status differs  → Matrix moved it, apply
+ *   - issue quiet + Status differs             → a human moved the card, leave it
+ *
+ * Wider than the 10-minute poll so a slow cycle does not drop a real change.
+ */
+const STATUS_WINDOW_MINUTES = Number(process.env.STATUS_WINDOW_MINUTES ?? 20);
 
 /**
  * The three comment-driven behaviours, all of which exist because ServiceNow

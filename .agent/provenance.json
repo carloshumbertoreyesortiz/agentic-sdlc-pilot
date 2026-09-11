@@ -1,11 +1,11 @@
 {
-  "run_id": "run-1789041438286",
-  "task": "fix(us075): App token must not be repo-scoped to reach an org Project",
+  "run_id": "run-1789111913607",
+  "task": "fix(us075): stop overwriting a handler's board move",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-09-10T11:57:18.285Z",
-  "finished_at": "2026-09-10T11:57:18.286Z",
+  "started_at": "2026-09-11T07:31:53.595Z",
+  "finished_at": "2026-09-11T07:31:53.607Z",
   "prompt_hash": "sha256:bb1b3f36f59b0cc5d581d245524c44fda19855b890584e53bb79cf5117b86d8d",
   "tool_trace": [
     "Read",
