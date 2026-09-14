@@ -58,26 +58,47 @@ const CALLER_LABEL = 'updated-by-caller';
  * stay open. GitHub knows about the close for free, so the detection belongs
  * here. Carries PROMPT_MARKER so it is posted once rather than every cycle.
  */
-const PROMPT_BODY = `${PROMPT_MARKER}
-⚠️ **This issue was closed, but the Matrix incident has _not_ been resolved.**
-
-Closing an incident needs closure information. Add a comment starting with \`[closure]\` and the incident will resolve automatically — no need to reopen this issue.
-
-\`\`\`
-[closure]
-Close notes: <what was done, written for the person who reported it — they see this>
-
-Technical documentation:   <-- P0/P1 only
+/**
+ * The prompt, tailored to the issue's priority.
+ *
+ * The first version printed one template carrying the annotation
+ * "<-- P0/P1 only" against the technical-documentation block. On 2026-09-11 a
+ * P1 was closed with that block left blank and the annotation left in: Matrix
+ * refused the resolve, retried ten times and failed. The reader had been asked
+ * to work out whether a section applied to them, and reasonably did not.
+ *
+ * So the template now shows only what THIS issue needs. We already know the
+ * priority — making the person derive it was the defect.
+ */
+function promptBody(priority: string | undefined): string {
+  const needsDoc = priority === 'P0' || priority === 'P1';
+  const doc = needsDoc
+    ? `
+Technical documentation:
 Actual start:
 Actual end:
 Cause:
 Actions:
 Caused by a change or release:
 Problem required:
-Case handler:
+Case handler:`
+    : '';
+  const note = needsDoc
+    ? `_This is a **${priority}** incident, so Matrix requires the technical documentation as well as the close notes. **Leaving those fields blank will make the resolve fail.**_`
+    : `_Close notes are all that is needed for **${priority ?? 'this'}** incidents._`;
+
+  return `${PROMPT_MARKER}
+⚠️ **This issue was closed, but the Matrix incident has _not_ been resolved.**
+
+Add a comment starting with \`[closure]\` and the incident will resolve automatically — no need to reopen this issue.
+
+\`\`\`
+[closure]
+Close notes: <what was done, written for the person who reported it — they see this>${doc}
 \`\`\`
 
-_Close notes are required on every incident. The technical documentation is required for P0 and P1 only._`;
+${note}`;
+}
 
 function gh(args: string[]): string {
   return execFileSync('gh', args, { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
@@ -257,7 +278,7 @@ function main(): void {
 
     // Comment handling first, and it runs in dry-run too: a dry run that skips
     // the analysis reports nothing useful. Writes inside are guarded.
-    const facts = handleComments(issue, DRY);
+    const facts = handleComments(issue, DRY, values.priority);
 
     if (DRY) { console.log('  [dry run — board fields not evaluated]'); continue; }
 
@@ -421,6 +442,7 @@ const DASHBOARD_TITLE = 'Matrix ↔ GitHub sync — live status';
 function handleComments(
   issue: { number: number; state: string; closedAt?: string | null },
   dry: boolean,
+  priority?: string,
 ): { labels: string[]; hasClosure: boolean } {
   const comments = JSON.parse(
     gh(['api', '--paginate', `repos/${TARGET}/issues/${issue.number}/comments`,
@@ -436,7 +458,7 @@ function handleComments(
     const cutoff = Date.now() - PROMPT_WINDOW_HOURS * 3600_000;
     if (closedAt >= cutoff) {
       console.log('  → closed without closure info: posting prompt');
-      if (!dry) gh(['issue', 'comment', String(issue.number), '-R', TARGET, '--body', PROMPT_BODY]);
+      if (!dry) gh(['issue', 'comment', String(issue.number), '-R', TARGET, '--body', promptBody(priority)]);
     } else {
       console.log(`  · closed without closure info, but >${PROMPT_WINDOW_HOURS}h ago — not prompting`);
     }
