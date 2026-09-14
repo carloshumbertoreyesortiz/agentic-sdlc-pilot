@@ -1,11 +1,11 @@
 {
-  "_doc": "Phase 1 metrics snapshot for the pilot dashboard — US-074 (SFB↔GitHub sync health) and US-078 (per-flow metrics + key-person-risk KPI). SNAPSHOT-DRIVEN BY DESIGN: Phase 1 avoids live Salesforce / ServiceNow API calls at dashboard-build time (US-074 scope 1, US-078 AC 'cleanly generated at Pages-deploy'), so this file is the single source. Update by hand (or a future sync job) — each edit is a committed, auditable data point. A metric carrying a non-empty \"pending\" is blocked on the noted dependency and renders as 'pending', NEVER as a fabricated number. Wire to live sources once #1121 (Flow B) / US-075 (Flow C) land.",
-  "as_of": "2026-07-08",
+  "_doc": "Phase 1 metrics snapshot for the pilot dashboard — US-074 (SFB↔GitHub sync health) and US-078 (per-flow metrics + key-person-risk KPI). SNAPSHOT-DRIVEN BY DESIGN: Phase 1 avoids live Salesforce / ServiceNow API calls at dashboard-build time (US-074 scope 1, US-078 AC 'cleanly generated at Pages-deploy'), so this file is the single source. Update by hand (or a future sync job) — each edit is a committed, auditable data point. A metric carrying a non-empty \"pending\" is blocked on the noted dependency and renders as 'pending', NEVER as a fabricated number. Wire to live sources once #1121 (Flow B) lands. FLOW C IS NOW LIVE (2026-09-03) and its figures below are measured, not estimated — with the test/real split stated, because most early volume was Ingrid and Halvor testing rather than genuine incidents.",
+  "as_of": "2026-09-14",
   "key_person_risk": {
     "baseline": 1,
     "current": 1,
     "target": 0,
-    "note": "Ingrid's Matrix ↔ GitHub manual sync — the single-person dependency US-075 retires."
+    "note": "Ingrid's Matrix <-> GitHub manual sync. STILL 1 as of 2026-09-14, deliberately. The sync is live and automates creation, both-way comments and closure — but the handlers have not yet been briefed, so Ingrid is still shadowing it manually. This flips to 0 when she actually stops, which follows the team briefing rather than the technology. Reporting 0 before then would claim a dependency was removed while the person is still doing the work."
   },
   "sync_health": {
     "approved_sfb_cases": null,
@@ -17,29 +17,89 @@
     "A": {
       "label": "Flow A — Dialogue / GitHub-native (E-00)",
       "metrics": [
-        { "name": "Channels operational", "value": 0, "target": 4, "unit": "of 6" },
-        { "name": "Intakes per channel / week", "pending": "capture layer not yet in production" },
-        { "name": "CP1 acceptance rate (planner plans)", "pending": "no planner runs measured yet" },
-        { "name": "Intake → CP1 approval time", "pending": "no planner runs measured yet" }
+        {
+          "name": "Channels operational",
+          "value": 0,
+          "target": 4,
+          "unit": "of 6"
+        },
+        {
+          "name": "Intakes per channel / week",
+          "pending": "capture layer not yet in production"
+        },
+        {
+          "name": "CP1 acceptance rate (planner plans)",
+          "pending": "no planner runs measured yet"
+        },
+        {
+          "name": "Intake → CP1 approval time",
+          "pending": "no planner runs measured yet"
+        }
       ]
     },
     "B": {
       "label": "Flow B — SFB TCR via #1121 (Apoorv)",
       "metrics": [
-        { "name": "SF TCR Cases synced / sprint", "pending": "#1121 not live (T1)" },
-        { "name": "Schema conformance rate (no translation shim)", "pending": "#1121 schema not aligned (US-072)" },
-        { "name": "Manual copy-paste time saved / week", "pending": "baseline = Ingrid's current effort; not yet measured" }
+        {
+          "name": "SF TCR Cases synced / sprint",
+          "pending": "#1121 not live (T1)"
+        },
+        {
+          "name": "Schema conformance rate (no translation shim)",
+          "pending": "#1121 schema not aligned (US-072)"
+        },
+        {
+          "name": "Manual copy-paste time saved / week",
+          "pending": "baseline = Ingrid's current effort; not yet measured"
+        }
       ]
     },
     "C": {
-      "label": "Flow C — Matrix / ServiceNow via #1595 (Martin)",
+      "label": "Flow C — Matrix / ServiceNow via #1595 (Martin) — LIVE since 2026-09-03",
       "metrics": [
-        { "name": "Matrix incidents synced / week", "pending": "US-075 sync not operational (T2)" },
-        { "name": "Manual sync effort saved / week", "pending": "baseline = Ingrid's current effort; not yet measured" },
-        { "name": "GitHub → Matrix reverse-sync latency", "pending": "US-075 sync not operational (T2)" },
-        { "name": "Sync failure rate", "pending": "US-075 sync not operational (T2)" }
+        {
+          "name": "Incidents synced (total since go-live)",
+          "value": 5,
+          "unit": "2026-09-03 to 09-14",
+          "note": "2 genuine incidents; 3 created by Ingrid and Halvor for testing. Stated separately rather than as a headline count, which would overstate adoption."
+        },
+        {
+          "name": "Genuine incidents synced / week",
+          "value": 1.3,
+          "unit": "per week",
+          "note": "2 real incidents over 11 days. A true rate needs the handlers briefed and using it; until then this measures what happened to arrive."
+        },
+        {
+          "name": "Manual sync effort saved / week",
+          "pending": "not yet measurable — Ingrid is still shadowing the sync manually until the team is briefed"
+        },
+        {
+          "name": "Reverse-sync latency (GitHub -> Matrix)",
+          "value": "~2 min",
+          "unit": "comments",
+          "note": "ServiceNow polls the comments endpoint every 2 minutes. Board decoration on the GitHub side is slower — see the note on scheduled-run cadence."
+        },
+        {
+          "name": "GitHub-side automation success rate",
+          "value": "22/30",
+          "unit": "runs",
+          "note": "The 8 failures are all from the credential changeover (classic PAT rejected by the org, then the App permission landing in stages), not from incident processing. No incident failed to sync."
+        },
+        {
+          "name": "Sync failure rate (ServiceNow queue)",
+          "pending": "Halvor's queue-failure notifications and dashboard report are built but not yet reporting to the pilot"
+        }
       ]
     }
   },
-  "history": [{ "as_of": "2026-07-08", "key_person_risk_current": 1 }]
+  "history": [
+    {
+      "as_of": "2026-07-08",
+      "key_person_risk_current": 1
+    },
+    {
+      "as_of": "2026-09-14",
+      "key_person_risk_current": 1
+    }
+  ]
 }
