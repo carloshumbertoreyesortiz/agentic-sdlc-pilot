@@ -239,6 +239,11 @@ function main(): void {
   }[];
 
   console.log(`${issues.length} matrix issue(s) in ${TARGET}`);
+  const lastRun = lastSuccessfulRunAt();
+  const boundary = lastRun ?? Date.now() - STATUS_WINDOW_MINUTES * 60_000;
+  console.log(lastRun
+    ? `Status changes considered since the last successful run (${new Date(boundary).toISOString()})`
+    : `No run history — falling back to a ${STATUS_WINDOW_MINUTES}m window`);
   const dash: DashIssue[] = [];
 
   for (const issue of issues) {
@@ -266,9 +271,9 @@ function main(): void {
     // otherwise a handler's board move is silently undone. See
     // STATUS_WINDOW_MINUTES.
     const issueChangedAt = issue.updatedAt ? Date.parse(issue.updatedAt) : 0;
-    const statusIsFresh = issueChangedAt >= Date.now() - STATUS_WINDOW_MINUTES * 60_000;
+    const statusIsFresh = issueChangedAt >= boundary;
     if (!statusIsFresh && values.status) {
-      console.log(`  · Status left as set on the board (issue quiet for >${STATUS_WINDOW_MINUTES}m)`);
+      console.log(`  · Status left as set on the board (unchanged since the last run)`);
     }
 
     for (const [name, value] of Object.entries(plannedFields(values, statusIsFresh))) {
@@ -369,6 +374,36 @@ const PROMPT_WINDOW_HOURS = Number(process.env.PROMPT_WINDOW_HOURS ?? 24);
  * Wider than the 10-minute poll so a slow cycle does not drop a real change.
  */
 const STATUS_WINDOW_MINUTES = Number(process.env.STATUS_WINDOW_MINUTES ?? 20);
+
+/**
+ * When the previous successful run happened — the real boundary for "did Matrix
+ * change this, or did a person move the card?".
+ *
+ * A FIXED window is wrong because the schedule is not honoured. GitHub
+ * deprioritises `schedule` triggers on quiet repositories: a ten-minute cron was
+ * observed firing roughly every TWO HOURS (2026-09-14). With a 20-minute window, almost
+ * every genuine Matrix status change would land outside it and never be
+ * applied — the bug would present as "status sometimes doesn't update", which
+ * is close to undiagnosable from the outside.
+ *
+ * Reading the actual last run makes the window self-correcting: whatever the
+ * real cadence turns out to be, the boundary matches it. Falls back to the
+ * fixed window when there is no run history (a local invocation, or the first
+ * ever run).
+ */
+function lastSuccessfulRunAt(): number | null {
+  try {
+    const rows = JSON.parse(
+      gh(['run', 'list', '--workflow', 'decorate-matrix-issues.yml', '--status', 'success',
+          '--limit', '2', '--json', 'createdAt']),
+    ) as { createdAt: string }[];
+    // [0] is usually the run currently executing; take the one before it.
+    const prev = rows[1] ?? rows[0];
+    return prev ? Date.parse(prev.createdAt) : null;
+  } catch {
+    return null;
+  }
+}
 
 /** Title of the self-updating status issue. Found by title, so nothing to configure. */
 const DASHBOARD_TITLE = 'Matrix ↔ GitHub sync — live status';
