@@ -1,11 +1,11 @@
 {
-  "run_id": "run-1789375099354",
-  "task": "docs(us074,us078): Flow C metrics now measured, not pending",
+  "run_id": "run-1789380821104",
+  "task": "fix(us075): closure prompt shows only the template this issue needs",
   "agent_identity": "claude-code@agentic-sdlc-pilot",
   "human_approver": "carloshumbertoreyesortiz",
   "model": "claude-opus-4-8",
-  "started_at": "2026-09-14T08:38:19.348Z",
-  "finished_at": "2026-09-14T08:38:19.354Z",
+  "started_at": "2026-09-14T10:13:41.093Z",
+  "finished_at": "2026-09-14T10:13:41.104Z",
   "prompt_hash": "sha256:bb1b3f36f59b0cc5d581d245524c44fda19855b890584e53bb79cf5117b86d8d",
   "tool_trace": [
     "Read",
