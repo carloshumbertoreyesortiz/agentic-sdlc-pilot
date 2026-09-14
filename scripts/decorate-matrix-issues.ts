@@ -40,7 +40,7 @@ import {
 const TARGET = process.env.TARGET_REPO ?? 'TelenorNorgeInternal/s06065-sfb-telenor-sfdc';
 const OWNER = process.env.PROJECT_OWNER ?? 'TelenorNorgeInternal';
 const PROJECT_NUMBER = Number(process.env.PROJECT_NUMBER ?? 408);
-/** The epic rolls every January; resolved by name so nothing needs editing. */
+/** Epics roll every quarter; resolved by name so nothing needs editing. */
 const EPIC_PREFIX = process.env.EPIC_PREFIX ?? 'Incidents from Matrix';
 const DRY = process.argv.includes('--dry-run');
 
@@ -144,16 +144,34 @@ function loadProject(): { projectId: string; fields: Field[] } {
 }
 
 /**
- * Finds this year's Matrix epic by title.
+ * Quarter key for an ISO timestamp — `26-Q3`.
  *
- * Resolved by NAME rather than a configured number, deliberately. A configured
- * number nobody updates each January keeps parenting to last year's epic — which
- * works, silently, misfiling a year of incidents. A name lookup that finds
- * nothing fails loudly on 2 January, which is the failure worth having.
- * Previous years stay open, so the year is matched explicitly.
+ * Derived from the ISSUE's own creation date, never from today. An incident
+ * raised on 30 September belongs in Q3 even if nothing decorates it until
+ * October; and since the decorator re-reads every issue (`--state all`) on each
+ * run, keying on "now" would quietly refile the whole backlog into the new
+ * quarter every January, April, July and October.
  */
-function findEpic(year: number): { number: number; id: string } | null {
-  const needle = `${EPIC_PREFIX} '${String(year).slice(-2)}`;
+function quarterKey(iso: string): string {
+  const d = new Date(iso);
+  return `${String(d.getUTCFullYear()).slice(-2)}-Q${Math.floor(d.getUTCMonth() / 3) + 1}`;
+}
+
+/**
+ * Finds the Matrix epics by title, keyed by quarter (`26-Q3`).
+ *
+ * Quarterly rather than annual since 2026-09-14: SFB raised 109 incidents in
+ * the previous year, so a single yearly epic would hit the 100-sub-issue cap
+ * partway through — silently, since the parenting call swallows its failure so
+ * a full epic can never strand a real incident.
+ *
+ * Resolved by NAME rather than four configured numbers, deliberately. Numbers
+ * nobody updates each quarter keep parenting to the previous one — which works,
+ * silently, misfiling months of incidents. A name lookup that finds nothing
+ * warns loudly on the first day of the quarter, which is the failure worth
+ * having.
+ */
+function findEpics(): Map<string, { number: number; id: string; title: string }> {
   // Search on the PREFIX ONLY, then filter locally. GitHub's search tokeniser
   // silently drops the apostrophe-year: `Incidents from Matrix '26 in:title`
   // returns nothing, while `Incidents from Matrix in:title` returns the epic.
@@ -164,8 +182,15 @@ function findEpic(year: number): { number: number; id: string } | null {
     '--search', `${EPIC_PREFIX} in:title`, '--json', 'number,title,id',
   ]);
   const rows = JSON.parse(out) as { number: number; title: string; id: string }[];
-  // Substring, not equality — the real titles carry a decorative prefix.
-  return rows.find((r) => r.title.includes(needle)) ?? null;
+  const escaped = EPIC_PREFIX.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Matched, not compared: the real titles carry a decorative prefix ("✨ ").
+  const pattern = new RegExp(`${escaped}\\s+Q([1-4])\\s+'(\\d{2})`);
+  const epics = new Map<string, { number: number; id: string; title: string }>();
+  for (const r of rows) {
+    const m = r.title.match(pattern);
+    if (m) epics.set(`${m[2]}-Q${m[1]}`, { number: r.number, id: r.id, title: r.title });
+  }
+  return epics;
 }
 
 /**
@@ -242,10 +267,11 @@ function main(): void {
     throw err;
   }
   const { projectId, fields } = project;
-  const year = Number(process.env.EPIC_YEAR ?? new Date().getFullYear());
-  const epic = findEpic(year);
-  if (!epic) {
-    console.error(`::warning::No open epic matching "${EPIC_PREFIX} '${String(year).slice(-2)}" — issues will be left unparented.`);
+  const epics = findEpics();
+  const nowKey = process.env.EPIC_QUARTER ?? quarterKey(new Date().toISOString());
+  console.log(`Epics found: ${[...epics.keys()].sort().join(', ') || '(none)'}`);
+  if (!epics.has(nowKey)) {
+    console.error(`::warning::No open epic for ${nowKey} (expected "${EPIC_PREFIX} Q<n> '<yy>") — new issues will be left unparented.`);
   }
   const bugTypeId = issueTypeId(ISSUE_TYPE);
 
@@ -253,10 +279,10 @@ function main(): void {
   // fields are still worth keeping correct.
   const issues = JSON.parse(
     gh(['issue', 'list', '-R', TARGET, '--label', 'matrix', '--state', 'all',
-        '--limit', '200', '--json', 'number,id,body,title,state,closedAt,updatedAt']),
+        '--limit', '200', '--json', 'number,id,body,title,state,createdAt,closedAt,updatedAt']),
   ) as {
     number: number; id: string; body: string; title: string;
-    state: string; closedAt?: string | null; updatedAt?: string | null;
+    state: string; createdAt: string; closedAt?: string | null; updatedAt?: string | null;
   }[];
 
   console.log(`${issues.length} matrix issue(s) in ${TARGET}`);
@@ -340,6 +366,8 @@ function main(): void {
       hasClosure: facts.hasClosure,
     });
 
+    // The issue's own quarter, not the current one — see quarterKey().
+    const epic = epics.get(quarterKey(issue.createdAt)) ?? null;
     if (epic) {
       try {
         // Numeric id, not the node id — and -F, since the API rejects a string.
@@ -360,7 +388,7 @@ function main(): void {
     }
   }
 
-  publishDashboard(dash, epic?.number ?? null, DRY);
+  publishDashboard(dash, epics.get(nowKey)?.number ?? null, DRY);
 }
 
 interface Comment { id: number; body: string; created_at: string }
