@@ -66,7 +66,13 @@ export function undecorated(issues: DashIssue[]): DashIssue[] {
 }
 
 function link(i: DashIssue): string {
-  return `[#${i.number}](../../issues/${i.number}) ${i.title}`;
+  // Bare `#123`, not a markdown link. A relative `../../issues/123` looks right
+  // and is not: GitHub renders the dashboard at /OWNER/REPO/issues/NNNN, so two
+  // levels up strips `issues/` AND `REPO/`, landing on /OWNER/issues/123 — a
+  // 404 on every row (reported by Ingrid, 2026-09-15). GitHub autolinks the
+  // `#123` form against the repository the body lives in, so it cannot acquire
+  // the wrong base, and it gains hover cards showing title and state for free.
+  return `#${i.number} ${i.title}`;
 }
 
 function section(title: string, rows: string[], emptyNote: string): string {
@@ -139,7 +145,7 @@ export function renderDashboard(d: DashInput): string {
     const pct = Math.round((d.epic.used / d.epic.limit) * 100);
     const warn = d.epic.used >= d.epic.limit - 10 ? ' ⚠️ **nearly full**' : '';
     parts.push(
-      `**Epic capacity** — [#${d.epic.number}](../../issues/${d.epic.number}) ${d.epic.title}: **${d.epic.used} of ${d.epic.limit}** (${pct}%)${warn}`,
+      `**Epic capacity** — #${d.epic.number} ${d.epic.title}: **${d.epic.used} of ${d.epic.limit}** (${pct}%)${warn}`,
       '',
       d.epic.used >= d.epic.limit - 10
         ? '_GitHub caps an issue at 100 sub-issues, and closed ones still count. When it fills, new incidents arrive unparented and are listed above._'
