@@ -390,7 +390,7 @@ function main(): void {
     }
   }
 
-  publishDashboard(dash, epics.get(nowKey)?.number ?? null, DRY);
+  publishDashboard(dash, epics.get(nowKey)?.number ?? null, DRY, epics.has(nowKey) ? null : nowKey);
 }
 
 interface Comment { id: number; body: string; created_at: string }
@@ -544,7 +544,12 @@ function handleComments(
  * Found by title rather than a configured number, so there is nothing to set up
  * and nothing to go stale. Created on first run.
  */
-function publishDashboard(dash: DashIssue[], epicNumber: number | null, dry: boolean): void {
+function publishDashboard(
+  dash: DashIssue[],
+  epicNumber: number | null,
+  dry: boolean,
+  epicMissingFor: string | null = null,
+): void {
   const generatedAt = gh(['api', '/', '--jq', '"now"', '-i'])
     .split('\n')
     .find((l) => l.toLowerCase().startsWith('date:'))
@@ -560,7 +565,7 @@ function publishDashboard(dash: DashIssue[], epicNumber: number | null, dry: boo
     epic = { number: epicNumber, title, used: subs.length, limit: 100 };
   }
 
-  const body = renderDashboard({ issues: dash, epic, generatedAt, lastRun: null });
+  const body = renderDashboard({ issues: dash, epic, epicMissingFor, generatedAt, lastRun: null });
 
   const found = JSON.parse(
     gh(['issue', 'list', '-R', TARGET, '--state', 'open', '--limit', '50',
