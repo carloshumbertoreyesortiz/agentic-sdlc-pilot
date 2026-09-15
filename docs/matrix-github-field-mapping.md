@@ -265,6 +265,26 @@ Only two cases deviate:
 
 _This was the gap behind the failed rejection test: the status went into the body, but a Status field cannot reopen an issue — only `state` can._
 
+#### ⚠️ "Close as not planned" cancels the incident
+
+The reverse direction reads `state_reason` too, and it is the one end-of-life
+choice a developer makes without realising it is a choice. The two buttons sit
+together in the same dropdown:
+
+| Closing the GitHub issue as… | Matrix does |
+|---|---|
+| **Completed** | resolves the incident — **requires** a `[closure]` comment |
+| **Not planned** | **cancels** the incident — takes no close notes at all |
+
+So a cancelled incident must **not** be prompted for closure information, and a
+`[closure]` comment on one cannot succeed however well written.
+
+Established 2026-09-15 from INC0072921 (#3152): closed as *not planned*, the
+decorator asked for close notes, Ingrid supplied a complete documentation block,
+and the resolve failed ten times. The incident was being cancelled the whole
+time. It cost two days mainly because the failure notification came back with
+its Processing Notes empty (fixed on the ServiceNow side the same day).
+
 #### ⚠️ `status` is NOT a top-level payload field
 
 This is the single easiest thing to get wrong, and it fails **silently** — GitHub ignores unknown top-level fields and still returns `200`, so the call looks successful while Status never moves on the board.

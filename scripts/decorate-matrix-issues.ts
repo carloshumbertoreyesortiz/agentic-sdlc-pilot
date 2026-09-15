@@ -279,10 +279,11 @@ function main(): void {
   // fields are still worth keeping correct.
   const issues = JSON.parse(
     gh(['issue', 'list', '-R', TARGET, '--label', 'matrix', '--state', 'all',
-        '--limit', '200', '--json', 'number,id,body,title,state,createdAt,closedAt,updatedAt']),
+        '--limit', '200', '--json', 'number,id,body,title,state,stateReason,createdAt,closedAt,updatedAt']),
   ) as {
     number: number; id: string; body: string; title: string;
-    state: string; createdAt: string; closedAt?: string | null; updatedAt?: string | null;
+    state: string; stateReason?: string | null; createdAt: string;
+    closedAt?: string | null; updatedAt?: string | null;
   }[];
 
   console.log(`${issues.length} matrix issue(s) in ${TARGET}`);
@@ -364,6 +365,7 @@ function main(): void {
       onBoard: true,
       parented: true,
       hasClosure: facts.hasClosure,
+      cancelled: (issue.stateReason ?? '').toUpperCase() === 'NOT_PLANNED',
     });
 
     // The issue's own quarter, not the current one — see quarterKey().
@@ -468,7 +470,7 @@ const DASHBOARD_TITLE = 'Matrix ↔ GitHub sync — live status';
  *  3. caller replied last      → label; cleared when a human replies in GitHub
  */
 function handleComments(
-  issue: { number: number; state: string; closedAt?: string | null },
+  issue: { number: number; state: string; stateReason?: string | null; closedAt?: string | null },
   dry: boolean,
   priority?: string,
 ): { labels: string[]; hasClosure: boolean } {
@@ -480,8 +482,17 @@ function handleComments(
   const hasClosure = comments.some((c) => isClosureComment(c.body));
   const hasPrompt = comments.some((c) => c.body.includes(PROMPT_MARKER));
   const closed = issue.state.toUpperCase() === 'CLOSED';
+  // "Close as not planned" is the contract's signal for CANCELLED, not resolved
+  // (field-mapping doc, end-of-life table). A cancelled incident is never asked
+  // for close notes, so prompting for them sends someone off to write
+  // documentation that cannot be accepted — which is exactly what happened to
+  // INC0072921 (#3152) on 2026-09-10: prompted, answered carefully, and the
+  // resolve failed ten times because ServiceNow was cancelling the incident.
+  const cancelled = closed && (issue.stateReason ?? '').toUpperCase() === 'NOT_PLANNED';
 
-  if (closed && !hasClosure && !hasPrompt) {
+  if (cancelled && !hasClosure && !hasPrompt) {
+    console.log('  · closed as not planned — incident will be CANCELLED, no closure info needed');
+  } else if (closed && !hasClosure && !hasPrompt) {
     const closedAt = issue.closedAt ? Date.parse(issue.closedAt) : 0;
     const cutoff = Date.now() - PROMPT_WINDOW_HOURS * 3600_000;
     if (closedAt >= cutoff) {
