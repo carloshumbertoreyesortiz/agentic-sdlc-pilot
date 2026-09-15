@@ -52,6 +52,19 @@ describe('sync dashboard', () => {
     expect(body).not.toContain('No epic exists');
   });
 
+  it('links issues by bare reference, never by a relative path', () => {
+    // `../../issues/N` resolves to /OWNER/issues/N from the dashboard's own
+    // URL — the repo segment is eaten, and every row 404s.
+    const body = renderDashboard({
+      issues: [{ ...base, number: 3138, state: 'CLOSED' }],
+      epic: { number: 3185, title: "Q3 '26", used: 23, limit: 100 },
+      generatedAt: 'now',
+    });
+    expect(body).not.toContain('../');
+    expect(body).toContain('#3138');
+    expect(body).toContain('#3185');
+  });
+
   it('leads with what needs a person, not with totals', () => {
     const body = renderDashboard({ issues: [base], generatedAt: 'now' });
     expect(body.indexOf('Needs someone')).toBeLessThan(body.indexOf('Volume'));
