@@ -20,6 +20,8 @@ export interface DashIssue {
   onBoard: boolean;
   parented: boolean;
   hasClosure: boolean;
+  /** Closed as "not planned" — the incident is being cancelled, not resolved. */
+  cancelled?: boolean;
 }
 
 export interface DashInput {
@@ -36,9 +38,17 @@ export function awaitingReply(issues: DashIssue[]): DashIssue[] {
   return issues.filter((i) => i.labels.includes(CALLER_LABEL));
 }
 
-/** Closed, but no closure information — the incident is still open in Matrix. */
+/**
+ * Closed, but no closure information — the incident is still open in Matrix.
+ *
+ * Cancelled issues are excluded. Closing as "not planned" maps to CANCELLED,
+ * which takes no close notes, so flagging those as missing closure information
+ * reports a problem that does not exist — and buries the ones that are real.
+ */
 export function closedWithoutClosure(issues: DashIssue[]): DashIssue[] {
-  return issues.filter((i) => i.state.toUpperCase() === 'CLOSED' && !i.hasClosure);
+  return issues.filter(
+    (i) => i.state.toUpperCase() === 'CLOSED' && !i.hasClosure && !i.cancelled,
+  );
 }
 
 /** Anything the automation has not finished decorating. */

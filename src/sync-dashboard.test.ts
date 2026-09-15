@@ -20,6 +20,17 @@ describe('sync dashboard', () => {
     expect(closedWithoutClosure(issues).map((i) => i.number)).toEqual([3]);
   });
 
+  it('does not flag cancelled issues as missing closure information', () => {
+    // Closing as "not planned" maps to CANCELLED, which takes no close notes.
+    // INC0072921 (#3152) was cancelled this way and the sync reported it as a
+    // failure for two days; flagging it here would have said the same thing.
+    const issues = [
+      { ...base, number: 7, state: 'CLOSED', hasClosure: false, cancelled: true },
+      { ...base, number: 8, state: 'CLOSED', hasClosure: false },
+    ];
+    expect(closedWithoutClosure(issues).map((i) => i.number)).toEqual([8]);
+  });
+
   it('flags anything missing board placement or an epic link', () => {
     const issues = [base, { ...base, number: 5, onBoard: false }, { ...base, number: 6, parented: false }];
     expect(undecorated(issues).map((i) => i.number)).toEqual([5, 6]);
