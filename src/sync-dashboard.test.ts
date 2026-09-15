@@ -36,6 +36,22 @@ describe('sync dashboard', () => {
     expect(undecorated(issues).map((i) => i.number)).toEqual([5, 6]);
   });
 
+  it('shouts when the quarter has no epic, and says how to fix it', () => {
+    // The script already logs ::warning:: for this, but an Actions log is not a
+    // notification — nobody opens one. Ingrid keeps epic creation as a manual
+    // job on the strength of being told when it is due, so the telling has to
+    // land somewhere she actually looks.
+    const body = renderDashboard({ issues: [base], epicMissingFor: '26-Q4', generatedAt: 'now' });
+    expect(body).toContain("No epic exists for Q4 '26");
+    expect(body).toContain("Incidents from Matrix Q4 '26");
+    expect(body.indexOf('No epic exists')).toBeLessThan(body.indexOf('Caller has replied'));
+  });
+
+  it('says nothing about epics when the quarter has one', () => {
+    const body = renderDashboard({ issues: [base], generatedAt: 'now' });
+    expect(body).not.toContain('No epic exists');
+  });
+
   it('leads with what needs a person, not with totals', () => {
     const body = renderDashboard({ issues: [base], generatedAt: 'now' });
     expect(body.indexOf('Needs someone')).toBeLessThan(body.indexOf('Volume'));

@@ -27,6 +27,15 @@ export interface DashIssue {
 export interface DashInput {
   issues: DashIssue[];
   epic?: { number: number; title: string; used: number; limit: number } | null;
+  /**
+   * Quarter key (`26-Q4`) when no epic exists for it yet.
+   *
+   * Creating each quarter's epic stays a human job — four minutes a year, and a
+   * reasonable moment to look at the board. That only holds if the reminder
+   * reaches a human: the script already logs `::warning::`, but that lands in
+   * an Actions log nobody opens. It belongs here, where Ingrid is watching.
+   */
+  epicMissingFor?: string | null;
   generatedAt: string;
   lastRun?: { conclusion: string; at: string } | null;
 }
@@ -86,6 +95,24 @@ export function renderDashboard(d: DashInput): string {
     '',
     '## Needs someone',
     '',
+  ];
+
+  // First, above the per-issue lists: without an epic for the current quarter
+  // every incident that arrives lands unparented, so this is the one item here
+  // that gets worse the longer it waits.
+  if (d.epicMissingFor) {
+    const [yy, q] = d.epicMissingFor.split('-');
+    parts.push(
+      `### 🚨 No epic exists for ${q} '${yy}`,
+      '',
+      `Incidents raised this quarter are arriving **unparented**. Create an issue titled `
+        + `\`✨Incidents from Matrix ${q} '${yy}\` (type **Epic**) and the automation picks it `
+        + 'up on the next run — nothing else to change.',
+      '',
+    );
+  }
+
+  parts.push(
     section(
       `⚠️ Caller has replied and is waiting (${waiting.length})`,
       waiting.map(link),
@@ -106,7 +133,7 @@ export function renderDashboard(d: DashInput): string {
       'Everything is on the board and linked to the epic.',
     ),
     '',
-  ];
+  );
 
   if (d.epic) {
     const pct = Math.round((d.epic.used / d.epic.limit) * 100);
