@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 import process from 'node:process';
 import { renderDashboard, type DashIssue } from '../src/sync-dashboard.js';
 import {
@@ -586,4 +587,9 @@ function publishDashboard(
   }
 }
 
-if (process.argv[1]?.endsWith('decorate-matrix-issues.ts')) main();
+// Entry point. Compared as a resolved URL rather than by filename: a filename
+// test silently stops running `main()` the moment the file is renamed, and the
+// job then exits 0 having done nothing — green in Actions, incidents piling up
+// undecorated. That is not hypothetical; it happened porting this file into the
+// SFB repository on 2026-09-15, and was caught only by running it.
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main();
