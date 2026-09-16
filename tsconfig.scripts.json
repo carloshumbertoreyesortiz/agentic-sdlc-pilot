@@ -1,0 +1,18 @@
+{
+  // `scripts/` is not covered by the build: tsconfig.json sets rootDir to `src`
+  // so the published output stays clean. That left the scripts entirely
+  // unchecked, which is how a comment containing `*/10` silently terminated a
+  // block comment (PR #231) and how a missing brace passed `npm run check`
+  // while editing for PR #239. Type errors there are just as real, so they get
+  // their own no-emit pass.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "erasableSyntaxOnly": true,
+    "rootDir": "."
+  },
+  // Scoped to the decorator rather than all of `scripts/`: the others carry
+  // pre-existing type debt (slack-bot, validate-approver) and fixing that is a
+  // separate job. Widen this when they are cleaned up.
+  "include": ["scripts/decorate-matrix-issues.ts", "src"]
+}

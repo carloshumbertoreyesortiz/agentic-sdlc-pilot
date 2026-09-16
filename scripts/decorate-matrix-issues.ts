@@ -6,6 +6,7 @@ import {
   extractFields,
   isCallerComment,
   isClosureComment,
+  sourceUpdatedAt,
   isHumanReply,
   PROMPT_MARKER,
   type MatrixFieldValues,
@@ -14,28 +15,17 @@ import {
 /**
  * US-075: decorates Matrix-sourced issues in the SFB production repo.
  *
- * WHY IT LIVES HERE RATHER THAN IN THE PRODUCTION REPO. The natural home is a
- * workflow inside `TelenorNorgeInternal/s06065-sfb-telenor-sfdc`, triggered on
- * issue events. That needs an Actions secret, which needs repo admin — the
- * pilot has `write`. And the GitHub App cannot set Project fields, because it is
- * scoped to Issues + Metadata (adding Projects needs an org owner).
+ * WHERE THIS RUNS. The production copy lives in
+ * `TelenorNorgeInternal/s06065-sfb-telenor-sfdc` as
+ * `.github/scripts/matrix-sync/decorate.mts`, driven by `matrix-decorate.yml`
+ * on issue events — decoration within seconds of an incident arriving.
  *
- * Both routes therefore wait on someone else, while the SFB team currently
- * cannot see Priority or Status on incoming incidents at all — which blocks
- * Ingrid's acceptance testing. So this runs from the pilot's own repo on a
- * schedule instead, using a credential the pilot controls. It polls rather than
- * reacting to events: a few minutes' delay, and no dependency on anyone.
- *
- * INTERIM BY DESIGN. When the App gains Projects permission this should move
- * into the production repo as an event-driven workflow, and this script and its
- * schedule should be deleted. Recorded in docs/matrix-sync-cutover.md.
- *
- * Idempotent: safe to re-run, and re-running is the normal case.
- *
- *   npx tsx scripts/decorate-matrix-issues.ts [--dry-run]
- *
- * Env: GH_TOKEN (classic PAT: `repo` for the private target + `project`),
- *      TARGET_REPO, PROJECT_OWNER, PROJECT_NUMBER, EPIC_PREFIX.
+ * This copy still runs here on a schedule, and must keep running until the
+ * production workflow is confirmed decorating real incidents; deleting it first
+ * leaves nothing setting Priority, Status or the epic link. Once that is
+ * confirmed, DELETE the workflow here rather than leaving two jobs writing to
+ * the same board. Changes should be made in both until then — the production
+ * copy is the one that matters.
  */
 
 const TARGET = process.env.TARGET_REPO ?? 'TelenorNorgeInternal/s06065-sfb-telenor-sfdc';
@@ -207,6 +197,19 @@ function findEpics(): Map<string, { number: number; id: string; title: string }>
  * hardcoded id can still rot, so the lookup is attempted first and this is only
  * the fallback — and which path was taken is logged either way.
  */
+/**
+ * The account Matrix-sourced issues must be authored by.
+ *
+ * Without this, ANY issue carrying a `matrix-fields` block and the `matrix`
+ * label is treated as authoritative — so anyone who can edit an issue can hand
+ * this job a Priority, a Status and an issue type, and have it apply them to an
+ * ORG-owned project with an App token. That is a real step up from repository
+ * write, which does not by itself grant write on Project 408.
+ *
+ * The genuine articles are all opened by the App, so the check costs nothing.
+ * Raised by Copilot on PR #3193, 2026-09-16.
+ */
+const SYNC_AUTHOR = process.env.SYNC_AUTHOR ?? 'matrix-sfb-sync';
 const BUG_TYPE_ID = process.env.BUG_TYPE_ID ?? 'IT_kwDOB6pan84BIpiw';
 
 function issueTypeId(name: string): string | null {
@@ -280,11 +283,12 @@ function main(): void {
   // fields are still worth keeping correct.
   const issues = JSON.parse(
     gh(['issue', 'list', '-R', TARGET, '--label', 'matrix', '--state', 'all',
-        '--limit', '200', '--json', 'number,id,body,title,state,stateReason,createdAt,closedAt,updatedAt']),
+        '--limit', '200', '--json', 'number,id,body,title,state,stateReason,createdAt,closedAt,updatedAt,author']),
   ) as {
     number: number; id: string; body: string; title: string;
     state: string; stateReason?: string | null; createdAt: string;
     closedAt?: string | null; updatedAt?: string | null;
+    author?: { login?: string } | null;
   }[];
 
   console.log(`${issues.length} matrix issue(s) in ${TARGET}`);
@@ -296,10 +300,20 @@ function main(): void {
   const dash: DashIssue[] = [];
 
   for (const issue of issues) {
+    const cancelled = (issue.stateReason ?? '').toUpperCase() === 'NOT_PLANNED';
     const values = extractFields(issue.body ?? '');
     if (!values) {
       // A hand-written issue someone labelled `matrix` — not an error.
       console.log(`#${issue.number}: no matrix-fields metadata, skipping`);
+      continue;
+    }
+    // Metadata is only believed from the sync account. See SYNC_AUTHOR.
+    // gh reports App authors as `app/<slug>`; the REST API uses `<slug>[bot]`.
+    // Normalise both — matching only one of them skips every real incident,
+    // which is what the first run of this check did.
+    const author = (issue.author?.login ?? '').replace(/^app\//, '').replace(/\[bot\]$/, '');
+    if (author !== SYNC_AUTHOR) {
+      console.log(`#${issue.number}: matrix-fields present but authored by ${author || 'unknown'}, not ${SYNC_AUTHOR} — ignoring`);
       continue;
     }
     console.log(`#${issue.number} (${values.number}):`);
@@ -316,16 +330,30 @@ function main(): void {
       { p: projectId, c: issue.id },
     ).data.addProjectV2ItemById.item.id;
 
-    // Only let Matrix drive Status when the issue itself was just updated —
-    // otherwise a handler's board move is silently undone. See
-    // STATUS_WINDOW_MINUTES.
-    const issueChangedAt = issue.updatedAt ? Date.parse(issue.updatedAt) : 0;
-    const statusIsFresh = issueChangedAt >= boundary;
+    // Only let Matrix drive Status when MATRIX changed since the last run —
+    // otherwise a handler's board move is silently undone.
+    //
+    // Keyed on the `Source last updated` row Matrix writes into the body, not on
+    // the issue's own updatedAt: comments, labels and this job's own
+    // `updated-by-caller` edit all bump updatedAt, any of which would then
+    // re-apply Matrix's Status over a board move made afterwards. Raised by
+    // Copilot on PR #3193, 2026-09-16.
+    const changedAt = sourceUpdatedAt(issue.body ?? '')
+      ?? (issue.updatedAt ? Date.parse(issue.updatedAt) : 0);
+    const statusIsFresh = changedAt >= boundary;
     if (!statusIsFresh && values.status) {
       console.log(`  · Status left as set on the board (unchanged since the last run)`);
     }
 
-    for (const [name, value] of Object.entries(plannedFields(values, statusIsFresh))) {
+    // A cancelled incident keeps whatever Status it last held, which leaves it
+    // showing as active work on a board it has permanently left — and Ingrid's
+    // "Open Incidents" view filters on `-status:Done`, so it never drops off.
+    // The board has no Cancelled option, so Done is the only terminal state
+    // available. Raised by Copilot on PR #3193, 2026-09-16.
+    const planned = plannedFields(values, statusIsFresh);
+    if (cancelled) planned.Status = 'Done';
+
+    for (const [name, value] of Object.entries(planned)) {
       const field = fields.find((f) => f.name === name);
       if (!field) { console.error(`  ! no field "${name}" on the board — skipping`); continue; }
       if (field.options) {
@@ -355,22 +383,9 @@ function main(): void {
       console.log(`  ✓ Type = ${ISSUE_TYPE}`);
     }
 
-    dash.push({
-      number: issue.number,
-      title: issue.title,
-      state: issue.state,
-      labels: facts.labels,
-      updatedAt: issue.updatedAt,
-      status: values.status ?? null,
-      priority: values.priority ?? null,
-      onBoard: true,
-      parented: true,
-      hasClosure: facts.hasClosure,
-      cancelled: (issue.stateReason ?? '').toUpperCase() === 'NOT_PLANNED',
-    });
-
     // The issue's own quarter, not the current one — see quarterKey().
     const epic = epics.get(quarterKey(issue.createdAt)) ?? null;
+    let parented = false;
     if (epic) {
       try {
         // Numeric id, not the node id — and -F, since the API rejects a string.
@@ -381,14 +396,37 @@ function main(): void {
           // outcome on every re-run, and an error line each cycle trains people
           // to ignore the log — which is where the real failures appear.
           { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+        parented = true;
         console.log(`  ✓ parented to #${epic.number}`);
       } catch {
         // Already a sub-issue (the normal re-run case), or the epic is full at
         // 100. Either way the issue exists and is decorated — never fail the
         // run and strand a real incident.
-        console.log(`  · parent link unchanged (already linked, or epic full)`);
+        //
+        // Which of the two it was decides whether the dashboard should be
+        // flagging this issue, so ask rather than assume: `parented` used to be
+        // hardcoded true, so "Not fully set up" could never report anything and
+        // quietly claimed everything was linked. Raised by Copilot on PR #3193.
+        parented = hasParent(issue.number);
+        console.log(parented
+          ? '  · parent link unchanged (already a sub-issue)'
+          : `  ! NOT parented — epic #${epic.number} may be full`);
       }
     }
+
+    dash.push({
+      number: issue.number,
+      title: issue.title,
+      state: issue.state,
+      labels: facts.labels,
+      updatedAt: issue.updatedAt,
+      status: values.status ?? null,
+      priority: values.priority ?? null,
+      onBoard: true,
+      parented,
+      hasClosure: facts.hasClosure,
+      cancelled,
+    });
   }
 
   publishDashboard(dash, epics.get(nowKey)?.number ?? null, DRY, epics.has(nowKey) ? null : nowKey);
@@ -443,6 +481,18 @@ const STATUS_WINDOW_MINUTES = Number(process.env.STATUS_WINDOW_MINUTES ?? 20);
  * fixed window when there is no run history (a local invocation, or the first
  * ever run).
  */
+/** True when the issue already has a parent — asked, not assumed. */
+function hasParent(number: number): boolean {
+  try {
+    // `parent_issue_url` is the field that actually carries it — there is no
+    // `parent` or `sub_issue_parent` on the REST issue object, and asking for
+    // one returns null for everything, which reads as "nothing is parented".
+    return JSON.parse(gh(['api', `repos/${TARGET}/issues/${number}`, '--jq', '(.parent_issue_url != null)'])) === true;
+  } catch {
+    return false;
+  }
+}
+
 function lastSuccessfulRunAt(): number | null {
   try {
     const rows = JSON.parse(
@@ -475,10 +525,15 @@ function handleComments(
   dry: boolean,
   priority?: string,
 ): { labels: string[]; hasClosure: boolean } {
-  const comments = JSON.parse(
-    gh(['api', '--paginate', `repos/${TARGET}/issues/${issue.number}/comments`,
-        '--jq', '[.[] | {id, body, created_at}]']),
-  ) as Comment[];
+  // `--slurp`, and the shaping done here rather than in `--jq`. With
+  // `--paginate` alone, gh emits ONE JSON array PER PAGE and `--jq` runs against
+  // each separately, so the moment an issue passes 100 comments JSON.parse gets
+  // `[...][...]` and throws — aborting the whole run on exactly the long-lived
+  // incidents that matter most. `--slurp` returns a single array of pages, which
+  // flattens cleanly. Raised by Copilot on PR #3193, 2026-09-16.
+  const comments = (JSON.parse(
+    gh(['api', '--paginate', '--slurp', `repos/${TARGET}/issues/${issue.number}/comments`]),
+  ) as Comment[][]).flat().map(({ id, body, created_at }) => ({ id, body, created_at }));
 
   const hasClosure = comments.some((c) => isClosureComment(c.body));
   const hasPrompt = comments.some((c) => c.body.includes(PROMPT_MARKER));
@@ -559,9 +614,12 @@ function publishDashboard(
 
   let epic = null;
   if (epicNumber) {
-    const subs = JSON.parse(
-      gh(['api', '--paginate', `repos/${TARGET}/issues/${epicNumber}/sub_issues`, '--jq', '[.[].number]']),
-    ) as number[];
+    // `--slurp` for the same reason as the comments fetch above: `--paginate`
+    // with `--jq` yields one array per page, and an epic at the 100 cap is
+    // precisely when this runs over a page boundary.
+    const subs = (JSON.parse(
+      gh(['api', '--paginate', '--slurp', `repos/${TARGET}/issues/${epicNumber}/sub_issues`]),
+    ) as { number: number }[][]).flat().map((r) => r.number);
     const title = JSON.parse(gh(['issue', 'view', String(epicNumber), '-R', TARGET, '--json', 'title'])).title;
     epic = { number: epicNumber, title, used: subs.length, limit: 100 };
   }

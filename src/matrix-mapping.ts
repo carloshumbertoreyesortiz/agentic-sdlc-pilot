@@ -51,7 +51,7 @@ const SYS_ID_MARKER = 'Matrix-Sys-Id:';
  * GraphQL on the ServiceNow side for fields it does not own.
  *
  * So the values ride along in the body as JSON, and
- * .github/workflows/matrix-issue-fields.yml applies them GitHub-side, where the
+ * .github/workflows/matrix-decorate.yml applies them GitHub-side, where the
  * Projects API is reachable without any network path or firewall involvement.
  */
 const FIELDS_MARKER = 'matrix-fields:';
@@ -106,6 +106,26 @@ const STATUS: Record<string, string | null> = {
   Closed: 'Done',
   Cancelled: null,
 };
+
+/**
+ * The `Source last updated` timestamp Matrix writes into every issue body, in ms.
+ *
+ * This is the only true statement about when MATRIX last changed, and it is what
+ * decides whether Matrix may drive the board Status. The issue's own `updatedAt`
+ * cannot answer that: a comment, a label, or this job's own `updated-by-caller`
+ * edit all bump it, so using it lets an unrelated event re-apply Matrix's Status
+ * over a board move a person made afterwards.
+ *
+ * Returns null when the row is absent — the caller then falls back to
+ * `updatedAt`, which is wrong in the way described above but no worse than the
+ * behaviour it replaces.
+ */
+export function sourceUpdatedAt(body: string): number | null {
+  const m = body.match(/\|\s*Source last updated\s*\|\s*([0-9TZ:+\-.]+)\s*\|/);
+  if (!m) return null;
+  const t = Date.parse(m[1]);
+  return Number.isNaN(t) ? null : t;
+}
 
 export function mapPriority(priority?: number | null): string | undefined {
   if (priority == null) return undefined;
