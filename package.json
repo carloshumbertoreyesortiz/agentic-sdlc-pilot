@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run lint && npm run build && npm run test",
+    "check": "npm run lint && npm run build && npm run typecheck:scripts && npm run test",
+    "typecheck:scripts": "tsc --noEmit -p tsconfig.scripts.json",
     "dev": "tsx watch src/index.ts",
     "dashboard": "tsx scripts/dashboard.ts"
   },

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildIssuePayload,
+  sourceUpdatedAt,
   buildTitle,
   buildWorkNoteComment,
   duplicateCommentQuery,
@@ -329,5 +330,25 @@ describe('plannedFields — Status ownership', () => {
     const out = plannedFields(v, false);
     expect(out.Priority).toBe('P1');
     expect(out['External ref. / URL']).toBe('INC1');
+  });
+});
+
+describe('sourceUpdatedAt', () => {
+  const body = [
+    '| | |', '|---|---|',
+    '| Raised | 2026-09-15T07:03:13Z |',
+    '| Source last updated | 2026-09-15T09:26:12Z |',
+  ].join('\n');
+
+  it('reads the Matrix-side timestamp, not the Raised one', () => {
+    expect(sourceUpdatedAt(body)).toBe(Date.parse('2026-09-15T09:26:12Z'));
+  });
+
+  it('returns null when the row is absent, so the caller can fall back', () => {
+    expect(sourceUpdatedAt('no source table here')).toBeNull();
+  });
+
+  it('returns null rather than NaN on an unparseable timestamp', () => {
+    expect(sourceUpdatedAt('| Source last updated | not-a-date |')).toBeNull();
   });
 });
