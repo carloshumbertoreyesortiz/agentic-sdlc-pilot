@@ -65,6 +65,21 @@ export function undecorated(issues: DashIssue[]): DashIssue[] {
   return issues.filter((i) => !i.onBoard || !i.parented);
 }
 
+/**
+ * Makes caller-written text safe to place in the dashboard body.
+ *
+ * Incident titles come from Matrix, where the CALLER writes them. Rendered raw,
+ * an `@name` in a title would notify that person on every dashboard refresh — a
+ * few times an hour once the job is event-driven — and `#123`, `[text](url)` or
+ * `<tag>` would add cross-references, links or markup nobody chose. A zero-width
+ * space breaks mentions; a backslash neutralises Markdown punctuation.
+ */
+export function inlineText(text: string): string {
+  return text
+    .replace(/[\\`*_[\]<>|#~()]/g, (c) => `\\${c}`)
+    .replace(/@/g, '@\u200b');
+}
+
 function link(i: DashIssue): string {
   // Bare `#123`, not a markdown link. A relative `../../issues/123` looks right
   // and is not: GitHub renders the dashboard at /OWNER/REPO/issues/NNNN, so two
@@ -72,7 +87,7 @@ function link(i: DashIssue): string {
   // 404 on every row (reported by Ingrid, 2026-09-15). GitHub autolinks the
   // `#123` form against the repository the body lives in, so it cannot acquire
   // the wrong base, and it gains hover cards showing title and state for free.
-  return `#${i.number} ${i.title}`;
+  return `#${i.number} ${inlineText(i.title)}`;
 }
 
 function section(title: string, rows: string[], emptyNote: string): string {
@@ -145,7 +160,7 @@ export function renderDashboard(d: DashInput): string {
     const pct = Math.round((d.epic.used / d.epic.limit) * 100);
     const warn = d.epic.used >= d.epic.limit - 10 ? ' ⚠️ **nearly full**' : '';
     parts.push(
-      `**Epic capacity** — #${d.epic.number} ${d.epic.title}: **${d.epic.used} of ${d.epic.limit}** (${pct}%)${warn}`,
+      `**Epic capacity** — #${d.epic.number} ${inlineText(d.epic.title)}: **${d.epic.used} of ${d.epic.limit}** (${pct}%)${warn}`,
       '',
       d.epic.used >= d.epic.limit - 10
         ? '_GitHub caps an issue at 100 sub-issues, and closed ones still count. When it fills, new incidents arrive unparented and are listed above._'

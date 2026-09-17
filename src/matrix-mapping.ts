@@ -126,7 +126,13 @@ export function sourceUpdatedAt(body: string): number | null {
   // `YYYY-MM-DD HH:mm:ss`, so that format silently fell back to updatedAt —
   // the very signal this function exists to replace. Raised by Copilot on
   // PR #3193, 2026-09-17.
-  const m = body.match(/\|\s*Source last updated\s*\|([^|\n]*)\|/);
+  //
+  // The LAST matching row, not the first. The incident description — free text
+  // the caller wrote — comes before the generated Source table, so a caller
+  // could otherwise plant a row of their own and decide when Matrix's Status
+  // counts as fresh. The generated table is always last. Raised by Copilot on
+  // PR #3193, 2026-09-17.
+  const m = [...body.matchAll(/\|\s*Source last updated\s*\|([^|\n]*)\|/g)].at(-1);
   if (!m) return null;
   const raw = m[1].trim();
   // ServiceNow's `YYYY-MM-DD HH:mm:ss` carries no zone, and Date.parse reads a
@@ -154,7 +160,11 @@ export function normaliseLogin(login: string | null | undefined): string {
  * account. Raised by Copilot on PR #3193, 2026-09-17.
  */
 export function isBodyTrusted(editor: string | null | undefined, syncAuthor: string): boolean {
-  return editor == null || normaliseLogin(editor) === syncAuthor;
+  // null = never edited, so the App's original body stands. undefined = the
+  // editor is unknown, which fails CLOSED: an unverified body is not believed.
+  if (editor === null) return true;
+  if (editor === undefined) return false;
+  return normaliseLogin(editor) === syncAuthor;
 }
 
 export function mapPriority(priority?: number | null): string | undefined {
