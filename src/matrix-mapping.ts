@@ -121,10 +121,40 @@ const STATUS: Record<string, string | null> = {
  * behaviour it replaces.
  */
 export function sourceUpdatedAt(body: string): number | null {
-  const m = body.match(/\|\s*Source last updated\s*\|\s*([0-9TZ:+\-.]+)\s*\|/);
+  // Capture the WHOLE cell up to the next `|`. An earlier character class
+  // ([0-9TZ:+-.]) could not hold the space in ServiceNow's own
+  // `YYYY-MM-DD HH:mm:ss`, so that format silently fell back to updatedAt —
+  // the very signal this function exists to replace. Raised by Copilot on
+  // PR #3193, 2026-09-17.
+  const m = body.match(/\|\s*Source last updated\s*\|([^|\n]*)\|/);
   if (!m) return null;
-  const t = Date.parse(m[1]);
+  const raw = m[1].trim();
+  // ServiceNow's `YYYY-MM-DD HH:mm:ss` carries no zone, and Date.parse reads a
+  // zone-less value as the RUNNER'S local time — two hours out on a machine in
+  // Oslo. ServiceNow stores and serves it in UTC, so say so explicitly.
+  const iso = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/.test(raw)
+    ? `${raw.replace(' ', 'T')}Z`
+    : raw;
+  const t = Date.parse(iso);
   return Number.isNaN(t) ? null : t;
+}
+
+/** `app/<slug>` (gh CLI), `<slug>[bot]` (REST) and `<slug>` (GraphQL) name one account. */
+export function normaliseLogin(login: string | null | undefined): string {
+  return (login ?? '').replace(/^app\//, '').replace(/\[bot\]$/, '');
+}
+
+/**
+ * Whether an issue body's metadata may be believed, given who last edited it.
+ *
+ * The author of an issue is fixed at creation; its body is not. Checking only
+ * the author lets anyone with repository write rewrite `matrix-fields` on a
+ * genuine incident and have the App token apply it. So the body counts only when
+ * it has never been edited (`editor` null) or was last edited by the sync
+ * account. Raised by Copilot on PR #3193, 2026-09-17.
+ */
+export function isBodyTrusted(editor: string | null | undefined, syncAuthor: string): boolean {
+  return editor == null || normaliseLogin(editor) === syncAuthor;
 }
 
 export function mapPriority(priority?: number | null): string | undefined {

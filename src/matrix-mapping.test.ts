@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   buildIssuePayload,
   sourceUpdatedAt,
+  normaliseLogin,
+  isBodyTrusted,
   buildTitle,
   buildWorkNoteComment,
   duplicateCommentQuery,
@@ -348,7 +350,39 @@ describe('sourceUpdatedAt', () => {
     expect(sourceUpdatedAt('no source table here')).toBeNull();
   });
 
+  it("reads ServiceNow's zone-less format as UTC, not the runner's local time", () => {
+    expect(sourceUpdatedAt('| Source last updated | 2026-09-15 09:26:12 |'))
+      .toBe(Date.parse('2026-09-15T09:26:12Z'));
+  });
+
+  it('reads the human-friendly format proposed for the Source table', () => {
+    expect(sourceUpdatedAt('| Source last updated | 4 Sep 2026, 09:03 UTC |'))
+      .toBe(Date.parse('2026-09-04T09:03:00Z'));
+  });
+
   it('returns null rather than NaN on an unparseable timestamp', () => {
     expect(sourceUpdatedAt('| Source last updated | not-a-date |')).toBeNull();
+  });
+});
+
+describe('body trust', () => {
+  it('treats the three spellings of the App as one account', () => {
+    for (const l of ['app/matrix-sfb-sync', 'matrix-sfb-sync[bot]', 'matrix-sfb-sync']) {
+      expect(normaliseLogin(l)).toBe('matrix-sfb-sync');
+    }
+  });
+
+  it('trusts a body never edited since creation', () => {
+    expect(isBodyTrusted(null, 'matrix-sfb-sync')).toBe(true);
+  });
+
+  it('trusts a body last edited by the sync account, however it is spelled', () => {
+    expect(isBodyTrusted('matrix-sfb-sync', 'matrix-sfb-sync')).toBe(true);
+    expect(isBodyTrusted('matrix-sfb-sync[bot]', 'matrix-sfb-sync')).toBe(true);
+  });
+
+  it('does not trust a body a person edited last', () => {
+    // The author is still the App; the metadata is no longer its word.
+    expect(isBodyTrusted('someone-with-write', 'matrix-sfb-sync')).toBe(false);
   });
 });

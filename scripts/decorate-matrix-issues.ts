@@ -7,6 +7,8 @@ import {
   isCallerComment,
   isClosureComment,
   sourceUpdatedAt,
+  normaliseLogin,
+  isBodyTrusted,
   isHumanReply,
   PROMPT_MARKER,
   type MatrixFieldValues,
@@ -298,6 +300,7 @@ function main(): void {
     ? `Status changes considered since the last successful run (${new Date(boundary).toISOString()})`
     : `No run history — falling back to a ${STATUS_WINDOW_MINUTES}m window`);
   const dash: DashIssue[] = [];
+  const editors = bodyEditors();
 
   for (const issue of issues) {
     const cancelled = (issue.stateReason ?? '').toUpperCase() === 'NOT_PLANNED';
@@ -308,15 +311,28 @@ function main(): void {
       continue;
     }
     // Metadata is only believed from the sync account. See SYNC_AUTHOR.
-    // gh reports App authors as `app/<slug>`; the REST API uses `<slug>[bot]`.
-    // Normalise both — matching only one of them skips every real incident,
-    // which is what the first run of this check did.
-    const author = (issue.author?.login ?? '').replace(/^app\//, '').replace(/\[bot\]$/, '');
+    // Logins are normalised: matching only one spelling skips every real
+    // incident, which is what the first run of this check did.
+    const author = normaliseLogin(issue.author?.login);
     if (author !== SYNC_AUTHOR) {
       console.log(`#${issue.number}: matrix-fields present but authored by ${author || 'unknown'}, not ${SYNC_AUTHOR} — ignoring`);
       continue;
     }
     console.log(`#${issue.number} (${values.number}):`);
+
+    // The AUTHOR never changes; the BODY does. Anyone with repository write can
+    // rewrite the matrix-fields block on a genuine incident, and the `edited`
+    // event would then apply their Priority, Status and reference with the App
+    // token. So the metadata is believed only when the body's most recent editor
+    // is the sync account itself — or it has never been edited. A person's edit
+    // is not undone; its values are simply not applied until Matrix next
+    // re-sends the body, which restores trust on its own. Raised by Copilot on
+    // PR #3193, 2026-09-17.
+    const editor = editors.get(issue.number) ?? null;
+    const bodyTrusted = isBodyTrusted(editor, SYNC_AUTHOR);
+    if (!bodyTrusted) {
+      console.error(`  ! body last edited by ${editor}, not ${SYNC_AUTHOR} — Priority, Status and reference NOT applied until Matrix re-sends it`);
+    }
 
     // Comment handling first, and it runs in dry-run too: a dry run that skips
     // the analysis reports nothing useful. Writes inside are guarded.
@@ -338,8 +354,13 @@ function main(): void {
     // `updated-by-caller` edit all bump updatedAt, any of which would then
     // re-apply Matrix's Status over a board move made afterwards. Raised by
     // Copilot on PR #3193, 2026-09-16.
-    const changedAt = sourceUpdatedAt(issue.body ?? '')
-      ?? (issue.updatedAt ? Date.parse(issue.updatedAt) : 0);
+    const sourceAt = sourceUpdatedAt(issue.body ?? '');
+    if (sourceAt === null && /Source last updated/.test(issue.body ?? '')) {
+      // Present but unreadable means Matrix changed its format. Say so: the
+      // fallback below is the weak signal a comment or label edit can fool.
+      console.error('  ! "Source last updated" is present but unreadable — falling back to the issue\'s updatedAt');
+    }
+    const changedAt = sourceAt ?? (issue.updatedAt ? Date.parse(issue.updatedAt) : 0);
     const statusIsFresh = changedAt >= boundary;
     if (!statusIsFresh && values.status) {
       console.log(`  · Status left as set on the board (unchanged since the last run)`);
@@ -350,7 +371,8 @@ function main(): void {
     // "Open Incidents" view filters on `-status:Done`, so it never drops off.
     // The board has no Cancelled option, so Done is the only terminal state
     // available. Raised by Copilot on PR #3193, 2026-09-16.
-    const planned = plannedFields(values, statusIsFresh);
+    const planned = bodyTrusted ? plannedFields(values, statusIsFresh) : {};
+    // From the issue's own state, not the body, so it stands either way.
     if (cancelled) planned.Status = 'Done';
 
     for (const [name, value] of Object.entries(planned)) {
@@ -481,6 +503,37 @@ const STATUS_WINDOW_MINUTES = Number(process.env.STATUS_WINDOW_MINUTES ?? 20);
  * fixed window when there is no run history (a local invocation, or the first
  * ever run).
  */
+/**
+ * Who last edited each `matrix` issue's BODY, keyed by issue number.
+ *
+ * GraphQL's `editor` is the most recent editor (verified 2026-09-17 on #836:
+ * written by one person, last edited by another, `editor` returns the latter).
+ * Null when the body has never been edited since creation.
+ */
+interface EditorsPage {
+  pageInfo: { hasNextPage: boolean; endCursor: string };
+  nodes: { number: number; editor: { login: string } | null }[];
+}
+
+function bodyEditors(): Map<number, string | null> {
+  const [owner, name] = TARGET.split('/');
+  const out = new Map<number, string | null>();
+  let cursor: string | null = null;
+  do {
+    const after: string = cursor ? `, after: ${JSON.stringify(cursor)}` : '';
+    const d: { data: { repository: { issues: EditorsPage } } } = graphql(
+      `query($o: String!, $n: String!) { repository(owner: $o, name: $n) {
+        issues(first: 100${after}, labels: ["matrix"]) {
+          pageInfo { hasNextPage endCursor } nodes { number editor { login } } } } }`,
+      { o: owner, n: name },
+    );
+    const page: EditorsPage = d.data.repository.issues;
+    for (const i of page.nodes) out.set(i.number, i.editor?.login ?? null);
+    cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null;
+  } while (cursor);
+  return out;
+}
+
 /** True when the issue already has a parent — asked, not assumed. */
 function hasParent(number: number): boolean {
   try {
