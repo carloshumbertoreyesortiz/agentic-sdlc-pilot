@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { awaitingReply, closedWithoutClosure, renderDashboard, undecorated, type DashIssue } from './sync-dashboard.js';
+import { awaitingReply, closedWithoutClosure, inlineText, renderDashboard, undecorated, type DashIssue } from './sync-dashboard.js';
 
 const base: DashIssue = {
   number: 1, title: 'INC1 - something', state: 'OPEN', labels: ['matrix'],
@@ -63,6 +63,24 @@ describe('sync dashboard', () => {
     expect(body).not.toContain('../');
     expect(body).toContain('#3138');
     expect(body).toContain('#3185');
+  });
+
+  it('does not let a caller-written title mention, link or reference anything', () => {
+    // Titles are written by callers in Matrix. Raw, an @mention would notify on
+    // every dashboard refresh.
+    const title = 'INC1 - ask @ops-team see #42 [here](http://x) <b>';
+    const body = renderDashboard({
+      issues: [{ ...base, labels: ['matrix', 'updated-by-caller'], title }],
+      generatedAt: 'now',
+    });
+    expect(body).not.toContain('@ops-team');
+    expect(body).not.toContain('](http');
+    expect(body).not.toContain(' #42');
+    expect(body).not.toContain('<b>');
+  });
+
+  it('leaves an ordinary incident title readable', () => {
+    expect(inlineText('INC0072789 - notifications not sent')).toBe('INC0072789 - notifications not sent');
   });
 
   it('leads with what needs a person, not with totals', () => {

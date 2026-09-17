@@ -346,6 +346,15 @@ describe('sourceUpdatedAt', () => {
     expect(sourceUpdatedAt(body)).toBe(Date.parse('2026-09-15T09:26:12Z'));
   });
 
+  it('takes the generated row, not one a caller planted in the description', () => {
+    const planted = [
+      'Description: | Source last updated | 2099-01-01T00:00:00Z |',
+      '## Source', '| | |', '|---|---|',
+      '| Source last updated | 2026-09-15T09:26:12Z |',
+    ].join('\n');
+    expect(sourceUpdatedAt(planted)).toBe(Date.parse('2026-09-15T09:26:12Z'));
+  });
+
   it('returns null when the row is absent, so the caller can fall back', () => {
     expect(sourceUpdatedAt('no source table here')).toBeNull();
   });
@@ -379,6 +388,10 @@ describe('body trust', () => {
   it('trusts a body last edited by the sync account, however it is spelled', () => {
     expect(isBodyTrusted('matrix-sfb-sync', 'matrix-sfb-sync')).toBe(true);
     expect(isBodyTrusted('matrix-sfb-sync[bot]', 'matrix-sfb-sync')).toBe(true);
+  });
+
+  it('fails closed when the editor is unknown, rather than treating it as unedited', () => {
+    expect(isBodyTrusted(undefined, 'matrix-sfb-sync')).toBe(false);
   });
 
   it('does not trust a body a person edited last', () => {

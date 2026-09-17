@@ -283,15 +283,31 @@ function main(): void {
 
   // `--state all`: closed issues still need the closure check, and their board
   // fields are still worth keeping correct.
-  const issues = JSON.parse(
-    gh(['issue', 'list', '-R', TARGET, '--label', 'matrix', '--state', 'all',
-        '--limit', '200', '--json', 'number,id,body,title,state,stateReason,createdAt,closedAt,updatedAt,author']),
-  ) as {
-    number: number; id: string; body: string; title: string;
-    state: string; stateReason?: string | null; createdAt: string;
-    closedAt?: string | null; updatedAt?: string | null;
-    author?: { login?: string } | null;
-  }[];
+  //
+  // Paginated through the REST API rather than `gh issue list --limit N`. A
+  // fixed cap silently drops the OLDEST incidents once the label passes it, and
+  // after the 2026-09-17 backfill the label sits on 88 issues and grows by about
+  // 110 a year — so a cap of 200 was roughly a year from biting, and would then
+  // have left old incidents undecorated and undercounted on the dashboard with
+  // no error anywhere. Raised by Copilot on PR #3193, 2026-09-17.
+  const issues = (JSON.parse(
+    gh(['api', '--paginate', '--slurp',
+        `repos/${TARGET}/issues?labels=matrix&state=all&per_page=100`]),
+  ) as RestIssue[][])
+    .flat()
+    .filter((i) => !i.pull_request) // the issues endpoint also returns PRs
+    .map((i) => ({
+      number: i.number,
+      id: i.node_id,
+      body: i.body ?? '',
+      title: i.title,
+      state: i.state.toUpperCase(),
+      stateReason: (i.state_reason ?? '').toUpperCase(),
+      createdAt: i.created_at,
+      closedAt: i.closed_at,
+      updatedAt: i.updated_at,
+      author: { login: i.user?.login ?? '' },
+    }));
 
   console.log(`${issues.length} matrix issue(s) in ${TARGET}`);
   const lastRun = lastSuccessfulRunAt();
@@ -328,10 +344,15 @@ function main(): void {
     // is not undone; its values are simply not applied until Matrix next
     // re-sends the body, which restores trust on its own. Raised by Copilot on
     // PR #3193, 2026-09-17.
-    const editor = editors.get(issue.number) ?? null;
+    // `undefined` — absent from the lookup — is NOT the same as `null`, never
+    // edited. Treating an issue the lookup missed as unedited would trust
+    // exactly the bodies nobody checked.
+    const editor = editors.has(issue.number) ? editors.get(issue.number) ?? null : undefined;
     const bodyTrusted = isBodyTrusted(editor, SYNC_AUTHOR);
     if (!bodyTrusted) {
-      console.error(`  ! body last edited by ${editor}, not ${SYNC_AUTHOR} — Priority, Status and reference NOT applied until Matrix re-sends it`);
+      console.error(editor === undefined
+        ? `  ! body editor could not be determined — Priority, Status and reference NOT applied`
+        : `  ! body last edited by ${editor}, not ${SYNC_AUTHOR} — Priority, Status and reference NOT applied until Matrix re-sends it`);
     }
 
     // Comment handling first, and it runs in dry-run too: a dry run that skips
@@ -523,7 +544,7 @@ function bodyEditors(): Map<number, string | null> {
     const after: string = cursor ? `, after: ${JSON.stringify(cursor)}` : '';
     const d: { data: { repository: { issues: EditorsPage } } } = graphql(
       `query($o: String!, $n: String!) { repository(owner: $o, name: $n) {
-        issues(first: 100${after}, labels: ["matrix"]) {
+        issues(first: 100${after}, labels: ["matrix"], states: [OPEN, CLOSED]) {
           pageInfo { hasNextPage endCursor } nodes { number editor { login } } } } }`,
       { o: owner, n: name },
     );
@@ -532,6 +553,21 @@ function bodyEditors(): Map<number, string | null> {
     cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null;
   } while (cursor);
   return out;
+}
+
+/** The fields read from `GET /repos/{owner}/{repo}/issues`. */
+interface RestIssue {
+  number: number;
+  node_id: string;
+  body: string | null;
+  title: string;
+  state: string;
+  state_reason: string | null;
+  created_at: string;
+  closed_at: string | null;
+  updated_at: string;
+  user: { login: string } | null;
+  pull_request?: unknown;
 }
 
 /** True when the issue already has a parent — asked, not assumed. */
