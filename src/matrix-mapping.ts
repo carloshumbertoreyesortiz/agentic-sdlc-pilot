@@ -132,7 +132,7 @@ export function sourceUpdatedAt(body: string): number | null {
   // could otherwise plant a row of their own and decide when Matrix's Status
   // counts as fresh. The generated table is always last. Raised by Copilot on
   // PR #3193, 2026-09-17.
-  const m = [...body.matchAll(/\|\s*Source last updated\s*\|([^|\n]*)\|/g)].at(-1);
+  const m = lastMatch(body, /\|\s*Source last updated\s*\|([^|\n]*)\|/g);
   if (!m) return null;
   const raw = m[1].trim();
   // ServiceNow's `YYYY-MM-DD HH:mm:ss` carries no zone, and Date.parse reads a
@@ -201,8 +201,24 @@ export function duplicateSearchQuery(repo: string, sysId: string): string {
 
 /** Extracts the sys_id from an issue body, or null. Inverse of the marker. */
 export function extractSysId(body: string): string | null {
-  const match = body.match(/<!--\s*Matrix-Sys-Id:\s*([^\s>]+)\s*-->/);
+  // The LAST marker — see lastMatch(). Raised by Copilot on PR #3193.
+  const match = lastMatch(body, /<!--\s*Matrix-Sys-Id:\s*([^\s>]+)\s*-->/g);
   return match ? match[1] : null;
+}
+
+/**
+ * The last match of a global pattern, or null.
+ *
+ * Every generated marker in an issue body — `Matrix-Sys-Id`, `matrix-fields`,
+ * the Source table — is written AFTER the incident description, and the
+ * description is free text the CALLER wrote. Reading the first match lets a
+ * caller plant their own marker and have it believed: a different incident's
+ * sys_id, or a Priority and Status of their choosing. The generated one is
+ * always last, so take the last. Deliberately no fallback to an earlier match
+ * when the last one is unusable: that would reopen the same hole.
+ */
+export function lastMatch(body: string, pattern: RegExp): RegExpMatchArray | null {
+  return [...body.matchAll(pattern)].at(-1) ?? null;
 }
 
 /** Builds the JSON metadata comment the GitHub-side workflow consumes. */
@@ -235,7 +251,12 @@ export function extractFields(body: string): MatrixFieldValues | null {
   // named "Nina }" would yield invalid JSON and silently drop every field.
   // Nothing forbids `}` in a ServiceNow display value, so the terminator is the
   // only safe anchor.
-  const match = body.match(/<!--\s*matrix-fields:\s*([\s\S]*?)\s*-->/);
+  //
+  // And the LAST block, not the first: a caller who writes a matrix-fields
+  // comment into their description would otherwise choose Priority and Status.
+  // The body-editor check cannot catch that — the App wrote the whole body,
+  // planted block included. See lastMatch().
+  const match = lastMatch(body, /<!--\s*matrix-fields:\s*([\s\S]*?)\s*-->/g);
   if (!match) return null;
   try {
     const parsed = JSON.parse(match[1].trim()) as MatrixFieldValues;

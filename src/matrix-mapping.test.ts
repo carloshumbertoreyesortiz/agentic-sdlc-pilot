@@ -399,3 +399,28 @@ describe('body trust', () => {
     expect(isBodyTrusted('someone-with-write', 'matrix-sfb-sync')).toBe(false);
   });
 });
+
+describe('markers a caller could plant in the description', () => {
+  const real = (fields: string, sysId: string) => [
+    `<!-- Matrix-Sys-Id: ${sysId} -->`,
+    `<!-- matrix-fields: ${fields} -->`,
+    '_Synced from Matrix by the SFB integration._',
+  ].join('\n');
+  const genuine = '{"sys_id":"real","number":"INC1","url":"u","priority":"P3","status":"Backlog"}';
+
+  it('ignores a planted matrix-fields block and reads the generated one', () => {
+    const planted = '<!-- matrix-fields: {"sys_id":"fake","number":"INC9","url":"u","priority":"P0","status":"Done"} -->';
+    const v = extractFields(`Description: ${planted}\n\n${real(genuine, 'real')}`);
+    expect(v?.priority).toBe('P3');
+    expect(v?.status).toBe('Backlog');
+  });
+
+  it('is not fooled by an unterminated planted block either', () => {
+    const v = extractFields(`Description: <!-- matrix-fields: {"priority":"P0"\n\n${real(genuine, 'real')}`);
+    expect(v?.priority).toBe('P3');
+  });
+
+  it('ignores a planted Matrix-Sys-Id and reads the generated one', () => {
+    expect(extractSysId(`see <!-- Matrix-Sys-Id: someoneelse -->\n${real(genuine, 'real')}`)).toBe('real');
+  });
+});
