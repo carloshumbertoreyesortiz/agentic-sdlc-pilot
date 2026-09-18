@@ -317,6 +317,7 @@ function main(): void {
     : `No run history — falling back to a ${STATUS_WINDOW_MINUTES}m window`);
   const dash: DashIssue[] = [];
   const editors = bodyEditors();
+  const children = new Map<number, Set<number>>();
 
   for (const issue of issues) {
     const cancelled = (issue.stateReason ?? '').toUpperCase() === 'NOT_PLANNED';
@@ -430,7 +431,12 @@ function main(): void {
     const epic = epics.get(quarterKey(issue.createdAt)) ?? null;
     let parented = false;
     if (epic) {
-      try {
+      if (!children.has(epic.number)) children.set(epic.number, epicChildren(epic.number));
+      const linked = children.get(epic.number)!;
+      if (linked.has(issue.number)) {
+        parented = true;
+        console.log(`  · parent link unchanged (already a sub-issue of #${epic.number})`);
+      } else try {
         // Numeric id, not the node id — and -F, since the API rejects a string.
         const dbId = JSON.parse(gh(['api', `repos/${TARGET}/issues/${issue.number}`, '--jq', '.id']));
         execFileSync('gh',
@@ -440,6 +446,7 @@ function main(): void {
           // to ignore the log — which is where the real failures appear.
           { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
         parented = true;
+        children.get(epic.number)!.add(issue.number);
         console.log(`  ✓ parented to #${epic.number}`);
       } catch {
         // Already a sub-issue (the normal re-run case), or the epic is full at
@@ -450,10 +457,9 @@ function main(): void {
         // flagging this issue, so ask rather than assume: `parented` used to be
         // hardcoded true, so "Not fully set up" could never report anything and
         // quietly claimed everything was linked. Raised by Copilot on PR #3193.
-        parented = hasParent(issue.number);
-        console.log(parented
-          ? '  · parent link unchanged (already a sub-issue)'
-          : `  ! NOT parented — epic #${epic.number} may be full`);
+        // Reached only when the issue was NOT already a child, so the POST
+        // genuinely failed — a full epic at the 100 cap, most likely.
+        console.error(`  ! NOT parented — epic #${epic.number} may be full`);
       }
     }
 
@@ -570,15 +576,29 @@ interface RestIssue {
   pull_request?: unknown;
 }
 
-/** True when the issue already has a parent — asked, not assumed. */
-function hasParent(number: number): boolean {
+/**
+ * The issues already linked under an epic.
+ *
+ * Membership is read from the EPIC's own sub-issue list, not from each issue's
+ * `parent_issue_url`. That field is present for a user token and absent for the
+ * App's installation token, so the previous per-issue check returned true when
+ * run by hand and false for all 8 incidents in Actions — the dashboard then
+ * reported every incident as having no epic link while they were all correctly
+ * linked (Ingrid, 2026-09-18). This endpoint is the one the capacity line
+ * already relies on in Actions, so it is known to work there.
+ *
+ * It is also cheaper: one call per epic rather than one per issue.
+ */
+function epicChildren(epicNumber: number): Set<number> {
   try {
-    // `parent_issue_url` is the field that actually carries it — there is no
-    // `parent` or `sub_issue_parent` on the REST issue object, and asking for
-    // one returns null for everything, which reads as "nothing is parented".
-    return JSON.parse(gh(['api', `repos/${TARGET}/issues/${number}`, '--jq', '(.parent_issue_url != null)'])) === true;
+    const pages = JSON.parse(
+      gh(['api', '--paginate', '--slurp', `repos/${TARGET}/issues/${epicNumber}/sub_issues?per_page=100`]),
+    ) as { number: number }[][];
+    return new Set(pages.flat().map((i) => i.number));
   } catch {
-    return false;
+    // An unreadable epic must not make every issue look unparented.
+    console.error(`  ! could not list sub-issues of #${epicNumber}`);
+    return new Set();
   }
 }
 
