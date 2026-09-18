@@ -22,6 +22,8 @@ export interface DashIssue {
   hasClosure: boolean;
   /** Closed as "not planned" — the incident is being cancelled, not resolved. */
   cancelled?: boolean;
+  /** The epic's child list could not be read, so the link is neither confirmed nor denied. */
+  parentUnknown?: boolean;
 }
 
 export interface DashInput {
@@ -62,7 +64,15 @@ export function closedWithoutClosure(issues: DashIssue[]): DashIssue[] {
 
 /** Anything the automation has not finished decorating. */
 export function undecorated(issues: DashIssue[]): DashIssue[] {
-  return issues.filter((i) => !i.onBoard || !i.parented);
+  // `parentUnknown` is excluded: a failed read is not a missing link, and
+  // reporting it as one turns a transient API failure into a page of false
+  // alarms. It is surfaced separately, as a count, so it is not silent either.
+  return issues.filter((i) => !i.onBoard || (!i.parented && !i.parentUnknown));
+}
+
+/** Issues whose epic link could not be checked this run. */
+export function parentUnchecked(issues: DashIssue[]): DashIssue[] {
+  return issues.filter((i) => i.parentUnknown === true);
 }
 
 /**
@@ -155,6 +165,14 @@ export function renderDashboard(d: DashInput): string {
     ),
     '',
   );
+
+  const unchecked = parentUnchecked(d.issues);
+  if (unchecked.length > 0) {
+    parts.push(
+      `_Epic links could not be checked for **${unchecked.length}** issue(s) this run — the epic's sub-issue list was unreadable. Nothing was changed._`,
+      '',
+    );
+  }
 
   if (d.epic) {
     const pct = Math.round((d.epic.used / d.epic.limit) * 100);
