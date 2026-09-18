@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { awaitingReply, closedWithoutClosure, inlineText, renderDashboard, undecorated, type DashIssue } from './sync-dashboard.js';
+import { awaitingReply, closedWithoutClosure, inlineText, parentUnchecked, renderDashboard, undecorated, type DashIssue } from './sync-dashboard.js';
 
 const base: DashIssue = {
   number: 1, title: 'INC1 - something', state: 'OPEN', labels: ['matrix'],
@@ -81,6 +81,26 @@ describe('sync dashboard', () => {
 
   it('leaves an ordinary incident title readable', () => {
     expect(inlineText('INC0072789 - notifications not sent')).toBe('INC0072789 - notifications not sent');
+  });
+
+  it('does not report an unreadable epic as a missing epic link', () => {
+    // A failed read is not evidence of a missing link. Reporting it as one turns
+    // a transient API failure into a page of false alarms — which is what the
+    // first version of this did.
+    const issues = [
+      { ...base, number: 9, parented: false, parentUnknown: true },
+      { ...base, number: 10, parented: false },
+    ];
+    expect(undecorated(issues).map((i) => i.number)).toEqual([10]);
+    expect(parentUnchecked(issues).map((i) => i.number)).toEqual([9]);
+  });
+
+  it('still says so when epic links could not be checked', () => {
+    const body = renderDashboard({
+      issues: [{ ...base, number: 9, parented: false, parentUnknown: true }],
+      generatedAt: 'now',
+    });
+    expect(body).toContain('could not be checked for **1**');
   });
 
   it('leads with what needs a person, not with totals', () => {

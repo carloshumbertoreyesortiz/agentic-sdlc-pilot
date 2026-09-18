@@ -317,7 +317,7 @@ function main(): void {
     : `No run history — falling back to a ${STATUS_WINDOW_MINUTES}m window`);
   const dash: DashIssue[] = [];
   const editors = bodyEditors();
-  const children = new Map<number, Set<number>>();
+  const children = new Map<number, Set<number> | null>();
 
   for (const issue of issues) {
     const cancelled = (issue.stateReason ?? '').toUpperCase() === 'NOT_PLANNED';
@@ -430,10 +430,15 @@ function main(): void {
     // The issue's own quarter, not the current one — see quarterKey().
     const epic = epics.get(quarterKey(issue.createdAt)) ?? null;
     let parented = false;
+    let parentUnknown = false;
     if (epic) {
       if (!children.has(epic.number)) children.set(epic.number, epicChildren(epic.number));
-      const linked = children.get(epic.number)!;
-      if (linked.has(issue.number)) {
+      const linked = children.get(epic.number) ?? null;
+      if (linked === null) {
+        // Unknown: neither claim it is linked nor write on a guess.
+        parentUnknown = true;
+        console.error(`  ! epic link not verified (#${epic.number} unreadable) — left alone`);
+      } else if (linked.has(issue.number)) {
         parented = true;
         console.log(`  · parent link unchanged (already a sub-issue of #${epic.number})`);
       } else try {
@@ -446,7 +451,7 @@ function main(): void {
           // to ignore the log — which is where the real failures appear.
           { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
         parented = true;
-        children.get(epic.number)!.add(issue.number);
+        children.get(epic.number)?.add(issue.number);
         console.log(`  ✓ parented to #${epic.number}`);
       } catch {
         // Already a sub-issue (the normal re-run case), or the epic is full at
@@ -473,6 +478,7 @@ function main(): void {
       priority: values.priority ?? null,
       onBoard: true,
       parented,
+      parentUnknown,
       hasClosure: facts.hasClosure,
       cancelled,
     });
@@ -589,16 +595,21 @@ interface RestIssue {
  *
  * It is also cheaper: one call per epic rather than one per issue.
  */
-function epicChildren(epicNumber: number): Set<number> {
+function epicChildren(epicNumber: number): Set<number> | null {
   try {
     const pages = JSON.parse(
       gh(['api', '--paginate', '--slurp', `repos/${TARGET}/issues/${epicNumber}/sub_issues?per_page=100`]),
     ) as { number: number }[][];
     return new Set(pages.flat().map((i) => i.number));
   } catch {
-    // An unreadable epic must not make every issue look unparented.
-    console.error(`  ! could not list sub-issues of #${epicNumber}`);
-    return new Set();
+    // NULL, not an empty set. An empty set says "this epic has no children",
+    // so every existing link would look missing: the POSTs would all be retried
+    // and the dashboard would report every incident as unparented — the exact
+    // false alarm this function was written to stop. A read that failed is not
+    // evidence about the links; it is the absence of evidence. Raised by Copilot
+    // on PR #3193, 2026-09-18.
+    console.error(`  ! could not list sub-issues of #${epicNumber} — epic links not checked this run`);
+    return null;
   }
 }
 
