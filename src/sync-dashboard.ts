@@ -86,7 +86,10 @@ export function parentUnchecked(issues: DashIssue[]): DashIssue[] {
  */
 export function inlineText(text: string): string {
   return text
-    .replace(/[\\`*_[\]<>|#~()]/g, (c) => `\\${c}`)
+    // `(` and `)` are deliberately NOT escaped: only `[` and `]` can begin a
+    // link, so escaping brackets was pure noise — and it showed, as
+    // `terminated\(get an end date\)` in a real incident title.
+    .replace(/[\\`*_[\]<>|#~]/g, (c) => `\\${c}`)
     .replace(/@/g, '@\u200b');
 }
 

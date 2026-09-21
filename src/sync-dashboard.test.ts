@@ -74,9 +74,17 @@ describe('sync dashboard', () => {
       generatedAt: 'now',
     });
     expect(body).not.toContain('@ops-team');
-    expect(body).not.toContain('](http');
     expect(body).not.toContain(' #42');
     expect(body).not.toContain('<b>');
+    // The link text keeps its `](http` but cannot render as a link, because the
+    // opening bracket is escaped — that is what stops it, not removing the text.
+    expect(body).not.toContain('[here]');
+    expect(body).toContain('\\[here\\]');
+  });
+
+  it('leaves brackets alone — they cannot start a link', () => {
+    expect(inlineText('TSP contract terminated (get an end date)'))
+      .toBe('TSP contract terminated (get an end date)');
   });
 
   it('leaves an ordinary incident title readable', () => {
