@@ -11,6 +11,7 @@ import {
   extractFields,
   extractJournalId,
   isCallerComment,
+  isCallerAcceptance,
   isClosureComment,
   isHumanReply,
   PROMPT_MARKER,
@@ -422,5 +423,30 @@ describe('markers a caller could plant in the description', () => {
 
   it('ignores a planted Matrix-Sys-Id and reads the generated one', () => {
     expect(extractSysId(`see <!-- Matrix-Sys-Id: someoneelse -->\n${real(genuine, 'real')}`)).toBe('real');
+  });
+});
+
+describe('caller acceptance', () => {
+  const matrixComment = (text: string) => [
+    `**[Matrix comment]** — Ingrid Marie Urdshals, 2026-09-21T07:21:53Z`,
+    '', text, '',
+    '<!-- Matrix-Journal-Id: 650ebb8c24ab47109c462f882b9af166 -->',
+  ].join('\n');
+
+  it('recognises the acceptance Matrix generates', () => {
+    expect(isCallerAcceptance(matrixComment('Caller has accepted the resolution'))).toBe(true);
+  });
+
+  it('does not treat a rejection as acceptance — that one needs a person', () => {
+    expect(isCallerAcceptance(matrixComment('The caller rejected the resolution. Reject reason: '))).toBe(false);
+  });
+
+  it('ignores the phrase when it is not a caller comment from Matrix', () => {
+    // A handler quoting it in GitHub is not the caller accepting anything.
+    expect(isCallerAcceptance('caller has accepted the resolution')).toBe(false);
+  });
+
+  it('still counts anything the caller says after accepting', () => {
+    expect(isCallerAcceptance(matrixComment('Actually it is happening again'))).toBe(false);
   });
 });
