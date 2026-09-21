@@ -383,6 +383,24 @@ export function isCallerComment(body: string): boolean {
 }
 
 /**
+ * True when a caller comment is Matrix announcing that the caller ACCEPTED the
+ * resolution — the caller signing off, not asking for anything.
+ *
+ * Without this, accepting a solution flags the issue as "caller is waiting" and
+ * sends a handler to an incident that is finished (Ingrid, 2026-09-21, #3188).
+ * Rejection is deliberately NOT included: "The caller rejected the resolution"
+ * reopens the incident and genuinely does need someone.
+ *
+ * Matched on Matrix's own generated wording, which is a system phrase rather
+ * than anything a caller types — so it is part of the contract, and changing it
+ * on the ServiceNow side silently brings the false flag back. Recorded in
+ * docs/matrix-github-field-mapping.md for that reason.
+ */
+export function isCallerAcceptance(body: string): boolean {
+  return isCallerComment(body) && /caller\s+(?:has\s+)?accepted\s+the\s+resolution/i.test(body);
+}
+
+/**
  * True when a comment is a human reply written in GitHub — i.e. not from Matrix,
  * not our own prompt, and not marked internal.
  *

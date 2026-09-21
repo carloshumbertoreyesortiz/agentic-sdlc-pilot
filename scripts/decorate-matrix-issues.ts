@@ -5,6 +5,7 @@ import { renderDashboard, type DashIssue } from '../src/sync-dashboard.js';
 import {
   extractFields,
   isCallerComment,
+  isCallerAcceptance,
   isClosureComment,
   sourceUpdatedAt,
   normaliseLogin,
@@ -687,7 +688,10 @@ function handleComments(
   // Compare the LAST caller comment against the LAST human reply. Counting is
   // not enough: a caller who replies twice after being answered still needs the
   // flag, and a reply after two caller comments clears it.
-  const lastCaller = [...comments].reverse().find((c) => isCallerComment(c.body));
+  // Acceptance is the caller signing off, so it does not count as waiting —
+  // but anything they say AFTER accepting does. See isCallerAcceptance().
+  const lastCaller = [...comments].reverse()
+    .find((c) => isCallerComment(c.body) && !isCallerAcceptance(c.body));
   const lastReply = [...comments].reverse().find((c) => isHumanReply(c.body));
   const waiting = !!lastCaller && (!lastReply || lastCaller.created_at > lastReply.created_at);
 

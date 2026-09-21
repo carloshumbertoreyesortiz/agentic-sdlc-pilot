@@ -265,6 +265,24 @@ Only two cases deviate:
 
 _This was the gap behind the failed rejection test: the status went into the body, but a Status field cannot reopen an issue — only `state` can._
 
+#### ⚠️ Two generated caller phrases are part of the contract
+
+Matrix posts the caller's verdict on a resolution as an ordinary **Additional
+Comment**, so it arrives looking exactly like a caller asking a question. Two of
+them are system-generated and mean the opposite of each other:
+
+| Matrix sends | GitHub side |
+|---|---|
+| `Caller has accepted the resolution` | the caller signing off — **no** `updated-by-caller` flag |
+| `The caller rejected the resolution. Reject reason: …` | the incident is live again — flag it, someone must answer |
+
+Established 2026-09-21 from INC0073016 (#3188): accepting a solution flagged the
+issue as waiting and would have sent a handler to a finished incident.
+
+Because the GitHub side matches on this **wording**, it is part of the contract
+rather than cosmetic. Rephrasing or translating either string on the ServiceNow
+side brings the false flag straight back, so tell the GitHub side first.
+
 #### ⚠️ "Close as not planned" cancels the incident
 
 The reverse direction reads `state_reason` too, and it is the one end-of-life
