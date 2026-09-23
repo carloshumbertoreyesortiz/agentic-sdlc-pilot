@@ -16,17 +16,20 @@ import {
 /**
  * US-075: decorates Matrix-sourced issues in the SFB production repo.
  *
- * WHERE THIS RUNS. The production copy lives in
- * `TelenorNorgeInternal/s06065-sfb-telenor-sfdc` as
+ * WHERE THIS RUNS. Production, in
+ * `TelenorNorgeInternal/s06065-sfb-telenor-sfdc`, as
  * `.github/scripts/matrix-sync/decorate.mts`, driven by `matrix-decorate.yml`
  * on issue events — decoration within seconds of an incident arriving.
  *
- * This copy still runs here on a schedule, and must keep running until the
- * production workflow is confirmed decorating real incidents; deleting it first
- * leaves nothing setting Priority, Status or the epic link. Once that is
- * confirmed, DELETE the workflow here rather than leaving two jobs writing to
- * the same board. Changes should be made in both until then — the production
- * copy is the one that matters.
+ * THIS COPY NO LONGER RUNS. The pilot's scheduled workflow was deleted on
+ * 2026-09-23, once the production workflow was confirmed decorating on its own:
+ * two jobs writing to one board meant the dashboard's edits alternated between
+ * the App and whoever last ran this by hand.
+ *
+ * It is kept as the source the production copy is cut from — the pilot has the
+ * tests, and `.github/**` in the production repo is behind an organisation push
+ * rule, so changes are still made and tested here first. Changing this file
+ * alone changes nothing in production until the copy is carried across.
  */
 
 const TARGET = process.env.TARGET_REPO ?? 'TelenorNorgeInternal/s06065-sfb-telenor-sfdc';
