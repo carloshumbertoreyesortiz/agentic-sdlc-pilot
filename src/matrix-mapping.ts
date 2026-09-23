@@ -411,3 +411,26 @@ export function isCallerAcceptance(body: string): boolean {
 export function isHumanReply(body: string): boolean {
   return !isFromMatrix(body) && !body.includes(PROMPT_MARKER) && !isInternalComment(body);
 }
+
+/**
+ * Whether the caller is waiting on an answer.
+ *
+ * The LAST caller comment against the LAST human reply. Counting is not enough:
+ * a caller who writes twice after being answered still needs the flag, and one
+ * reply after two caller comments clears it.
+ *
+ * Acceptance is taken from the genuinely last caller comment, not by skipping
+ * over it. Filtering acceptances out first looks equivalent and is not: a caller
+ * who asks something and THEN accepts would leave the older question as the
+ * effective one, and the issue would stay flagged even though the caller has
+ * signed off. Raised by Copilot on PR #3296, 2026-09-23.
+ *
+ * A comment after an acceptance is an ordinary caller comment again.
+ */
+export function callerIsWaiting(comments: { body: string; created_at: string }[]): boolean {
+  const reversed = [...comments].reverse();
+  const lastCaller = reversed.find((c) => isCallerComment(c.body));
+  if (!lastCaller || isCallerAcceptance(lastCaller.body)) return false;
+  const lastReply = reversed.find((c) => isHumanReply(c.body));
+  return !lastReply || lastCaller.created_at > lastReply.created_at;
+}

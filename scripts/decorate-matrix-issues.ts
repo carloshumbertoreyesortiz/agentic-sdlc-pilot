@@ -4,13 +4,11 @@ import process from 'node:process';
 import { renderDashboard, type DashIssue } from '../src/sync-dashboard.js';
 import {
   extractFields,
-  isCallerComment,
-  isCallerAcceptance,
+  callerIsWaiting,
   isClosureComment,
   sourceUpdatedAt,
   normaliseLogin,
   isBodyTrusted,
-  isHumanReply,
   PROMPT_MARKER,
   type MatrixFieldValues,
 } from '../src/matrix-mapping.js';
@@ -685,15 +683,8 @@ function handleComments(
     if (!dry) gh(['issue', 'close', String(issue.number), '-R', TARGET, '--reason', 'completed']);
   }
 
-  // Compare the LAST caller comment against the LAST human reply. Counting is
-  // not enough: a caller who replies twice after being answered still needs the
-  // flag, and a reply after two caller comments clears it.
-  // Acceptance is the caller signing off, so it does not count as waiting —
-  // but anything they say AFTER accepting does. See isCallerAcceptance().
-  const lastCaller = [...comments].reverse()
-    .find((c) => isCallerComment(c.body) && !isCallerAcceptance(c.body));
-  const lastReply = [...comments].reverse().find((c) => isHumanReply(c.body));
-  const waiting = !!lastCaller && (!lastReply || lastCaller.created_at > lastReply.created_at);
+  // The rule itself lives in matrix-mapping so it can be tested directly.
+  const waiting = callerIsWaiting(comments);
 
   const labels = JSON.parse(
     gh(['issue', 'view', String(issue.number), '-R', TARGET, '--json', 'labels',

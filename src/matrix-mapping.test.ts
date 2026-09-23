@@ -12,6 +12,7 @@ import {
   extractJournalId,
   isCallerComment,
   isCallerAcceptance,
+  callerIsWaiting,
   isClosureComment,
   isHumanReply,
   PROMPT_MARKER,
@@ -448,5 +449,56 @@ describe('caller acceptance', () => {
 
   it('still counts anything the caller says after accepting', () => {
     expect(isCallerAcceptance(matrixComment('Actually it is happening again'))).toBe(false);
+  });
+});
+
+describe('callerIsWaiting', () => {
+  const journal = (n: string) => `<!-- Matrix-Journal-Id: ${n} -->`;
+  const caller = (at: string, text: string) => ({
+    created_at: at,
+    body: `**[Matrix comment]** — Caller, ${at}\n\n${text}\n\n${journal(at)}`,
+  });
+  const accepted = (at: string) => caller(at, 'Caller has accepted the resolution');
+  const reply = (at: string) => ({ created_at: at, body: 'Looking into it now.' });
+
+  it('flags a caller comment nobody has answered', () => {
+    expect(callerIsWaiting([caller('2026-09-01T10:00:00Z', 'Still broken')])).toBe(true);
+  });
+
+  it('clears once a human replies after it', () => {
+    expect(callerIsWaiting([
+      caller('2026-09-01T10:00:00Z', 'Still broken'),
+      reply('2026-09-01T11:00:00Z'),
+    ])).toBe(false);
+  });
+
+  it('clears when the caller asks and THEN accepts, with no reply between', () => {
+    // The bug Copilot caught: skipping the acceptance left the older question as
+    // the effective comment, so the issue stayed flagged after the caller had
+    // signed off.
+    expect(callerIsWaiting([
+      caller('2026-09-01T10:00:00Z', 'Any update?'),
+      accepted('2026-09-01T12:00:00Z'),
+    ])).toBe(false);
+  });
+
+  it('flags again when the caller comes back after accepting', () => {
+    expect(callerIsWaiting([
+      accepted('2026-09-01T10:00:00Z'),
+      caller('2026-09-02T09:00:00Z', 'It is happening again'),
+    ])).toBe(true);
+  });
+
+  it('still flags a rejection — that reopens the incident', () => {
+    expect(callerIsWaiting([
+      caller('2026-09-01T10:00:00Z', 'The caller rejected the resolution. Reject reason: '),
+    ])).toBe(true);
+  });
+
+  it('is not fooled by an [internal] note, which the caller cannot see', () => {
+    expect(callerIsWaiting([
+      caller('2026-09-01T10:00:00Z', 'Still broken'),
+      { created_at: '2026-09-01T11:00:00Z', body: '[internal] chasing this with the vendor' },
+    ])).toBe(true);
   });
 });
