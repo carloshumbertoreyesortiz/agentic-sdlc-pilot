@@ -266,10 +266,10 @@ function main(): void {
     project = loadProject();
   } catch (err) {
     if (isAuthRejection(err)) {
-      console.log('::warning::SFB_PROD_TOKEN was rejected by GitHub — nothing decorated.');
-      console.log('The org accepts neither classic PATs nor (apparently) fine-grained ones,');
-      console.log('so this needs Projects: read & write on the matrix-sfb-sync App.');
-      console.log('Pending that, run the script locally with credentials that work.');
+      console.log('::warning::the credential was rejected by GitHub — nothing decorated.');
+      console.log('In production this is the matrix-sfb-sync App: check SFB_APP_ID and');
+      console.log('SFB_APP_PRIVATE_KEY, and that the App still has Projects: read & write.');
+      console.log('A private key can be regenerated in the App settings by an App manager.');
       return;
     }
     throw err;
