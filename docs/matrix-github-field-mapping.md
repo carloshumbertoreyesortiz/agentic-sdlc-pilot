@@ -265,6 +265,37 @@ Only two cases deviate:
 
 _This was the gap behind the failed rejection test: the status went into the body, but a Status field cannot reopen an issue — only `state` can._
 
+#### Attachment notices
+
+Attachments themselves do **not** sync: GitHub has no API for attaching a file to
+an issue, and the issue handlers cannot open Matrix to follow a link (§10 of the
+solution document). Agreed 2026-09-28: instead, Matrix posts a **note** to the
+GitHub issue when a file is uploaded, so somebody knows to go and fetch it
+rather than checking every incident.
+
+Format — the two rules matter more than the wording:
+
+```
+**[Matrix attachment]** — `pricing-error.pdf` added by Ingrid Marie Urdshals, 2026-09-28T09:03:12Z
+
+<!-- Matrix-Journal-Id: 7c1f… -->
+```
+
+1. **It MUST carry a `Matrix-Journal-Id` marker.** Without one, the GitHub side
+   classifies the note as a *human reply* — because that is what anything not
+   from Matrix is — and it would clear the `updated-by-caller` flag. A caller who
+   attaches a file *and* asks a question would then look answered when nobody had
+   answered.
+2. **It MUST NOT begin with `**[Matrix comment]**`.** That prefix means *caller
+   comment*, which sets the waiting flag. An attachment notice is neither: with
+   the marker and without the prefix it is inert, which is exactly right.
+
+Also worth doing on the ServiceNow side: neutralise `@` in the filename before
+sending. A file called `@ingrid-notes.pdf` would otherwise mention that person on
+GitHub every time the note is posted.
+
+The journal id doubles as the idempotency key: one notice per attachment.
+
 #### ⚠️ Two generated caller phrases are part of the contract
 
 Matrix posts the caller's verdict on a resolution as an ordinary **Additional
