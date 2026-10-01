@@ -95,8 +95,38 @@ Close notes: <what was done, written for the person who reported it — they see
 ${note}`;
 }
 
+/**
+ * True for failures GitHub itself describes as worth retrying.
+ *
+ * `Something went wrong while executing your query` is GitHub's own wording for
+ * a server-side GraphQL failure, and it comes with a reference id to quote.
+ * 502/503/504 and the secondary rate limit are the same class. None of them say
+ * anything about the request being wrong.
+ */
+function isTransient(err: unknown): boolean {
+  const text = String((err as { stderr?: string; message?: string })?.stderr ?? (err as Error)?.message ?? err);
+  return /Something went wrong while executing your query/i.test(text)
+    || /\b(502|503|504)\b|Bad gateway|Service unavailable|Gateway timeout/i.test(text)
+    || /secondary rate limit|abuse detection/i.test(text);
+}
+
+const RETRIES = Number(process.env.GH_RETRIES ?? 2);
+
 function gh(args: string[]): string {
-  return execFileSync('gh', args, { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return execFileSync('gh', args, { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
+    } catch (err) {
+      // Retried here rather than at the call sites: every call goes through this
+      // function, and a transient failure killed a whole production run on
+      // 2026-10-01 — 94 issues read, then one flaky `updateIssue` mutation threw
+      // and the remaining issues and the dashboard never happened.
+      if (attempt >= RETRIES || !isTransient(err)) throw err;
+      const waitMs = 2000 * (attempt + 1);
+      console.error(`  · transient GitHub error, retrying in ${waitMs / 1000}s`);
+      execFileSync('sleep', [String(waitMs / 1000)]);
+    }
+  }
 }
 
 function graphql<T = unknown>(query: string, vars: Record<string, string | number> = {}): T {
@@ -321,7 +351,10 @@ function main(): void {
   const editors = bodyEditors();
   const children = new Map<number, Set<number> | null>();
 
+  const failed: number[] = [];
+
   for (const issue of issues) {
+   try {
     const cancelled = (issue.stateReason ?? '').toUpperCase() === 'NOT_PLANNED';
     const values = extractFields(issue.body ?? '');
     if (!values) {
@@ -484,9 +517,26 @@ function main(): void {
       hasClosure: facts.hasClosure,
       cancelled,
     });
+   } catch (err) {
+    // One issue must not take down the other ninety-three, nor the dashboard.
+    // On 2026-10-01 a single flaky `updateIssue` mutation ended a production run
+    // after 94 issues had been read: the rest went undecorated and the dashboard
+    // was never written, so the board quietly stopped reflecting reality.
+    //
+    // Still a failure, though — the run exits non-zero at the end, after doing
+    // everything it could. A silent partial run would be worse than the crash.
+    failed.push(issue.number);
+    console.error(`::error::#${issue.number} could not be decorated: ${String((err as Error)?.message ?? err).split('\n')[0]}`);
+   }
   }
 
   publishDashboard(dash, epics.get(nowKey)?.number ?? null, DRY, epics.has(nowKey) ? null : nowKey);
+
+  if (failed.length > 0) {
+    console.error(`::error::${failed.length} issue(s) failed: ${failed.map((n) => `#${n}`).join(', ')}`);
+    console.error('Everything else was decorated and the dashboard is current. The next run retries these.');
+    process.exitCode = 1;
+  }
 }
 
 interface Comment { id: number; body: string; created_at: string }
