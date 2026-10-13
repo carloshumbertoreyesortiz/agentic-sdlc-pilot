@@ -88,7 +88,7 @@ Mapping into the 10-state SFB taxonomy (way-of-work §5, US-063). Status flows *
 | On Hold / Pending | Pending Requestor |
 | Resolved | Deployed |
 | Closed | Done |
-| Cancelled | *(close the issue as not planned)* |
+| Cancelled | *(no GitHub signal today — see "Closing an issue does NOT, by itself, change the incident")* |
 
 ⚠️ **Resolved → Deployed is the weakest row here.** In ServiceNow "resolved" means the handler believes it is fixed; in the SFB taxonomy "Deployed" means the change reached production. Those are not the same claim, and Isak's closure semantics may well separate them. Flagged for the session rather than quietly assumed.
 
@@ -98,7 +98,7 @@ This caught the first person to use the integration, within an hour, so it is wo
 
 | | What it is | When it changes |
 | --- | --- | --- |
-| **Issue state** — `Open` / `Closed` | A **GitHub** concept, shown in the issue header | Only at the end of life: **Closed → close the issue**, **Cancelled → close as not planned**. It does **not** move for ordinary state changes. |
+| **Issue state** — `Open` / `Closed` | A **GitHub** concept, shown in the issue header | Only at the end of life: **Closed → close the issue**, **Cancelled → close as not planned**. Note this describes MATRIX → GitHub. The reverse does not read issue state at all; see the end-of-life section. |
 | **Status field** — Backlog … Done | The **SFB 10-state taxonomy**, a Project field shown on the board | Every state change, per the table above |
 
 An incident moving `New → In Progress` correctly produces a GitHub issue that is **still Open** with its **Status field now `Development`**. That is the system working. Looking at the issue header and seeing "Open" is not evidence the update failed — check the board column.
@@ -314,25 +314,45 @@ Because the GitHub side matches on this **wording**, it is part of the contract
 rather than cosmetic. Rephrasing or translating either string on the ServiceNow
 side brings the false flag straight back, so tell the GitHub side first.
 
-#### ⚠️ "Close as not planned" cancels the incident
+#### ⚠️ Closing an issue does NOT, by itself, change the incident
 
-The reverse direction reads `state_reason` too, and it is the one end-of-life
-choice a developer makes without realising it is a choice. The two buttons sit
-together in the same dropdown:
+**The ServiceNow side reads COMMENTS only. It never reads the issue's state.**
+Confirmed by Halvor, 2026-10-13.
 
 | Closing the GitHub issue as… | Matrix does |
 |---|---|
-| **Completed** | resolves the incident — **requires** a `[closure]` comment |
-| **Not planned** | **cancels** the incident — takes no close notes at all |
+| **Completed**, with a `[closure]` comment | resolves the incident |
+| **Completed**, with no `[closure]` comment | **nothing** — the incident stays open |
+| **Not planned** | **nothing today** — see below |
 
-So a cancelled incident must **not** be prompted for closure information, and a
-`[closure]` comment on one cannot succeed however well written.
+A correction, and worth recording as such. This section previously said that
+closing as *not planned* cancels the incident. It never did. That was inferred
+on 2026-09-15 from one sentence about INC0072921 — *"it was due to the incident
+being cancelled"* — which meant the incident was **already** cancelled in Matrix,
+not that GitHub had cancelled it. A rule was written into two documents from an
+ambiguous sentence and not verified against the implementation for four weeks.
 
-Established 2026-09-15 from INC0072921 (#3152): closed as *not planned*, the
-decorator asked for close notes, Ingrid supplied a complete documentation block,
-and the resolve failed ten times. The incident was being cancelled the whole
-time. It cost two days mainly because the failure notification came back with
-its Processing Notes empty (fixed on the ServiceNow side the same day).
+Surfaced by INC0073577 (#3473): closed as *not planned* with the comment *"This
+is a duplicate of INC0073503"*, and the incident stayed open in Matrix.
+Duplicates are closed this way regularly, so the gap is not academic.
+
+**Agreed direction (2026-10-13):** a `[cancel]` comment, symmetric with
+`[closure]`, since comments are the only channel the ServiceNow side reads. It
+takes no close notes — the intent is already unambiguous.
+
+```
+[cancel]
+Duplicate of INC0073503
+```
+
+Until the ServiceNow side implements it, **cancelling an incident is a manual
+step in Matrix.** The GitHub side will post the `[cancel]` comment itself when an
+issue is closed as not planned, once there is something at the other end to read
+it — not before, so that nothing posts a tag that silently does nothing.
+
+What the GitHub side already does for a not-planned close is local and stays:
+Status moves to **Done** so a cancelled incident stops looking like active work,
+and no closure prompt is posted, because close notes would not be accepted.
 
 #### ⚠️ `status` is NOT a top-level payload field
 
