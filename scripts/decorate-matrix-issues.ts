@@ -10,6 +10,9 @@ import {
   normaliseLogin,
   isBodyTrusted,
   PROMPT_MARKER,
+  CANCEL_MARKER,
+  CANCEL_TAG,
+  isCancelComment,
   type MatrixFieldValues,
 } from '../src/matrix-mapping.js';
 
@@ -111,6 +114,18 @@ function isTransient(err: unknown): boolean {
 }
 
 const RETRIES = Number(process.env.GH_RETRIES ?? 2);
+
+/**
+ * The comment that cancels the incident.
+ *
+ * No close notes: a cancellation takes none, and the reason is already on the
+ * issue in whatever the person wrote when they closed it.
+ */
+function cancelBody(): string {
+  return `${CANCEL_TAG}
+Closed as *not planned* in GitHub, so the incident is cancelled rather than resolved.
+${CANCEL_MARKER}`;
+}
 
 function gh(args: string[]): string {
   for (let attempt = 0; ; attempt++) {
@@ -718,8 +733,27 @@ function handleComments(
   // resolve failed ten times because ServiceNow was cancelling the incident.
   const cancelled = closed && (issue.stateReason ?? '').toUpperCase() === 'NOT_PLANNED';
 
-  if (cancelled && !hasClosure && !hasPrompt) {
-    console.log('  · closed as not planned — incident will be CANCELLED, no closure info needed');
+  if (cancelled) {
+    // Closing as "not planned" reaches Matrix only as a COMMENT: that side reads
+    // comments and never the issue's state, so the close by itself cancels
+    // nothing (established 2026-10-13, after four weeks of documentation saying
+    // otherwise). Posting the tag here means nobody has to remember it.
+    //
+    // Bounded by the same window as the closure prompt, and marked so it posts
+    // once: without the bound, switching this on would cancel every incident
+    // ever closed as not planned, including months-old ones somebody has since
+    // dealt with by hand.
+    const hasCancel = comments.some((c) => isCancelComment(c.body) || c.body.includes(CANCEL_MARKER));
+    const closedAt = issue.closedAt ? Date.parse(issue.closedAt) : 0;
+    const recent = closedAt >= Date.now() - PROMPT_WINDOW_HOURS * 3600_000;
+    if (hasCancel) {
+      console.log('  · closed as not planned — already cancelled');
+    } else if (!recent) {
+      console.log(`  · closed as not planned >${PROMPT_WINDOW_HOURS}h ago — not cancelling (do it in Matrix if still needed)`);
+    } else {
+      console.log('  → closed as not planned: cancelling the incident');
+      if (!dry) gh(['issue', 'comment', String(issue.number), '-R', TARGET, '--body', cancelBody()]);
+    }
   } else if (closed && !hasClosure && !hasPrompt) {
     const closedAt = issue.closedAt ? Date.parse(issue.closedAt) : 0;
     const cutoff = Date.now() - PROMPT_WINDOW_HOURS * 3600_000;

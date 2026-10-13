@@ -12,6 +12,8 @@ import {
   extractJournalId,
   isCallerComment,
   isCallerAcceptance,
+  isCancelComment,
+  CANCEL_MARKER,
   callerIsWaiting,
   isClosureComment,
   isHumanReply,
@@ -500,5 +502,28 @@ describe('callerIsWaiting', () => {
       caller('2026-09-01T10:00:00Z', 'Still broken'),
       { created_at: '2026-09-01T11:00:00Z', body: '[internal] chasing this with the vendor' },
     ])).toBe(true);
+  });
+});
+
+describe('cancel comments', () => {
+  it('recognises the tag', () => {
+    expect(isCancelComment('[cancel]\nDuplicate of INC0073503')).toBe(true);
+    expect(isCancelComment('  [CANCEL] duplicate')).toBe(true);
+  });
+
+  it('does not mistake a sentence about cancelling for the tag', () => {
+    expect(isCancelComment('We should cancel this one')).toBe(false);
+  });
+
+  it('does not treat our own cancel comment as a reply to the caller', () => {
+    // Otherwise cancelling an issue would clear `updated-by-caller` — the same
+    // trap flagged to Halvor for attachment notices.
+    const ours = `[cancel]\nClosed as not planned in GitHub.\n${CANCEL_MARKER}`;
+    expect(isHumanReply(ours)).toBe(false);
+  });
+
+  it('still treats a person writing [cancel] by hand as a reply', () => {
+    // No marker: a human typed it, and that is them acting on the issue.
+    expect(isHumanReply('[cancel]\nDuplicate of INC0073503')).toBe(true);
   });
 });

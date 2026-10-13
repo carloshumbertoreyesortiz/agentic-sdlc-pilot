@@ -362,6 +362,24 @@ export const INTERNAL_TAG = '[internal]';
  */
 export const PROMPT_MARKER = '<!-- matrix-closure-prompt -->';
 
+/**
+ * The tag that cancels an incident, as `[closure]` resolves one.
+ *
+ * Matrix reads comments and never the issue's state, so closing an issue as
+ * "not planned" reaches nothing by itself — the reason the claim that it did was
+ * wrong for four weeks. This is the signal that actually travels. Agreed with
+ * Halvor 2026-10-13; one `l`.
+ */
+export const CANCEL_TAG = '[cancel]';
+
+/** Marks our own generated cancel comment, so it is posted once and not re-read as a reply. */
+export const CANCEL_MARKER = '<!-- matrix-cancel -->';
+
+/** True when a comment cancels the incident. */
+export function isCancelComment(body: string): boolean {
+  return body.trimStart().toLowerCase().startsWith(CANCEL_TAG);
+}
+
 /** True when a comment carries closure information. */
 export function isClosureComment(body: string): boolean {
   return body.trimStart().toLowerCase().startsWith(CLOSURE_TAG);
@@ -409,7 +427,13 @@ export function isCallerAcceptance(body: string): boolean {
  * label while the caller is still, in fact, waiting.
  */
 export function isHumanReply(body: string): boolean {
-  return !isFromMatrix(body) && !body.includes(PROMPT_MARKER) && !isInternalComment(body);
+  return !isFromMatrix(body)
+    && !body.includes(PROMPT_MARKER)
+    // Our own cancel comment is not someone answering the caller. Without this
+    // it would clear `updated-by-caller` — the same trap flagged to Halvor for
+    // his attachment notices, which applies just as much to what we generate.
+    && !body.includes(CANCEL_MARKER)
+    && !isInternalComment(body);
 }
 
 /**
