@@ -12,6 +12,7 @@ import {
   PROMPT_MARKER,
   CANCEL_MARKER,
   CANCEL_TAG,
+  cancelDecision,
   isCancelComment,
   type MatrixFieldValues,
 } from '../src/matrix-mapping.js';
@@ -121,6 +122,28 @@ const RETRIES = Number(process.env.GH_RETRIES ?? 2);
  * No close notes: a cancellation takes none, and the reason is already on the
  * issue in whatever the person wrote when they closed it.
  */
+/**
+ * Who closed the issue, or null when it cannot be determined.
+ *
+ * Read from the timeline rather than inferred: `closed_by` on the REST issue is
+ * not reliably the actor for App closures, and getting this wrong means either
+ * an echo loop or a cancellation that never travels.
+ */
+function closedBy(number: number): string | null {
+  try {
+    const events = JSON.parse(
+      gh(['api', '--paginate', '--slurp', `repos/${TARGET}/issues/${number}/timeline?per_page=100`]),
+    ) as { event: string; actor?: { login?: string } }[][];
+    const closes = events.flat().filter((e) => e.event === 'closed');
+    return closes.at(-1)?.actor?.login ?? null;
+  } catch {
+    // Unknown: say nothing rather than risk the echo. A cancellation that did
+    // not travel is visible to a person; a retry storm reaches their inbox.
+    console.error(`  ! could not read who closed #${number}`);
+    return SYNC_AUTHOR;
+  }
+}
+
 function cancelBody(): string {
   return `${CANCEL_TAG}
 Closed as *not planned* in GitHub, so the incident is cancelled rather than resolved.
@@ -746,13 +769,28 @@ function handleComments(
     const hasCancel = comments.some((c) => isCancelComment(c.body) || c.body.includes(CANCEL_MARKER));
     const closedAt = issue.closedAt ? Date.parse(issue.closedAt) : 0;
     const recent = closedAt >= Date.now() - PROMPT_WINDOW_HOURS * 3600_000;
-    if (hasCancel) {
-      console.log('  · closed as not planned — already cancelled');
-    } else if (!recent) {
-      console.log(`  · closed as not planned >${PROMPT_WINDOW_HOURS}h ago — not cancelling (do it in Matrix if still needed)`);
-    } else {
-      console.log('  → closed as not planned: cancelling the incident');
-      if (!dry) gh(['issue', 'comment', String(issue.number), '-R', TARGET, '--body', cancelBody()]);
+    // WHO closed it decides whether to say anything. When MATRIX cancels an
+    // incident it closes the issue as not planned itself — so posting `[cancel]`
+    // back would tell Matrix to cancel what Matrix just cancelled. That is not
+    // hypothetical: the test on 2026-10-14 produced exactly that rejection,
+    // "incident already being in state: Cancelled", retried ten times and
+    // emailed. Shipping without this check would do it on every Matrix-side
+    // cancellation.
+    const closedBySync = normaliseLogin(closedBy(issue.number)) === SYNC_AUTHOR;
+    switch (cancelDecision({ hasCancel, closedBySync, recent })) {
+      case 'already':
+        console.log('  · closed as not planned — already cancelled');
+        break;
+      case 'matrix-closed':
+        console.log('  · closed as not planned by Matrix itself — nothing to send back');
+        break;
+      case 'stale':
+        console.log(`  · closed as not planned >${PROMPT_WINDOW_HOURS}h ago — not cancelling (do it in Matrix if still needed)`);
+        break;
+      case 'post':
+        console.log('  → closed as not planned: cancelling the incident');
+        if (!dry) gh(['issue', 'comment', String(issue.number), '-R', TARGET, '--body', cancelBody()]);
+        break;
     }
   } else if (closed && !hasClosure && !hasPrompt) {
     const closedAt = issue.closedAt ? Date.parse(issue.closedAt) : 0;

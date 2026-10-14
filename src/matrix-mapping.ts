@@ -458,3 +458,26 @@ export function callerIsWaiting(comments: { body: string; created_at: string }[]
   const lastReply = reversed.find((c) => isHumanReply(c.body));
   return !lastReply || lastCaller.created_at > lastReply.created_at;
 }
+
+/**
+ * Whether to post `[cancel]`, and why not when not.
+ *
+ * Pure, because the "why not" cases are the ones that matter and each was
+ * learned the hard way:
+ *  - `already` — the tag is there; posting again is a duplicate.
+ *  - `matrix-closed` — MATRIX closed the issue, because cancelling an incident
+ *    closes it as not planned. Posting back tells Matrix to cancel what it just
+ *    cancelled: rejected, retried ten times, emailed. Observed 2026-10-14.
+ *  - `stale` — closed longer ago than the window. Switching this on must not
+ *    cancel incidents people have since handled by hand.
+ */
+export function cancelDecision(f: {
+  hasCancel: boolean;
+  closedBySync: boolean;
+  recent: boolean;
+}): 'post' | 'already' | 'matrix-closed' | 'stale' {
+  if (f.hasCancel) return 'already';
+  if (f.closedBySync) return 'matrix-closed';
+  if (!f.recent) return 'stale';
+  return 'post';
+}
