@@ -13,6 +13,7 @@ import {
   isCallerComment,
   isCallerAcceptance,
   isCancelComment,
+  cancelDecision,
   CANCEL_MARKER,
   callerIsWaiting,
   isClosureComment,
@@ -525,5 +526,32 @@ describe('cancel comments', () => {
   it('still treats a person writing [cancel] by hand as a reply', () => {
     // No marker: a human typed it, and that is them acting on the issue.
     expect(isHumanReply('[cancel]\nDuplicate of INC0073503')).toBe(true);
+  });
+});
+
+describe('cancelDecision', () => {
+  const base = { hasCancel: false, closedBySync: false, recent: true };
+
+  it('posts when a person closed it as not planned just now', () => {
+    expect(cancelDecision(base)).toBe('post');
+  });
+
+  it('says nothing when Matrix closed the issue itself', () => {
+    // Cancelling an incident closes the issue as not planned, so posting back
+    // tells Matrix to cancel what it just cancelled — rejected, retried ten
+    // times, emailed. Observed on INC0073577, 2026-10-14.
+    expect(cancelDecision({ ...base, closedBySync: true })).toBe('matrix-closed');
+  });
+
+  it('does not post twice', () => {
+    expect(cancelDecision({ ...base, hasCancel: true })).toBe('already');
+  });
+
+  it('leaves old closures alone', () => {
+    expect(cancelDecision({ ...base, recent: false })).toBe('stale');
+  });
+
+  it('prefers the existing tag over every other reason', () => {
+    expect(cancelDecision({ hasCancel: true, closedBySync: true, recent: false })).toBe('already');
   });
 });
