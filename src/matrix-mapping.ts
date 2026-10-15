@@ -375,6 +375,20 @@ export const CANCEL_TAG = '[cancel]';
 /** Marks our own generated cancel comment, so it is posted once and not re-read as a reply. */
 export const CANCEL_MARKER = '<!-- matrix-cancel -->';
 
+/** Marks the note left when an issue is closed because Matrix resolved the incident. */
+export const RESOLVED_MARKER = '<!-- matrix-resolved-close -->';
+
+/**
+ * Board statuses meaning the incident is finished on the Matrix side.
+ *
+ * `Deployed` is Resolved and `Done` is Closed — see the STATUS map. Agreed with
+ * Ingrid 2026-10-15: once an incident is resolved nobody works on it further,
+ * and if the caller rejects the resolution Matrix reopens both sides anyway.
+ */
+export function isFinishedStatus(status?: string | null): boolean {
+  return status === 'Deployed' || status === 'Done';
+}
+
 /** True when a comment cancels the incident. */
 export function isCancelComment(body: string): boolean {
   return body.trimStart().toLowerCase().startsWith(CANCEL_TAG);
@@ -433,6 +447,7 @@ export function isHumanReply(body: string): boolean {
     // it would clear `updated-by-caller` — the same trap flagged to Halvor for
     // his attachment notices, which applies just as much to what we generate.
     && !body.includes(CANCEL_MARKER)
+    && !body.includes(RESOLVED_MARKER)
     && !isInternalComment(body);
 }
 
