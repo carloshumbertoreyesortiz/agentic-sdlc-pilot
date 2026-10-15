@@ -372,8 +372,6 @@ export const PROMPT_MARKER = '<!-- matrix-closure-prompt -->';
  */
 export const CANCEL_TAG = '[cancel]';
 
-/** Marks our own generated cancel comment, so it is posted once and not re-read as a reply. */
-export const CANCEL_MARKER = '<!-- matrix-cancel -->';
 
 /** Marks the note left when an issue is closed because Matrix resolved the incident. */
 export const RESOLVED_MARKER = '<!-- matrix-resolved-close -->';
@@ -446,7 +444,12 @@ export function isHumanReply(body: string): boolean {
     // Our own cancel comment is not someone answering the caller. Without this
     // it would clear `updated-by-caller` — the same trap flagged to Halvor for
     // his attachment notices, which applies just as much to what we generate.
-    && !body.includes(CANCEL_MARKER)
+    // A `[cancel]` comment is an instruction to Matrix, not somebody answering
+    // the caller — whoever wrote it. The tag identifies it on its own, which is
+    // why there is no hidden marker: this comment is COPIED INTO ServiceNow, and
+    // an HTML comment that GitHub hides shows up as plain text in the close
+    // notes, which the requester can see (observed on INC0073688, 2026-10-15).
+    && !isCancelComment(body)
     && !body.includes(RESOLVED_MARKER)
     && !isInternalComment(body);
 }

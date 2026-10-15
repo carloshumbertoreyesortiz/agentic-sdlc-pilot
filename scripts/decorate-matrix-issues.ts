@@ -10,7 +10,6 @@ import {
   normaliseLogin,
   isBodyTrusted,
   PROMPT_MARKER,
-  CANCEL_MARKER,
   CANCEL_TAG,
   RESOLVED_MARKER,
   isFinishedStatus,
@@ -156,8 +155,7 @@ If the caller rejects the resolution, Matrix reopens the incident and this issue
 
 function cancelBody(): string {
   return `${CANCEL_TAG}
-Closed as *not planned* in GitHub, so the incident is cancelled rather than resolved.
-${CANCEL_MARKER}`;
+Closed as *not planned* in GitHub, so the incident is cancelled rather than resolved.`;
 }
 
 function gh(args: string[]): string {
@@ -781,7 +779,8 @@ function handleComments(
     // once: without the bound, switching this on would cancel every incident
     // ever closed as not planned, including months-old ones somebody has since
     // dealt with by hand.
-    const hasCancel = comments.some((c) => isCancelComment(c.body) || c.body.includes(CANCEL_MARKER));
+    // The tag alone is the record that it was sent — no hidden marker needed.
+    const hasCancel = comments.some((c) => isCancelComment(c.body));
     const closedAt = issue.closedAt ? Date.parse(issue.closedAt) : 0;
     const recent = closedAt >= Date.now() - PROMPT_WINDOW_HOURS * 3600_000;
     // WHO closed it decides whether to say anything. When MATRIX cancels an
