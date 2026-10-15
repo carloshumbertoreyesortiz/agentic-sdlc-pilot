@@ -15,6 +15,8 @@ import {
   isCancelComment,
   cancelDecision,
   matrixCommentAuthor,
+  isFinishedStatus,
+  RESOLVED_MARKER,
   CANCEL_MARKER,
   callerIsWaiting,
   isClosureComment,
@@ -580,5 +582,19 @@ describe('callerIsWaiting — who actually wrote it', () => {
   it('keeps the old behaviour when the caller is unknown', () => {
     // A missed flag is worse than a spurious one.
     expect(callerIsWaiting([from('Someone', '2026-10-07T08:00:00Z')], null)).toBe(true);
+  });
+});
+
+describe('finished incidents', () => {
+  it('treats Resolved and Closed as finished, and live work as not', () => {
+    expect(isFinishedStatus('Deployed')).toBe(true);   // Resolved
+    expect(isFinishedStatus('Done')).toBe(true);       // Closed
+    for (const live of ['Backlog', 'Development', 'Pending Requestor', 'Updated by Caller', null, undefined]) {
+      expect(isFinishedStatus(live)).toBe(false);
+    }
+  });
+
+  it('does not treat the auto-close note as someone answering the caller', () => {
+    expect(isHumanReply(`${RESOLVED_MARKER}\nClosed automatically.`)).toBe(false);
   });
 });

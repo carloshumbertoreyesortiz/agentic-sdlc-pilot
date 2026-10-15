@@ -12,6 +12,8 @@ import {
   PROMPT_MARKER,
   CANCEL_MARKER,
   CANCEL_TAG,
+  RESOLVED_MARKER,
+  isFinishedStatus,
   cancelDecision,
   isCancelComment,
   type MatrixFieldValues,
@@ -142,6 +144,14 @@ function closedBy(number: number): string | null {
     console.error(`  ! could not read who closed #${number}`);
     return SYNC_AUTHOR;
   }
+}
+
+/** The note left when Matrix has resolved the incident and the issue is closed for it. */
+function resolvedBody(): string {
+  return `${RESOLVED_MARKER}
+✅ **Closed automatically** — the Matrix incident is resolved, so there is nothing left to do here.
+
+If the caller rejects the resolution, Matrix reopens the incident and this issue with it.`;
 }
 
 function cancelBody(): string {
@@ -431,7 +441,7 @@ function main(): void {
 
     // Comment handling first, and it runs in dry-run too: a dry run that skips
     // the analysis reports nothing useful. Writes inside are guarded.
-    const facts = handleComments(issue, DRY, values.priority, values.caller);
+    const facts = handleComments(issue, DRY, values.priority, values.caller, values.status);
 
     if (DRY) { console.log('  [dry run — board fields not evaluated]'); continue; }
 
@@ -735,6 +745,7 @@ function handleComments(
   dry: boolean,
   priority?: string,
   caller?: string | null,
+  status?: string | null,
 ): { labels: string[]; hasClosure: boolean } {
   // `--slurp`, and the shaping done here rather than in `--jq`. With
   // `--paginate` alone, gh emits ONE JSON array PER PAGE and `--jq` runs against
@@ -749,6 +760,9 @@ function handleComments(
   const hasClosure = comments.some((c) => isClosureComment(c.body));
   const hasPrompt = comments.some((c) => c.body.includes(PROMPT_MARKER));
   const closed = issue.state.toUpperCase() === 'CLOSED';
+  // Matrix finished with it: Resolved, or Closed after the 7-day timer.
+  const finished = isFinishedStatus(status);
+  const toldResolved = comments.some((c) => c.body.includes(RESOLVED_MARKER));
   // "Close as not planned" is the contract's signal for CANCELLED, not resolved
   // (field-mapping doc, end-of-life table). A cancelled incident is never asked
   // for close notes, so prompting for them sends someone off to write
@@ -793,6 +807,10 @@ function handleComments(
         if (!dry) gh(['issue', 'comment', String(issue.number), '-R', TARGET, '--body', cancelBody()]);
         break;
     }
+  } else if (closed && finished && !hasClosure && !hasPrompt) {
+    // Matrix resolved it; asking for close notes would be asking a second time
+    // for something already done, and a `[closure]` sent now would be rejected.
+    console.log('  · closed and already resolved in Matrix — no closure prompt needed');
   } else if (closed && !hasClosure && !hasPrompt) {
     const closedAt = issue.closedAt ? Date.parse(issue.closedAt) : 0;
     const cutoff = Date.now() - PROMPT_WINDOW_HOURS * 3600_000;
@@ -807,6 +825,20 @@ function handleComments(
   if (!closed && hasClosure) {
     console.log('  → closure info present on an open issue: closing');
     if (!dry) gh(['issue', 'close', String(issue.number), '-R', TARGET, '--reason', 'completed']);
+  } else if (!closed && finished && !toldResolved) {
+    // The incident is finished in Matrix, so the issue should not sit open with
+    // a stale flag — #3299 had been open and flagged since 7 October while the
+    // incident resolved itself on the 14th. Agreed with Ingrid 2026-10-15.
+    //
+    // Posted once, and never again: if someone deliberately reopens the issue to
+    // keep working, the note is already there and this will not close it a
+    // second time. A rejection reopens it from the Matrix side with a live
+    // status, which does not match `finished` either.
+    console.log('  → incident resolved in Matrix: closing the issue');
+    if (!dry) {
+      gh(['issue', 'comment', String(issue.number), '-R', TARGET, '--body', resolvedBody()]);
+      gh(['issue', 'close', String(issue.number), '-R', TARGET, '--reason', 'completed']);
+    }
   }
 
   // The rule itself lives in matrix-mapping so it can be tested directly.
