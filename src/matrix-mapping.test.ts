@@ -17,7 +17,6 @@ import {
   matrixCommentAuthor,
   isFinishedStatus,
   RESOLVED_MARKER,
-  CANCEL_MARKER,
   callerIsWaiting,
   isClosureComment,
   isHumanReply,
@@ -519,16 +518,13 @@ describe('cancel comments', () => {
     expect(isCancelComment('We should cancel this one')).toBe(false);
   });
 
-  it('does not treat our own cancel comment as a reply to the caller', () => {
-    // Otherwise cancelling an issue would clear `updated-by-caller` — the same
-    // trap flagged to Halvor for attachment notices.
-    const ours = `[cancel]\nClosed as not planned in GitHub.\n${CANCEL_MARKER}`;
-    expect(isHumanReply(ours)).toBe(false);
-  });
-
-  it('still treats a person writing [cancel] by hand as a reply', () => {
-    // No marker: a human typed it, and that is them acting on the issue.
-    expect(isHumanReply('[cancel]\nDuplicate of INC0073503')).toBe(true);
+  it('does not treat a cancel comment as a reply to the caller, whoever wrote it', () => {
+    // The tag identifies it, so no hidden marker is needed — and markers must
+    // not be used here: this comment is copied into ServiceNow, where an HTML
+    // comment shows as plain text in close notes the requester can see
+    // (observed on INC0073688, 2026-10-15).
+    expect(isHumanReply('[cancel]\nClosed as not planned in GitHub.')).toBe(false);
+    expect(isHumanReply('[cancel]\nDuplicate of INC0073503')).toBe(false);
   });
 });
 
