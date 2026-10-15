@@ -21,6 +21,7 @@ import {
   isClosureComment,
   isHumanReply,
   PROMPT_MARKER,
+  isInternalComment,
   extractSysId,
   mapPriority,
   mapStatus,
@@ -592,5 +593,20 @@ describe('finished incidents', () => {
 
   it('does not treat the auto-close note as someone answering the caller', () => {
     expect(isHumanReply(`${RESOLVED_MARKER}\nClosed automatically.`)).toBe(false);
+  });
+});
+
+describe('notes we generate stay internal', () => {
+  // ServiceNow fetches every comment and treats anything untagged as a
+  // caller-VISIBLE Additional Comment, so a note meant for the handler would
+  // otherwise land in a customer's inbox (Halvor, 2026-10-15).
+  it('an [internal]-prefixed note is a work note, not a reply to the caller', () => {
+    const prompt = `[internal]\n${PROMPT_MARKER}\n⚠️ This issue was closed...`;
+    expect(isInternalComment(prompt)).toBe(true);
+    expect(isHumanReply(prompt)).toBe(false);
+  });
+
+  it('a cancel instruction is NOT internal — it has to reach the incident', () => {
+    expect(isInternalComment('[cancel]\nClosed as not planned in GitHub.')).toBe(false);
   });
 });

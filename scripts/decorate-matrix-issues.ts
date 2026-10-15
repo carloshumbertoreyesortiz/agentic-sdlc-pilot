@@ -11,6 +11,7 @@ import {
   isBodyTrusted,
   PROMPT_MARKER,
   CANCEL_TAG,
+  INTERNAL_TAG,
   RESOLVED_MARKER,
   isFinishedStatus,
   cancelDecision,
@@ -87,7 +88,13 @@ Case handler:`
     ? `_This is a **${priority}** incident, so Matrix requires the technical documentation as well as the close notes. **Leaving those fields blank will make the resolve fail.**_`
     : `_Close notes are all that is needed for **${priority ?? 'this'}** incidents._`;
 
-  return `${PROMPT_MARKER}
+  // `[internal]` first, deliberately. ServiceNow fetches every comment on the
+  // issue, and anything untagged becomes a caller-VISIBLE Additional Comment —
+  // so without this, a customer receives our instructions to the handler, hidden
+  // marker and all (Halvor, 2026-10-15). As a work note it stays internal, which
+  // is what a note to our own team should be.
+  return `${INTERNAL_TAG}
+${PROMPT_MARKER}
 ⚠️ **This issue was closed, but the Matrix incident has _not_ been resolved.**
 
 Add a comment starting with \`[closure]\` and the incident will resolve automatically — no need to reopen this issue.
@@ -147,7 +154,10 @@ function closedBy(number: number): string | null {
 
 /** The note left when Matrix has resolved the incident and the issue is closed for it. */
 function resolvedBody(): string {
-  return `${RESOLVED_MARKER}
+  // `[internal]` for the same reason as the closure prompt: a note to our own
+  // team should not arrive in a customer's inbox.
+  return `${INTERNAL_TAG}
+${RESOLVED_MARKER}
 ✅ **Closed automatically** — the Matrix incident is resolved, so there is nothing left to do here.
 
 If the caller rejects the resolution, Matrix reopens the incident and this issue with it.`;
