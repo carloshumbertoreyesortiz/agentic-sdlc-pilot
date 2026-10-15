@@ -865,7 +865,16 @@ function handleComments(
       // the issue stays open and every later run skips it. Raised by Copilot on
       // PR #3504.
       gh(['issue', 'close', String(issue.number), '-R', TARGET, '--reason', 'completed']);
-      gh(['issue', 'comment', String(issue.number), '-R', TARGET, '--body', resolvedBody()]);
+      // No note when the incident is CLOSED. Every comment on the issue is
+      // exported to ServiceNow, and a Closed incident rejects updates — so the
+      // housekeeping note would buy a rejected queue record and a failure email,
+      // the very noise this week has been spent removing. A Resolved incident
+      // still accepts a work note, so it gets one. Raised by Copilot, PR #3504.
+      if (status !== 'Done') {
+        gh(['issue', 'comment', String(issue.number), '-R', TARGET, '--body', resolvedBody()]);
+      } else {
+        console.log('  · incident already Closed in Matrix — closed quietly, no note to export');
+      }
     }
   }
 

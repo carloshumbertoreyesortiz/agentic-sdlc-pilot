@@ -149,6 +149,20 @@ export function renderDashboard(d: DashInput): string {
     '',
   ];
 
+  // Before anything else, and before the counts: every list and total below is
+  // taken from the issues that could be read. Buried lower, "nobody is waiting"
+  // and "everything is on the board" still read as statements about all of them
+  // — which, if every issue failed, is the dashboard confidently describing a
+  // set it never saw. Raised by Copilot on PR #3504.
+  const failed = d.failed ?? [];
+  if (failed.length > 0) {
+    parts.push(
+      `> 🚨 **${failed.length} issue(s) could not be read this run** — ${failed.map((n) => `#${n}`).join(', ')}.`,
+      '> Every list and count on this page describes only the issues that WERE read, including the ones that say nothing is outstanding.',
+      '',
+    );
+  }
+
   // First, above the per-issue lists: without an epic for the current quarter
   // every incident that arrives lands unparented, so this is the one item here
   // that gets worse the longer it waits.
@@ -186,16 +200,6 @@ export function renderDashboard(d: DashInput): string {
     ),
     '',
   );
-
-  const failed = d.failed ?? [];
-  if (failed.length > 0) {
-    parts.push(
-      `### ⚠️ Could not be read this run (${failed.length})`,
-      '',
-      `${failed.map((n) => `#${n}`).join(', ')} — everything below EXCLUDES these.`,
-      '',
-    );
-  }
 
   const unchecked = parentUnchecked(d.issues);
   if (unchecked.length > 0) {

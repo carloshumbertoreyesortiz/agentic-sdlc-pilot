@@ -121,11 +121,14 @@ describe('sync dashboard', () => {
     expect(closedWithoutClosure(issues).map((i) => i.number)).toEqual([12]);
   });
 
-  it('admits which issues it could not read, and that the counts exclude them', () => {
+  it('warns at the very top that every list below covers only what it read', () => {
     const body = renderDashboard({ issues: [base], failed: [77, 88], generatedAt: 'now' });
-    expect(body).toContain('Could not be read this run (2)');
+    expect(body).toContain('2 issue(s) could not be read this run');
     expect(body).toContain('#77, #88');
-    expect(body).toContain('EXCLUDES');
+    // Above the lists, not below: "nobody is waiting" reads as a statement
+    // about every issue, and buried underneath it would still look like one.
+    expect(body.indexOf('could not be read')).toBeLessThan(body.indexOf('Caller has replied'));
+    expect(body).toContain('including the ones that say nothing is outstanding');
   });
 
   it('leads with what needs a person, not with totals', () => {
