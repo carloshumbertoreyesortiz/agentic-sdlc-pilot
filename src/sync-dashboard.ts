@@ -24,11 +24,22 @@ export interface DashIssue {
   cancelled?: boolean;
   /** The epic's child list could not be read, so the link is neither confirmed nor denied. */
   parentUnknown?: boolean;
+  /** Matrix has resolved or closed the incident — there is nothing left to send it. */
+  finished?: boolean;
 }
 
 export interface DashInput {
   issues: DashIssue[];
   epic?: { number: number; title: string; used: number; limit: number } | null;
+  /**
+   * Issues this run could not process at all.
+   *
+   * They are missing from `issues` entirely, so every count and list below is
+   * taken from the survivors — and without saying so the dashboard would report
+   * the healthy subset as the whole picture, and could claim everything is set
+   * up when nothing was read. Raised by Copilot on PR #3504.
+   */
+  failed?: number[];
   /**
    * Quarter key (`26-Q4`) when no epic exists for it yet.
    *
@@ -58,7 +69,14 @@ export function awaitingReply(issues: DashIssue[]): DashIssue[] {
  */
 export function closedWithoutClosure(issues: DashIssue[]): DashIssue[] {
   return issues.filter(
-    (i) => i.state.toUpperCase() === 'CLOSED' && !i.hasClosure && !i.cancelled,
+    (i) => i.state.toUpperCase() === 'CLOSED'
+      && !i.hasClosure
+      && !i.cancelled
+      // Nor one Matrix has already finished with. Those are closed here BECAUSE
+      // the incident resolved, so they carry no `[closure]` comment and never
+      // will — listing them says "the Matrix incident is still open" about an
+      // incident that is closed. Raised by Copilot on PR #3504.
+      && !i.finished,
   );
 }
 
@@ -168,6 +186,16 @@ export function renderDashboard(d: DashInput): string {
     ),
     '',
   );
+
+  const failed = d.failed ?? [];
+  if (failed.length > 0) {
+    parts.push(
+      `### ⚠️ Could not be read this run (${failed.length})`,
+      '',
+      `${failed.map((n) => `#${n}`).join(', ')} — everything below EXCLUDES these.`,
+      '',
+    );
+  }
 
   const unchecked = parentUnchecked(d.issues);
   if (unchecked.length > 0) {
