@@ -143,7 +143,11 @@ function closedBy(number: number): string | null {
       gh(['api', '--paginate', '--slurp', `repos/${TARGET}/issues/${number}/timeline?per_page=100`]),
     ) as { event: string; actor?: { login?: string } }[][];
     const closes = events.flat().filter((e) => e.event === 'closed');
-    return closes.at(-1)?.actor?.login ?? null;
+    // No usable actor is UNKNOWN, and unknown must not become "a person closed
+    // it": normaliseLogin(null) is '', which does not equal the sync account, so
+    // returning null here would send `[cancel]` with Matrix not ruled out as the
+    // closer. Same answer as the catch below, for the same reason.
+    return closes.at(-1)?.actor?.login ?? SYNC_AUTHOR;
   } catch {
     // Unknown: say nothing rather than risk the echo. A cancellation that did
     // not travel is visible to a person; a retry storm reaches their inbox.
@@ -449,7 +453,17 @@ function main(): void {
 
     // Comment handling first, and it runs in dry-run too: a dry run that skips
     // the analysis reports nothing useful. Writes inside are guarded.
-    const facts = handleComments(issue, DRY, values.priority, values.caller, values.status);
+    // caller and status come from the body, so they obey bodyTrusted like every
+    // other value read from it. Without that, an untrusted edit setting status
+    // to Deployed would make this close the issue and announce that Matrix had
+    // resolved the incident, and an edited caller would suppress the waiting
+    // label — the board fields were gated and these were not. Raised by Copilot
+    // on PR #3504.
+    const facts = handleComments(
+      issue, DRY, values.priority,
+      bodyTrusted ? values.caller : null,
+      bodyTrusted ? values.status : null,
+    );
 
     if (DRY) { console.log('  [dry run — board fields not evaluated]'); continue; }
 
@@ -572,6 +586,7 @@ function main(): void {
       parentUnknown,
       hasClosure: facts.hasClosure,
       cancelled,
+      finished: bodyTrusted && isFinishedStatus(values.status),
     });
    } catch (err) {
     // One issue must not take down the other ninety-three, nor the dashboard.
@@ -586,7 +601,7 @@ function main(): void {
    }
   }
 
-  publishDashboard(dash, epics.get(nowKey)?.number ?? null, DRY, epics.has(nowKey) ? null : nowKey);
+  publishDashboard(dash, epics.get(nowKey)?.number ?? null, DRY, epics.has(nowKey) ? null : nowKey, failed);
 
   if (failed.length > 0) {
     console.error(`::error::${failed.length} issue(s) failed: ${failed.map((n) => `#${n}`).join(', ')}`);
@@ -845,8 +860,12 @@ function handleComments(
     // status, which does not match `finished` either.
     console.log('  → incident resolved in Matrix: closing the issue');
     if (!dry) {
-      gh(['issue', 'comment', String(issue.number), '-R', TARGET, '--body', resolvedBody()]);
+      // Close FIRST, then record it. The note is what stops this running again,
+      // so writing it before the close means a failed close is never retried —
+      // the issue stays open and every later run skips it. Raised by Copilot on
+      // PR #3504.
       gh(['issue', 'close', String(issue.number), '-R', TARGET, '--reason', 'completed']);
+      gh(['issue', 'comment', String(issue.number), '-R', TARGET, '--body', resolvedBody()]);
     }
   }
 
@@ -887,6 +906,8 @@ function publishDashboard(
   epicNumber: number | null,
   dry: boolean,
   epicMissingFor: string | null = null,
+  /** Issues this run could not process — they are missing from `dash` entirely. */
+  failed: number[] = [],
 ): void {
   const generatedAt = gh(['api', '/', '--jq', '"now"', '-i'])
     .split('\n')
@@ -906,7 +927,7 @@ function publishDashboard(
     epic = { number: epicNumber, title, used: subs.length, limit: 100 };
   }
 
-  const body = renderDashboard({ issues: dash, epic, epicMissingFor, generatedAt, lastRun: null });
+  const body = renderDashboard({ issues: dash, epic, epicMissingFor, failed, generatedAt, lastRun: null });
 
   const found = JSON.parse(
     gh(['issue', 'list', '-R', TARGET, '--state', 'open', '--limit', '50',

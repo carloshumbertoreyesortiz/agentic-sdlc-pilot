@@ -111,6 +111,23 @@ describe('sync dashboard', () => {
     expect(body).toContain('could not be checked for **1**');
   });
 
+  it('does not claim a resolved incident is still open', () => {
+    // Auto-closed because Matrix resolved it, so it carries no [closure]
+    // comment and never will. Raised by Copilot on PR #3504.
+    const issues = [
+      { ...base, number: 11, state: 'CLOSED', hasClosure: false, finished: true },
+      { ...base, number: 12, state: 'CLOSED', hasClosure: false },
+    ];
+    expect(closedWithoutClosure(issues).map((i) => i.number)).toEqual([12]);
+  });
+
+  it('admits which issues it could not read, and that the counts exclude them', () => {
+    const body = renderDashboard({ issues: [base], failed: [77, 88], generatedAt: 'now' });
+    expect(body).toContain('Could not be read this run (2)');
+    expect(body).toContain('#77, #88');
+    expect(body).toContain('EXCLUDES');
+  });
+
   it('leads with what needs a person, not with totals', () => {
     const body = renderDashboard({ issues: [base], generatedAt: 'now' });
     expect(body.indexOf('Needs someone')).toBeLessThan(body.indexOf('Volume'));
