@@ -14,6 +14,7 @@ import {
   isCallerAcceptance,
   isCancelComment,
   cancelDecision,
+  matrixCommentAuthor,
   CANCEL_MARKER,
   callerIsWaiting,
   isClosureComment,
@@ -553,5 +554,31 @@ describe('cancelDecision', () => {
 
   it('prefers the existing tag over every other reason', () => {
     expect(cancelDecision({ hasCancel: true, closedBySync: true, recent: false })).toBe('already');
+  });
+});
+
+describe('callerIsWaiting — who actually wrote it', () => {
+  const from = (who: string, at: string, text = 'any update?') => ({
+    created_at: at,
+    body: `**[Matrix comment]** — ${who}, 07 Oct 2026, 07:58 UTC\n\n${text}\n\n<!-- Matrix-Journal-Id: x -->`,
+  });
+
+  it('reads the author out of the comment header', () => {
+    expect(matrixCommentAuthor(from('Ingrid Marie Urdshals', 'x').body)).toBe('Ingrid Marie Urdshals');
+  });
+
+  it('flags a comment the caller wrote', () => {
+    expect(callerIsWaiting([from('Piero Notaro', '2026-10-07T08:00:00Z')], 'Piero Notaro')).toBe(true);
+  });
+
+  it('does not flag a handler answering in Matrix', () => {
+    // #3299: caller is Piero Notaro, the comment is Ingrid's. An Additional
+    // Comment is caller-VISIBLE, not caller-written.
+    expect(callerIsWaiting([from('Ingrid Marie Urdshals', '2026-10-07T08:00:00Z')], 'Piero Notaro')).toBe(false);
+  });
+
+  it('keeps the old behaviour when the caller is unknown', () => {
+    // A missed flag is worse than a spurious one.
+    expect(callerIsWaiting([from('Someone', '2026-10-07T08:00:00Z')], null)).toBe(true);
   });
 });

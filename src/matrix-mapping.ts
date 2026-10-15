@@ -437,6 +437,15 @@ export function isHumanReply(body: string): boolean {
 }
 
 /**
+ * The person named in a Matrix comment's header, or null.
+ *
+ * `**[Matrix comment]** — Ingrid Marie Urdshals, 07 Oct 2026, 07:58 UTC`
+ */
+export function matrixCommentAuthor(body: string): string | null {
+  return body.match(/\*\*\[Matrix comment\]\*\*\s*—\s*([^,\n]+),/)?.[1].trim() ?? null;
+}
+
+/**
  * Whether the caller is waiting on an answer.
  *
  * The LAST caller comment against the LAST human reply. Counting is not enough:
@@ -451,9 +460,21 @@ export function isHumanReply(body: string): boolean {
  *
  * A comment after an acceptance is an ordinary caller comment again.
  */
-export function callerIsWaiting(comments: { body: string; created_at: string }[]): boolean {
+export function callerIsWaiting(
+  comments: { body: string; created_at: string }[],
+  /** The incident's caller, from the metadata block. */
+  caller?: string | null,
+): boolean {
   const reversed = [...comments].reverse();
-  const lastCaller = reversed.find((c) => isCallerComment(c.body));
+  // An "Additional Comment" in ServiceNow is caller-VISIBLE, not caller-WRITTEN:
+  // a handler answering in Matrix produces exactly the same comment here. Taking
+  // every one as the caller speaking meant a handler's own note flagged their own
+  // issue as waiting on them — #3299, where the caller is Piero Notaro and the
+  // comment was Ingrid's. When the caller is unknown the old behaviour stands,
+  // since a missed flag is worse than a spurious one.
+  const fromCaller = (body: string) => isCallerComment(body)
+    && (!caller || matrixCommentAuthor(body) === caller);
+  const lastCaller = reversed.find((c) => fromCaller(c.body));
   if (!lastCaller || isCallerAcceptance(lastCaller.body)) return false;
   const lastReply = reversed.find((c) => isHumanReply(c.body));
   return !lastReply || lastCaller.created_at > lastReply.created_at;

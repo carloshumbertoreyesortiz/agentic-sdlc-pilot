@@ -431,7 +431,7 @@ function main(): void {
 
     // Comment handling first, and it runs in dry-run too: a dry run that skips
     // the analysis reports nothing useful. Writes inside are guarded.
-    const facts = handleComments(issue, DRY, values.priority);
+    const facts = handleComments(issue, DRY, values.priority, values.caller);
 
     if (DRY) { console.log('  [dry run — board fields not evaluated]'); continue; }
 
@@ -734,6 +734,7 @@ function handleComments(
   issue: { number: number; state: string; stateReason?: string | null; closedAt?: string | null },
   dry: boolean,
   priority?: string,
+  caller?: string | null,
 ): { labels: string[]; hasClosure: boolean } {
   // `--slurp`, and the shaping done here rather than in `--jq`. With
   // `--paginate` alone, gh emits ONE JSON array PER PAGE and `--jq` runs against
@@ -809,7 +810,7 @@ function handleComments(
   }
 
   // The rule itself lives in matrix-mapping so it can be tested directly.
-  const waiting = callerIsWaiting(comments);
+  const waiting = callerIsWaiting(comments, caller);
 
   const labels = JSON.parse(
     gh(['issue', 'view', String(issue.number), '-R', TARGET, '--json', 'labels',
